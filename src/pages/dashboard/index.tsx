@@ -1,14 +1,14 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 
-const Home = () => {
+const DashboardIndex = () => {
   const router = useRouter();
 
   useEffect(() => {
-    router.push('/login');
+    router.push('/dashboard/home');
   }, [router]);
 
   return null;
 };
 
-export default Home;
+export default DashboardIndex;
