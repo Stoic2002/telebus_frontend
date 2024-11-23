@@ -1,526 +1,239 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer } from 'react-leaflet';
+import { Icon, LatLng } from 'leaflet';
+import MarkerIcon2X from 'leaflet/dist/images/marker-icon-2x.png';
+import MarkerIcon from 'leaflet/dist/images/marker-icon.png';
+import MarkerShadow from 'leaflet/dist/images/marker-shadow.png';
+import { useSensorData } from '../../hooks/useSensorData';
+import { MapMarker } from './MapMarker';
+import { formatLoadValue, calculateTotalLoad, getDefaultLocations } from '../../lib/mapUtils';
+import { Location } from '../../types/mapTypes';
 import 'leaflet/dist/leaflet.css';
-import L, { LatLng } from 'leaflet';
-import { Icon } from "leaflet";
-import MarkerIcon2X from "leaflet/dist/images/marker-icon-2x.png";
-import MarkerIcon from "leaflet/dist/images/marker-icon.png";
-import MarkerShadow from "leaflet/dist/images/marker-shadow.png";
-import { SensorValueResponse } from '@/types/sensorTypes';
+import { fetchKedungomboLoadValue } from '@/services/loadUnit/kedungomboLoadUnit';
 import { fetchSoedirmanLoadSecondValue, fetchSoedirmanLoadThirdValue, fetchSoedirmanLoadValue } from '@/services/loadUnit/soedirmanLoadUnit';
 import { fetchSoedirmanWaterLevel } from '@/services/waterLevel/soedirmanWaterLevel';
 import { fetchGunungWugulLoadSecondValue, fetchGunungWugulLoadValue } from '@/services/loadUnit/gunungWugulLoadUnit';
 import { fetchGunungWugulWaterLevel } from '@/services/waterLevel/gunungWugulWaterLevel';
 import { fetchTapenLoadValue } from '@/services/loadUnit/tapenLoadUnit';
 import { fetchTapenWaterLevel } from '@/services/waterLevel/tapenWaterLevel';
-import { fetchKedungomboLoadValue } from '@/services/loadUnit/kedungomboLoadUnit';
 import { fetchKedungomboWaterLevel } from '@/services/waterLevel/kedungomboWaterLevel';
 import { fetchKlambuLoadValue } from '@/services/loadUnit/klambuLoadUnit';
 import { fetchKlambuWaterLevelAo } from '@/services/waterLevel/klambuWaterLevel';
 import { fetchSidorejoLoadValue } from '@/services/loadUnit/sidorejoLoadUnit';
-import { fetchSoedirmanInflowPerSec } from '@/services/inflow/soedirmanInflow';
 import { fetchSidorejoWaterLevel } from '@/services/waterLevel/sidorejoWaterLevel';
 import { fetchKetengerLoadFourthValue, fetchKetengerLoadSecondValue, fetchKetengerLoadThirdValue, fetchKetengerLoadValue } from '@/services/loadUnit/ketengerLoadUnit';
-import { fetchKetengerWaterLevel } from '@/services/waterLevel/ketengerWaterLevel';
+import { fetchGarungLoadSecondValue, fetchGarungLoadValue } from '@/services/loadUnit/garungLoadUnit';
+import { fetchJelokLoadFourthValue, fetchJelokLoadSecondValue, fetchJelokLoadThirdValue, fetchJelokLoadValue } from '@/services/loadUnit/jelokLoadUnit';
+import { fetchPejengkolanLoadValue } from '@/services/loadUnit/pejengkolanLoadUnit';
+import { fetchPlumbunganLoadValue } from '@/services/loadUnit/plumbunganLoadUnit';
+import { fetchSemporLoadValue } from '@/services/loadUnit/semporLoadUnit';
+import { fetchSitekiLoadValue } from '@/services/loadUnit/sitekiLoadUnit';
+import { fetchTimoLoadSecondValue, fetchTimoLoadThirdValue, fetchTimoLoadValue } from '@/services/loadUnit/timoLoadUnit';
+import { fetchTulisLoadSecondValue, fetchTulisLoadValue } from '@/services/loadUnit/tulisLoadUnit';
+import { fetchWadaslintangLoadSecondValue, fetchWadaslintangLoadValue } from '@/services/loadUnit/wadaslintangLoadUnit';
+import { fetchWonogiriLoadSecondValue, fetchWonogiriLoadValue } from '@/services/loadUnit/wonogiriLoadUnit';
 
-const MapContent = () => {
+
+const MapContent: React.FC = () => {
   const [mapReady, setMapReady] = useState(false);
-  const [pbsLoadValue, setPbsLoadValue] = useState<SensorValueResponse | null>(null);
-  const [pbsLoadSecondValue, setPbsLoadSecondValue] = useState<SensorValueResponse | null>(null);
-  const [pbsLoadThirdValue, setPbsLoadThirdValue] = useState<SensorValueResponse | null>(null);
-  const [pbsWaterLevelValue, setPbsWaterLevelValue] = useState<SensorValueResponse | null>(null);
-  const [gunungWugulLoadValue, setGunungWugulLoadValue] = useState<SensorValueResponse | null>(null);
-  const [gunungWugulLoadSecondValue, setGunungWugulLoadSecondValue] = useState<SensorValueResponse | null>(null);
-  const [gunungWugulWaterLevelValue, setGunungWugulWaterLevelValue] = useState<SensorValueResponse | null>(null);
-  const [tapenLoadValue, setTapenLoadValue] = useState<SensorValueResponse | null>(null);
-  const [tapenWaterLevelValue, setTapenWaterLevelValue] = useState<SensorValueResponse | null>(null);
-  const [kedungomboLoadValue, setKedungomboLoadValue] = useState<SensorValueResponse | null>(null);
-  const [kedungomboWaterLevelValue, setKedungomboWaterLevelValue] = useState<SensorValueResponse | null>(null);
-  const [klambuLoadValue, setKlambuLoadValue] = useState<SensorValueResponse | null>(null);
-  const [klambuWaterLevelValue, setKlambuWaterLevelValue] = useState<SensorValueResponse | null>(null);
-  const [sidorejoLoadValue, setSidorejoLoadValue] = useState<SensorValueResponse | null>(null);
-  const [sidorejoWaterLevelValue, setSidorejoWaterLevelValue] = useState<SensorValueResponse | null>(null);
-  const [ketengerLoadValue, setKetengerLoadValue] = useState<SensorValueResponse | null>(null);
-  const [ketengerLoadSecondValue, setKetengerLoadSecondValue] = useState<SensorValueResponse | null>(null);
-  const [ketengerLoadThirdValue, setKetengerLoadThirdValue] = useState<SensorValueResponse | null>(null);
-  const [ketengerLoadFourthValue, setKetengerLoadFourthValue] = useState<SensorValueResponse | null>(null);
-  const [ketengerWaterLevelValue, setKetengerWaterLevelValue] = useState<SensorValueResponse | null>(null);
+  const [locations, setLocations] = useState<Location[]>(getDefaultLocations());
 
+  // Initialize Leaflet icon settings
   useEffect(() => {
+    Icon.Default.mergeOptions({
+      iconRetinaUrl: MarkerIcon2X.src,
+      iconUrl: MarkerIcon.src,
+      shadowUrl: MarkerShadow.src,
+    });
     setMapReady(true);
   }, []);
 
-  const position = new LatLng(-7.5400, 110.4460);
-  const locations = [
-    { position: new LatLng(-7.386563238230246, 109.60085899477103), name: 'PLTA Tapen',waterLevel: tapenWaterLevelValue !== null ? tapenWaterLevelValue.data.value.value.toFixed(2) : "N/A",loadUnit : tapenLoadValue !== null ? (tapenLoadValue.data.value.value).toFixed(2) : 'N/A'},
-    { position: new LatLng(-7.403447747900593, 109.56813461938899), name: 'PLTA Siteki',waterLevel: 'N/A',loadUnit : 50 },
-    { position: new LatLng(-7.39494911212742, 109.60532545434796), name: 'PLTA Soedirman',waterLevel: pbsWaterLevelValue !== null ? pbsWaterLevelValue.data.value.value.toFixed(2) : "N/A",loadUnit : pbsLoadValue && pbsLoadSecondValue && pbsLoadThirdValue !== null ? (pbsLoadValue.data.value.value + pbsLoadSecondValue.data.value.value + pbsLoadThirdValue.data.value.value).toFixed(2) : 'N/A'},
-    { position: new LatLng(-7.40963131897961, 109.56792235776204), name: 'PLTA Plumbungan',waterLevel: 'N/A',loadUnit : 50 },
-    { position: new LatLng(-7.314167297132545, 109.71852123771501), name: 'PLTA Gunung wugul',waterLevel: gunungWugulWaterLevelValue !== null ? gunungWugulWaterLevelValue.data.value.value.toFixed(2) : "N/A",loadUnit : gunungWugulLoadValue && gunungWugulLoadSecondValue !== null ? ((gunungWugulLoadValue.data.value.value / 1000) + (gunungWugulLoadSecondValue.data.value.value / 1000)).toFixed(2) : 'N/A'},
-    { position: new LatLng(-7.3205022492692144, 109.22344528175903), name: 'PLTA Ketenger',waterLevel: "N/A",loadUnit : ketengerLoadValue && ketengerLoadSecondValue && ketengerLoadThirdValue && ketengerLoadFourthValue !== null ? (ketengerLoadValue.data.value.value + ketengerLoadSecondValue.data.value.value + (ketengerLoadThirdValue.data.value.value / 1000) + (ketengerLoadFourthValue.data.value.value / 1000)).toFixed(2) : 'N/A'},
-    { position: new LatLng(-7.309125894063505, 109.76976569969263), name: 'PLTA Tulis',waterLevel: 'N/A',loadUnit : 50 },
-    { position: new LatLng(-7.286172601473982, 109.92031631561362), name: 'PLTA Garung',waterLevel: 'N/A',loadUnit : 50 },
-    { position: new LatLng(-7.596274775273336, 109.77912085081293), name: 'PLTA Wadaslintang',waterLevel: 'N/A',loadUnit : 50 },
-    { position: new LatLng(-7.659905648323142, 109.7724663410396), name: 'PLTA Pejengkolan',waterLevel: 'N/A',loadUnit : 50 },
-    { position: new LatLng(-7.547181384353519, 109.48519257113237), name: 'PLTA Sempor',waterLevel: 'N/A',loadUnit : 50 },
-    { position: new LatLng(-7.8371339130071895, 110.9263176603235), name: 'PLTA Wonogiri',waterLevel: 'N/A',loadUnit : 50 },
-    { position: new LatLng(-7.214825581112301, 110.50210658754585), name: 'PLTA Timo',waterLevel: 'N/A',loadUnit : 50 },
-    { position: new LatLng(-7.214362144100243, 110.84650561162269), name: 'PLTA Sidorejo',waterLevel: sidorejoWaterLevelValue !== null ? sidorejoWaterLevelValue.data.value.value.toFixed(2) : "N/A",loadUnit : sidorejoLoadValue !== null ? (sidorejoLoadValue.data.value.value).toFixed(2) : 'N/A'},
-    { position: new LatLng(-7.017677610744967, 110.80358004674133), name: 'PLTA Klambu',waterLevel: klambuWaterLevelValue !== null ? klambuWaterLevelValue.data.value.value.toFixed(2) : "N/A",loadUnit : klambuLoadValue !== null ? (klambuLoadValue.data.value.value).toFixed(2) : 'N/A'},
-    { position: new LatLng(-7.243739514612452, 110.48112101052733), name: 'PLTA Jelok',waterLevel: 'N/A',loadUnit : 50 },
-    { position: new LatLng(-7.255866755384077, 110.83785488284785), name: 'PLTA Kedungombo',waterLevel: kedungomboWaterLevelValue !== null ? kedungomboWaterLevelValue.data.value.value.toFixed(2) : "N/A",loadUnit : kedungomboLoadValue !== null ? (kedungomboLoadValue.data.value.value).toFixed(2) : 'N/A'},
-  ];
+  // Fetch sensor data using custom hook
+  const { data: pbsLoad1 } = useSensorData({ fetchFunction: fetchSoedirmanLoadValue});
+  const { data: pbsLoad2 } = useSensorData({ fetchFunction: fetchSoedirmanLoadSecondValue });
+  const { data: pbsLoad3 } = useSensorData({ fetchFunction: fetchSoedirmanLoadThirdValue });
+  const { data: pbsWaterLevel } = useSensorData({ fetchFunction: fetchSoedirmanWaterLevel });
+  const { data: gunungWugulLoad1 } = useSensorData({ fetchFunction: fetchGunungWugulLoadValue });
+  const { data: gunungWugulLoad2 } = useSensorData({ fetchFunction: fetchGunungWugulLoadSecondValue });
+  const { data: gunungWugulWaterLevel } = useSensorData({ fetchFunction: fetchGunungWugulWaterLevel });
+  const { data: tapenLoad } = useSensorData({ fetchFunction: fetchTapenLoadValue });
+  const { data: tapenWaterLevel } = useSensorData({ fetchFunction: fetchTapenWaterLevel });
+  const { data: kedungomboLoad } = useSensorData({ fetchFunction: fetchKedungomboLoadValue });
+  const { data: kedungomboWaterLevel } = useSensorData({ fetchFunction: fetchKedungomboWaterLevel });
+  const { data: klambuLoad } = useSensorData({ fetchFunction: fetchKlambuLoadValue });
+  const { data: klambuWaterLevel } = useSensorData({ fetchFunction: fetchKlambuWaterLevelAo });
+  const { data: sidorejoLoad } = useSensorData({ fetchFunction: fetchSidorejoLoadValue });
+  const { data: sidorejoWaterLevel } = useSensorData({ fetchFunction: fetchSidorejoWaterLevel });
+  const { data: ketengerLoad1 } = useSensorData({ fetchFunction: fetchKetengerLoadValue });
+  const { data: ketengerLoad2 } = useSensorData({ fetchFunction: fetchKetengerLoadSecondValue });
+  const { data: ketengerLoad3 } = useSensorData({ fetchFunction: fetchKetengerLoadThirdValue });
+  const { data: ketengerLoad4 } = useSensorData({ fetchFunction: fetchKetengerLoadFourthValue });
+  const { data: garungLoad1 } = useSensorData({ fetchFunction: fetchGarungLoadValue });
+  const { data: garungLoad2} = useSensorData({ fetchFunction: fetchGarungLoadSecondValue });
+  const { data: jelokLoad1} = useSensorData({ fetchFunction: fetchJelokLoadValue });
+  const { data: jelokLoad2} = useSensorData({ fetchFunction: fetchJelokLoadSecondValue });
+  const { data: jelokLoad3} = useSensorData({ fetchFunction: fetchJelokLoadThirdValue });
+  const { data: jelokLoad4} = useSensorData({ fetchFunction: fetchJelokLoadFourthValue });
+  const { data: pejengkolanLoad} = useSensorData({ fetchFunction: fetchPejengkolanLoadValue });
+  const { data: plumbunganLoad} = useSensorData({ fetchFunction: fetchPlumbunganLoadValue });
+  const { data: semporLoad} = useSensorData({ fetchFunction: fetchSemporLoadValue });
+  const { data: sitekiLoad} = useSensorData({ fetchFunction: fetchSitekiLoadValue });
+  const { data: timoLoad1} = useSensorData({ fetchFunction: fetchTimoLoadValue });
+  const { data: timoLoad2} = useSensorData({ fetchFunction: fetchTimoLoadSecondValue });
+  const { data: timoLoad3} = useSensorData({ fetchFunction: fetchTimoLoadThirdValue });
+  const { data: tulisLoad1} = useSensorData({ fetchFunction: fetchTulisLoadValue });
+  const { data: tulisLoad2} = useSensorData({ fetchFunction: fetchTulisLoadSecondValue });
+  const { data: wadaslintangLoad1} = useSensorData({ fetchFunction: fetchWadaslintangLoadValue });
+  const { data: wadaslintangLoad2} = useSensorData({ fetchFunction: fetchWadaslintangLoadSecondValue });
+  const { data: wonogiriLoad1} = useSensorData({ fetchFunction: fetchWonogiriLoadValue });
+  const { data: wonogiriLoad2} = useSensorData({ fetchFunction: fetchWonogiriLoadSecondValue });
 
-  Icon.Default.mergeOptions({
-    iconRetinaUrl: MarkerIcon2X.src,
-    iconUrl: MarkerIcon.src,
-    shadowUrl: MarkerShadow.src,
-  });
-
-  //beban unit 1 pbs
+  // Update locations with sensor data
   useEffect(() => {
-    const getPbsLoad = async () => {
-      try {
-        const response = await fetchSoedirmanLoadValue();
-        if (response?.data) {
-          setPbsLoadValue(response);
-        }
-      } catch (error) {
-        console.error('Error in getData:', error);
+    const updatedLocations = locations.map(location => {
+      switch (location.name) {
+        case 'PLTA Tapen':
+          return {
+            ...location,
+            waterLevel: formatLoadValue(tapenWaterLevel),
+            loadUnit: formatLoadValue(tapenLoad)
+          };
+        case 'PLTA Soedirman':
+          return {
+            ...location,
+            waterLevel: formatLoadValue(pbsWaterLevel),
+            loadUnit: calculateTotalLoad([pbsLoad1, pbsLoad2, pbsLoad3]).toFixed(2)
+          };
+        case 'PLTA Gunung wugul':
+          return {
+            ...location,
+            waterLevel: formatLoadValue(gunungWugulWaterLevel),
+            loadUnit: calculateTotalLoad([gunungWugulLoad1, gunungWugulLoad2],true).toFixed(2)
+          };
+        case 'PLTA Sidorejo':
+          return {
+            ...location,
+            waterLevel: formatLoadValue(sidorejoWaterLevel),
+            loadUnit: calculateTotalLoad([sidorejoLoad],true).toFixed(2)
+          };
+        case 'PLTA Klambu':
+          return {
+            ...location,
+            waterLevel: formatLoadValue(klambuWaterLevel),
+            loadUnit: calculateTotalLoad([klambuLoad]).toFixed(2)
+          };
+        case 'PLTA Kedungombo':
+          return {
+            ...location,
+            waterLevel: formatLoadValue(kedungomboWaterLevel),
+            loadUnit: formatLoadValue(kedungomboLoad)
+          };
+        case 'PLTA Ketenger':
+          return {
+            ...location,
+            waterLevel: 'N/A',
+            loadUnit: (calculateTotalLoad([ketengerLoad3,ketengerLoad4],true) + calculateTotalLoad([ketengerLoad1,ketengerLoad2])).toFixed(2)
+          };
+        case 'PLTA Garung':
+          return {
+            ...location,
+            waterLevel: 'N/A',
+            loadUnit: calculateTotalLoad([garungLoad1, garungLoad2])
+          };
+        case 'PLTA Jelok':
+          return {
+            ...location,
+            waterLevel: 'N/A',
+            loadUnit: calculateTotalLoad([jelokLoad1,jelokLoad2,jelokLoad3,jelokLoad4],true).toFixed(2)
+          };
+        case 'PLTA Pejengkolan':
+          return {
+            ...location,
+            waterLevel: 'N/A',
+            loadUnit: calculateTotalLoad([pejengkolanLoad],true)
+          };
+        case 'PLTA Plumbungan':
+          return {
+            ...location,
+            waterLevel: 'N/A',
+            loadUnit: calculateTotalLoad([plumbunganLoad])
+          };
+        case 'PLTA Sempor':
+          return {
+            ...location,
+            waterLevel: 'N/A',
+            loadUnit: calculateTotalLoad([semporLoad],true).toFixed(2)
+          };
+        case 'PLTA Siteki':
+          return {
+            ...location,
+            waterLevel: 'N/A',
+            loadUnit: calculateTotalLoad([sitekiLoad])
+          };
+        case 'PLTA Timo':
+          return {
+            ...location,
+            waterLevel: 'N/A',
+            loadUnit: calculateTotalLoad([timoLoad1,timoLoad2,timoLoad3],true).toFixed(2)
+          };
+        case 'PLTA Tulis':
+          return {
+            ...location,
+            waterLevel: 'N/A',
+            loadUnit: calculateTotalLoad([tulisLoad1, tulisLoad2],true)
+          };
+        case 'PLTA Wadaslintang':
+          return {
+            ...location,
+            waterLevel: 'N/A',
+            loadUnit: calculateTotalLoad([wadaslintangLoad1,wadaslintangLoad2],true).toFixed(2)
+          };
+        case 'PLTA Wonogiri':
+          return {
+            ...location,
+            waterLevel: 'N/A',
+            loadUnit: calculateTotalLoad([wonogiriLoad1,wonogiriLoad2])
+          };
+        // ... handle other locations
+        default:
+          return location;
       }
-    };
-    getPbsLoad();
-    
-    const intervalId = setInterval(getPbsLoad, 10000);
+    });
+    setLocations(updatedLocations);
+  }, [
+    pbsLoad1, pbsLoad2, pbsLoad3, pbsWaterLevel,
+    gunungWugulLoad1, gunungWugulLoad2, gunungWugulWaterLevel,
+    tapenLoad, tapenWaterLevel,
+    kedungomboLoad, kedungomboWaterLevel,
+    klambuLoad, klambuWaterLevel,
+    sidorejoLoad, sidorejoWaterLevel,
+    ketengerLoad1, ketengerLoad2, ketengerLoad3, ketengerLoad4,
+    garungLoad1,garungLoad2,
+    jelokLoad1,jelokLoad2,jelokLoad3,jelokLoad4,
+    pejengkolanLoad,
+    plumbunganLoad,
+    semporLoad,
+    sitekiLoad,
+    timoLoad1,timoLoad2,timoLoad3,
+    tulisLoad1,tulisLoad2,
+    wadaslintangLoad1,wadaslintangLoad2,
+    wonogiriLoad1,wonogiriLoad2
+  ]);
 
-    return () => clearInterval(intervalId);
-  
-  }, []);
-
-   //beban unit 2 pbs
-  useEffect(() => {
-
-    const getPbsSecondLoad = async () => {
-      try {
-        const response = await fetchSoedirmanLoadSecondValue();
-        if (response?.data) {
-          setPbsLoadSecondValue(response);
-        }
-      } catch (error) {
-        console.error('Error in getData:', error);
-      }
-    };
-
-    getPbsSecondLoad();
-
-    const intervalId = setInterval(getPbsSecondLoad, 10000);
- 
-    return () => clearInterval(intervalId);
-  }, []);
-
-  //beban unit 3 pbs
-  useEffect(() => {
-  
-    const getPbsThirdLoad = async () => {
-      try {
-        const response = await fetchSoedirmanLoadThirdValue();
-        if (response?.data) {
-          setPbsLoadThirdValue(response);
-        }
-      } catch (error) {
-        console.error('Error in getData:', error);
-      }
-    };
-    getPbsThirdLoad();
-
-    const intervalId = setInterval(getPbsThirdLoad, 10000);
- 
-    return () => clearInterval(intervalId);
-  }, []);
-
-   // water level pbs
-   useEffect(() => {
-  
-    const getPbsWaterLevel = async () => {
-      try {
-        const response = await fetchSoedirmanWaterLevel();
-        if (response?.data) {
-          setPbsWaterLevelValue(response);
-        }
-      } catch (error) {
-        console.error('Error in getData:', error);
-      }
-    };
-
-    getPbsWaterLevel();
- 
-    const intervalId = setInterval(getPbsWaterLevel, 10000);
-
-    return () => clearInterval(intervalId);
-  }, []);  
-
-   //beban unit 1 gunung wugul
-  useEffect(() => {
-
-    const getGunungWugulLoad = async () => {
-      try {
-        const response = await fetchGunungWugulLoadValue();
-        if (response?.data) {
-          setGunungWugulLoadValue(response);
-        }
-      } catch (error) {
-        console.error('Error in getData:', error);
-      }
-    };
-
-    getGunungWugulLoad();
-
-    const intervalId = setInterval(getGunungWugulLoad, 10000);
- 
-    return () => clearInterval(intervalId);
-  }, []);
-
-  //beban unit 2 gunung wugul
-  useEffect(() => {
-  
-    const getGunungWugulSecondLoad = async () => {
-      try {
-        const response = await fetchGunungWugulLoadSecondValue();
-        if (response?.data) {
-          setGunungWugulLoadSecondValue(response);
-        }
-      } catch (error) {
-        console.error('Error in getData:', error);
-      }
-    };
-    getGunungWugulSecondLoad();
-
-    const intervalId = setInterval(getGunungWugulSecondLoad, 10000);
- 
-    return () => clearInterval(intervalId);
-  }, []);
-
-   // water level gunung wugul
-   useEffect(() => {
-  
-    const getGunungWugulWaterLevel = async () => {
-      try {
-        const response = await fetchGunungWugulWaterLevel();
-        if (response?.data) {
-          setGunungWugulWaterLevelValue(response);
-        }
-      } catch (error) {
-        console.error('Error in getData:', error);
-      }
-    };
-
-    getGunungWugulWaterLevel();
- 
-    const intervalId = setInterval(getGunungWugulWaterLevel, 10000);
-
-    return () => clearInterval(intervalId);
-  }, []);  
-
-
-  //beban unit 1 tapen
-  useEffect(() => {
-
-    const getTapenLoad = async () => {
-      try {
-        const response = await fetchTapenLoadValue();
-        if (response?.data) {
-          setTapenLoadValue(response);
-        }
-      } catch (error) {
-        console.error('Error in getData:', error);
-      }
-    };
-
-    getTapenLoad();
-
-    const intervalId = setInterval(getTapenLoad, 10000);
- 
-    return () => clearInterval(intervalId);
-  }, []);
-
-  // water level tapen
-   useEffect(() => {
-  
-    const getTapenWaterLevel = async () => {
-      try {
-        const response = await fetchTapenWaterLevel();
-        if (response?.data) {
-          setTapenWaterLevelValue(response);
-        }
-      } catch (error) {
-        console.error('Error in getData:', error);
-      }
-    };
-
-    getTapenWaterLevel();
- 
-    const intervalId = setInterval(getTapenWaterLevel, 10000);
-
-    return () => clearInterval(intervalId);
-  }, []);  
-
-  //beban unit 1 kedungombo
-  useEffect(() => {
-
-    const getKedungomboLoad = async () => {
-      try {
-        const response = await fetchKedungomboLoadValue();
-        if (response?.data) {
-          setKedungomboLoadValue(response);
-        }
-      } catch (error) {
-        console.error('Error in getData:', error);
-      }
-    };
-
-    getKedungomboLoad();
-
-    const intervalId = setInterval(getKedungomboLoad, 10000);
- 
-    return () => clearInterval(intervalId);
-  }, []);
-
-  // water level kedungombo
-   useEffect(() => {
-  
-    const getKedungomboWaterLevel = async () => {
-      try {
-        const response = await fetchKedungomboWaterLevel();
-        if (response?.data) {
-          setKedungomboWaterLevelValue(response);
-        }
-      } catch (error) {
-        console.error('Error in getData:', error);
-      }
-    };
-
-    getKedungomboWaterLevel();
- 
-    const intervalId = setInterval(getKedungomboWaterLevel, 10000);
-
-    return () => clearInterval(intervalId);
-  }, []);  
-
-  //beban unit 1 klambu
-  useEffect(() => {
-
-    const getKlambuLoad = async () => {
-      try {
-        const response = await fetchKlambuLoadValue();
-        if (response?.data) {
-          setKlambuLoadValue(response);
-        }
-      } catch (error) {
-        console.error('Error in getData:', error);
-      }
-    };
-
-    getKlambuLoad();
-
-    const intervalId = setInterval(getKlambuLoad, 10000);
- 
-    return () => clearInterval(intervalId);
-  }, []);
-
-  // water level Klambu
-   useEffect(() => {
-  
-    const getKlambuWaterLevel = async () => {
-      try {
-        const response = await fetchKlambuWaterLevelAo();
-        if (response?.data) {
-          setKlambuWaterLevelValue(response);
-        }
-      } catch (error) {
-        console.error('Error in getData:', error);
-      }
-    };
-
-    getKlambuWaterLevel();
- 
-    const intervalId = setInterval(getKlambuWaterLevel, 10000);
-
-    return () => clearInterval(intervalId);
-  }, []);  
-  //beban unit 1 Sidorejo
-  useEffect(() => {
-
-    const getSidorejoLoad = async () => {
-      try {
-        const response = await fetchSidorejoLoadValue();
-        if (response?.data) {
-          setSidorejoLoadValue(response);
-        }
-      } catch (error) {
-        console.error('Error in getData:', error);
-      }
-    };
-
-    getSidorejoLoad();
-
-    const intervalId = setInterval(getSidorejoLoad, 10000);
- 
-    return () => clearInterval(intervalId);
-  }, []);
-
-  // water level Sidorejo
-   useEffect(() => {
-  
-    const getSidorejoWaterLevel = async () => {
-      try {
-        const response = await fetchSidorejoWaterLevel();
-        if (response?.data) {
-          setSidorejoWaterLevelValue(response);
-        }
-      } catch (error) {
-        console.error('Error in getData:', error);
-      }
-    };
-
-    getSidorejoWaterLevel();
- 
-    const intervalId = setInterval(getSidorejoWaterLevel, 10000);
-
-    return () => clearInterval(intervalId);
-  }, []);  
-
-  //beban unit 1 Ketenger
-  useEffect(() => {
-    const getKetengerLoad = async () => {
-      try {
-        const response = await fetchKetengerLoadValue();
-        if (response?.data) {
-          setKetengerLoadValue(response);
-        }
-      } catch (error) {
-        console.error('Error in getData:', error);
-      }
-    };
-    getKetengerLoad();
-    
-    const intervalId = setInterval(getKetengerLoad, 10000);
-
-    return () => clearInterval(intervalId);
-  
-  }, []);
-
-   //beban unit 2 Ketenger
-  useEffect(() => {
-
-    const getKetengerSecondLoad = async () => {
-      try {
-        const response = await fetchKetengerLoadSecondValue();
-        if (response?.data) {
-          setKetengerLoadSecondValue(response);
-        }
-      } catch (error) {
-        console.error('Error in getData:', error);
-      }
-    };
-
-    getKetengerSecondLoad();
-
-    const intervalId = setInterval(getKetengerSecondLoad, 10000);
- 
-    return () => clearInterval(intervalId);
-  }, []);
-
-  //beban unit 3 Ketenger
-  useEffect(() => {
-  
-    const getKetengerThirdLoad = async () => {
-      try {
-        const response = await fetchKetengerLoadThirdValue();
-        if (response?.data) {
-          setKetengerLoadThirdValue(response);
-        }
-      } catch (error) {
-        console.error('Error in getData:', error);
-      }
-    };
-    getKetengerThirdLoad();
-
-    const intervalId = setInterval(getKetengerThirdLoad, 10000);
- 
-    return () => clearInterval(intervalId);
-  }, []);
-  //beban unit 4 Ketenger
-  useEffect(() => {
-  
-    const getKetengerFourthLoad = async () => {
-      try {
-        const response = await fetchKetengerLoadFourthValue();
-        if (response?.data) {
-          setKetengerLoadFourthValue(response);
-        }
-      } catch (error) {
-        console.error('Error in getData:', error);
-      }
-    };
-    getKetengerFourthLoad();
-
-    const intervalId = setInterval(getKetengerFourthLoad, 10000);
- 
-    return () => clearInterval(intervalId);
-  }, []);
-
-  //  water level Ketenger
-  //  useEffect(() => {
-  
-  //   const getKetengerWaterLevel = async () => {
-  //     try {
-  //       const response = await fetchKetengerWaterLevel();
-  //       if (response?.data) {
-  //         setKetengerWaterLevelValue(response);
-  //       }
-  //     } catch (error) {
-  //       console.error('Error in getData:', error);
-  //     }
-  //   };
-
-  //   getKetengerWaterLevel();
- 
-  //   const intervalId = setInterval(getKetengerWaterLevel, 10000);
-
-  //   return () => clearInterval(intervalId);
-  // }, []);  
-
+  if (!mapReady) return null;
 
   return (
-
-    <MapContainer className='z-0' center={position} zoom={8} style={{ height: '100%', width: '100%' }}>
-    <TileLayer
-      url="http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-    />
-    
-    {locations.map((location, index) => (
-      <Marker key={index} position={location.position}>
-        <Popup>
-          <div className="p-2">
-            <h3 className="text-lg font-bold text-center mb-2">{location.name}</h3>
-            <table className="w-full">
-              <tbody>
-                <tr>
-                  <td className="py-1 font-medium">TMA</td>
-                  <td className="py-1">: {location.waterLevel} mdpl</td>
-                </tr>
-                <tr>
-                  <td className="py-1 font-medium">Load</td>
-                  <td className="py-1">: {location.loadUnit} WH</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </Popup>
-      </Marker>
-    ))}
-  </MapContainer>
-
+    <MapContainer 
+      className="z-0" 
+      center={new LatLng(-7.5400, 110.4460)} 
+      zoom={8} 
+      style={{ height: '100%', width: '100%' }}
+    >
+      <TileLayer url="http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      {locations.map((location, index) => (
+        <MapMarker key={`${location.name}-${index}`} location={location} />
+      ))}
+    </MapContainer>
   );
 };
 

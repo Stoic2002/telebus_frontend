@@ -1,9 +1,3 @@
-// export interface SensorDataPoint {
-//     time: string;
-//     level: number;
-//     flow: number;
-//   }
-  
   export interface ValueData {
     dataType: string;
     arrayType: string;

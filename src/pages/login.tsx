@@ -20,8 +20,6 @@ const Login = () => {
     try {
       const response = await login(formData);
       console.log('Login successful:', response);
-      Cookies.set('__sessionId',response.token)
-      localStorage.setItem('token', response.token);
       router.push('/dashboard');
     } catch (error) {
       setError('Invalid email or password.');

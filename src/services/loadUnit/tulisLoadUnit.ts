@@ -35,7 +35,7 @@ export const fetchTulisLoadSecondValue = async (): Promise<SensorValueResponse> 
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ nodeId: 'ns=2;s=MRC_TCP.TL01.tls_u2_gen_active_power' }),
+      body: JSON.stringify({ nodeId: 'ns=2;s=MRC_TCP.TL02.tls_u2_gen_active_power' }),
     });
     
     if (!response.ok) {
@@ -44,7 +44,7 @@ export const fetchTulisLoadSecondValue = async (): Promise<SensorValueResponse> 
     
     const data: SensorValueResponse = await response.json();
     
-    if (!data?.data || !data.data.value || typeof data.data.value.value !== 'number') {
+    if (!data?.data || !data.data.value || typeof data.data.value.value !== 'number' || null) {
         throw new Error('Invalid response structure');
     }
     

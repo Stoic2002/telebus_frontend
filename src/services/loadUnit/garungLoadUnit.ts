@@ -34,7 +34,7 @@ export const fetchGarungLoadSecondValue = async (): Promise<SensorValueResponse>
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ nodeId: 'ns=2;s=MRC_TCP.GR02.UNIT_1_ACTUAL_MW_TRANSDUCER' }),
+      body: JSON.stringify({ nodeId: 'ns=2;s=MRC_TCP.GR02.UNIT1_ACTUAL_MW_TRANSDUCER' }),
     });
     
     if (!response.ok) {

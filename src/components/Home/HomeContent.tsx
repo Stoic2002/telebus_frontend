@@ -60,8 +60,8 @@ const HomeContent: React.FC = () => {
     : 'N/A';
 
   return (
-    <div className="p-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+    <div className="p-6" style={{height: 850}}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Water Level Card */}
         <Card>
           <CardHeader>
@@ -123,11 +123,11 @@ const HomeContent: React.FC = () => {
       </div>
 
       {/* Map Card */}
-      <Card className="mb-6">
+      <Card className="mt-6">
         <CardHeader>
           <CardTitle>Map PLTA</CardTitle>
         </CardHeader>
-        <CardContent className="h-96">
+        <CardContent style={{height: 500}}>
           <MapContent />
         </CardContent>
       </Card>

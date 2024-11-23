@@ -9,6 +9,7 @@ export interface User {
     message:string;
     user: User;
     token: string;
+    refreshToken:string
   }
   
   export interface LoginData {

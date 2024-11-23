@@ -87,7 +87,7 @@ export const fetchJelokLoadFourthValue = async (): Promise<SensorValueResponse> 
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ nodeId: 'ns=2;s=MRC_KWH.JL_NETTO3.kW' }),
+      body: JSON.stringify({ nodeId: 'ns=2;s=MRC_KWH.JL_NETTO4.kW' }),
     });
     
     if (!response.ok) {

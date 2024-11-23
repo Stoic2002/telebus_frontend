@@ -53,7 +53,7 @@ interface FormattedData {
   inflowSeparate?: number;
 }
 
-const MultiTrendsDashboard = () => {
+const TrendsContent = () => {
   const [data, setData] = useState<FormattedData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -76,99 +76,117 @@ const MultiTrendsDashboard = () => {
           axios.get<InflowData[]>('http://192.168.105.90/pbs-inflow-h')
         ]);
 
+        // Get today's date at midnight for comparison
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
         const groupedData: { [key: string]: FormattedData } = {};
 
-        // Process Beban data
-        bebanResponse.data.forEach((curr: BebanData) => {
-          const originalTime = new Date(curr.timestamp);
-          const timeKey = originalTime.toLocaleTimeString('id-ID', {
-            hour: '2-digit',
-            minute: '2-digit'
-          });
+        // Helper function to check if a date is from today
+        const isToday = (dateStr: string) => {
+          const date = new Date(dateStr);
+          return date.getTime() >= today.getTime() && date.getTime() < today.getTime() + 24 * 60 * 60 * 1000;
+        };
 
-          if (!groupedData[timeKey]) {
-            groupedData[timeKey] = {
-              time: timeKey,
-              originalTime: originalTime
-            };
-          }
+        // Process Beban data - filter for today only
+        bebanResponse.data
+          .filter(item => isToday(item.timestamp))
+          .forEach((curr: BebanData) => {
+            const originalTime = new Date(curr.timestamp);
+            const timeKey = originalTime.toLocaleTimeString('id-ID', {
+              hour: '2-digit',
+              minute: '2-digit'
+            });
 
-          if (curr.name.includes('PB01.ACTIVE_LOAD')) {
-            groupedData[timeKey].bebanPB01 = parseFloat(curr.value);
-          } else if (curr.name.includes('PB02.ACTIVE_LOAD')) {
-            groupedData[timeKey].bebanPB02 = parseFloat(curr.value);
-          } else if (curr.name.includes('PB03.ACTIVE_LOAD')) {
-            groupedData[timeKey].bebanPB03 = parseFloat(curr.value);
-          }
-        });
-
-        // Process Outflow data
-        outflowResponse.data.forEach((curr: OutflowData) => {
-          const originalTime = new Date(curr.timestamp);
-          const timeKey = originalTime.toLocaleTimeString('id-ID', {
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-
-          if (groupedData[timeKey]) {
-            groupedData[timeKey].outflow = parseFloat(curr.value);
-          }
-        });
-
-        // Process TMA data
-        tmaResponse.data.forEach((curr: TMAData) => {
-          const originalTime = new Date(curr.timestamp);
-          const timeKey = originalTime.toLocaleTimeString('id-ID', {
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-
-          if (groupedData[timeKey]) {
-            groupedData[timeKey].tma = parseFloat(curr.value);
-          }
-        });
-
-        // Process Inflow data
-        inflowResponse.data.forEach((curr: InflowData) => {
-          const originalTime = new Date(curr.timestamp);
-          const timeKey = originalTime.toLocaleTimeString('id-ID', {
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-
-          if (groupedData[timeKey]) {
-            groupedData[timeKey].inflow = parseFloat(curr.value);
-            console.log(`Inflow at ${timeKey}: ${curr.value}`); // Tambahkan log ini
-          }
-        });
-
-        // Process ARR data
-        arrResponse.data.forEach((curr: ARRData) => {
-          const originalTime = new Date(curr.timestamp);
-          const timeKey = originalTime.toLocaleTimeString('id-ID', {
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-
-          if (groupedData[timeKey]) {
-            if (curr.name.includes('ARR_ST01_RT')) {
-              groupedData[timeKey].arrST01 = parseFloat(curr.value);
-            } else if (curr.name.includes('ARR_ST02_RT')) {
-              groupedData[timeKey].arrST02 = parseFloat(curr.value);
-            } else if (curr.name.includes('ARR_ST03_RT')) {
-              groupedData[timeKey].arrST03 = parseFloat(curr.value);
+            if (!groupedData[timeKey]) {
+              groupedData[timeKey] = {
+                time: timeKey,
+                originalTime: originalTime
+              };
             }
-          }
-        });
+
+            if (curr.name.includes('PB01.ACTIVE_LOAD')) {
+              groupedData[timeKey].bebanPB01 = parseFloat(curr.value);
+            } else if (curr.name.includes('PB02.ACTIVE_LOAD')) {
+              groupedData[timeKey].bebanPB02 = parseFloat(curr.value);
+            } else if (curr.name.includes('PB03.ACTIVE_LOAD')) {
+              groupedData[timeKey].bebanPB03 = parseFloat(curr.value);
+            }
+          });
+
+        // Process Outflow data - filter for today only
+        outflowResponse.data
+          .filter(item => isToday(item.timestamp))
+          .forEach((curr: OutflowData) => {
+            const originalTime = new Date(curr.timestamp);
+            const timeKey = originalTime.toLocaleTimeString('id-ID', {
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+
+            if (groupedData[timeKey]) {
+              groupedData[timeKey].outflow = parseFloat(curr.value);
+            }
+          });
+
+        // Process TMA data - filter for today only
+        tmaResponse.data
+          .filter(item => isToday(item.timestamp))
+          .forEach((curr: TMAData) => {
+            const originalTime = new Date(curr.timestamp);
+            const timeKey = originalTime.toLocaleTimeString('id-ID', {
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+
+            if (groupedData[timeKey]) {
+              groupedData[timeKey].tma = parseFloat(curr.value);
+            }
+          });
+
+        // Process Inflow data - filter for today only
+        inflowResponse.data
+          .filter(item => isToday(item.timestamp))
+          .forEach((curr: InflowData) => {
+            const originalTime = new Date(curr.timestamp);
+            const timeKey = originalTime.toLocaleTimeString('id-ID', {
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+
+            if (groupedData[timeKey]) {
+              groupedData[timeKey].inflow = parseFloat(curr.value);
+            }
+          });
+
+        // Process ARR data - filter for today only
+        arrResponse.data
+          .filter(item => isToday(item.timestamp))
+          .forEach((curr: ARRData) => {
+            const originalTime = new Date(curr.timestamp);
+            const timeKey = originalTime.toLocaleTimeString('id-ID', {
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+
+            if (groupedData[timeKey]) {
+              if (curr.name.includes('ARR_ST01_RT')) {
+                groupedData[timeKey].arrST01 = parseFloat(curr.value);
+              } else if (curr.name.includes('ARR_ST02_RT')) {
+                groupedData[timeKey].arrST02 = parseFloat(curr.value);
+              } else if (curr.name.includes('ARR_ST03_RT')) {
+                groupedData[timeKey].arrST03 = parseFloat(curr.value);
+              }
+            }
+          });
 
         // Calculate total beban
-        // Hitung total beban
-          Object.values(groupedData).forEach(item => {
-            const beban1 = item.bebanPB01 || 0;
-            const beban2 = item.bebanPB02 || 0;
-            const beban3 = item.bebanPB03 || 0;
-            item.totalBeban = beban1 + beban2 + beban3;
-          });
+        Object.values(groupedData).forEach(item => {
+          const beban1 = item.bebanPB01 || 0;
+          const beban2 = item.bebanPB02 || 0;
+          const beban3 = item.bebanPB03 || 0;
+          item.totalBeban = beban1 + beban2 + beban3;
+        });
 
         // Convert to array and sort by time
         const formattedData = Object.values(groupedData)
@@ -389,8 +407,8 @@ const MultiTrendsDashboard = () => {
 
   return (
     <div className="p-6">
-    <div className="w-full p-4 bg-white rounded-lg shadow-lg mt-6">
-      <h2 className="text-xl font-bold mb-4 text-center">Multi-Trends Dashboard</h2>
+    <div className="w-full p-4 bg-white rounded-lg shadow-lg ">
+      <h2 className="text-xl font-bold mb-4 text-center">Trends</h2>
       
       <div className="flex justify-center mb-4">
         <div className="flex space-x-4">
@@ -421,4 +439,4 @@ const MultiTrendsDashboard = () => {
   );
 };
 
-export default MultiTrendsDashboard;
+export default TrendsContent;

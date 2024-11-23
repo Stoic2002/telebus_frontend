@@ -1,4 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
+
+// Shadcn UI Components
 import { 
   Select,
   SelectContent,
@@ -14,76 +18,103 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow 
-} from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Download } from 'lucide-react';
+
+// Components and Data
 import RohTable from './RohTable';
 import { rohData } from '@/data/ROH/rohData';
+import TmaTable from './TmaTable';
+import { tmaData } from '@/data/TMA/tmaData';
+import InflowTable from './InflowTable';
+import { inflowData } from '@/data/inflow/inflowData';
+import OutflowTable from './Outflow.table';
+import { outflowData } from '@/data/outflow/outflowData';
 
-const ReportContent = () => {
-  const [selectedReport, setSelectedReport] = useState('');
-  const [selectedPeriod, setSelectedPeriod] = useState('');
-  const [showReport, setShowReport] = useState(false);
+// Types
+interface ReportOption {
+  value: string;
+  label: string;
+}
 
-  // Sample data - dalam implementasi nyata, ini akan diambil dari API
-  const sampleData = {
-    ROH: [
-      { date: '2024-01-01', value: '75%' },
-      { date: '2024-01-02', value: '80%' },
-      { date: '2024-01-03', value: '85%' },
-    ],
-    inflow: [
-      { date: '2024-01-01', value: '100 m³/s' },
-      { date: '2024-01-02', value: '120 m³/s' },
-      { date: '2024-01-03', value: '110 m³/s' },
-    ],
-    outflow: [
-      { date: '2024-01-01', value: '90 m³/s' },
-      { date: '2024-01-02', value: '95 m³/s' },
-      { date: '2024-01-03', value: '100 m³/s' },
-    ],
-    TMA: [
-      { date: '2024-01-01', value: '100 m' },
-      { date: '2024-01-02', value: '102 m' },
-      { date: '2024-01-03', value: '101 m' },
-    ],
-  };
+const ReportContent: React.FC = () => {
+  // State Management
+  const [selectedReport, setSelectedReport] = useState<string>('');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [showReport, setShowReport] = useState<boolean>(false);
+  
+  // Refs
+  const reportRef = useRef<HTMLDivElement>(null);
 
-  const reportOptions = [
+  // Report Options
+  const reportOptions: ReportOption[] = [
     { value: 'ROH', label: 'ROH' },
     { value: 'inflow', label: 'Inflow' },
     { value: 'outflow', label: 'Outflow' },
     { value: 'TMA', label: 'TMA' },
   ];
 
-  const periodOptions = [
-    { value: 'daily', label: 'Harian' },
-    { value: 'weekly', label: 'Mingguan' },
-    { value: 'monthly', label: 'Bulanan' },
-  ];
+  // Handle Report Selection
+  const handleReportChange = (value: string) => {
+    setSelectedReport(value);
+    // Reset dates when changing reports
+    setStartDate('');
+    setEndDate('');
+    setShowReport(false);
+  };
 
+  // Submit Handler
   const handleSubmit = () => {
-    if (selectedReport && selectedPeriod) {
+    if (selectedReport === 'ROH' && startDate) {
+      setShowReport(true);
+    } else if (selectedReport && startDate && endDate) {
       setShowReport(true);
     }
   };
 
-  const handleDownload = (format: string) => {
-    // Implementasi download berdasarkan format
-    console.log(`Downloading ${format} format...`);
+  // PDF Download Handler
+  const handleDownloadPDF = async () => {
+    if (!reportRef.current) return;
+
+    try {
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
+
+      const imgWidth = pdf.internal.pageSize.getWidth();
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      const imgData = canvas.toDataURL('image/png');
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+
+      const formattedStartDate = new Date(startDate).toLocaleDateString('id-ID');
+      const filename = selectedReport === 'ROH' 
+        ? `${selectedReport}_${formattedStartDate}.pdf`
+        : `${selectedReport}_${formattedStartDate}_${new Date(endDate).toLocaleDateString('id-ID')}.pdf`;
+      
+      pdf.save(filename);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Gagal membuat PDF. Silakan coba lagi.');
+    }
   };
+
+  // Validate submit button state
+  const isSubmitDisabled = selectedReport === 'ROH' 
+    ? !startDate 
+    : !selectedReport || !startDate || !endDate;
+
+  // Validate download button state
+  const isDownloadDisabled = !showReport;
 
   return (
     <div className="p-6">
@@ -92,11 +123,12 @@ const ReportContent = () => {
           <CardTitle>Report Telemetering</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Report Select */}
             <div>
               <Select
                 value={selectedReport}
-                onValueChange={setSelectedReport}
+                onValueChange={handleReportChange}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih Report" />
@@ -113,80 +145,55 @@ const ReportContent = () => {
               </Select>
             </div>
 
+            {/* Date Inputs */}
             <div>
-              <Select
-                value={selectedPeriod}
-                onValueChange={setSelectedPeriod}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih Periode" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {periodOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-3 py-2 border rounded-md"
+                placeholder={selectedReport === 'ROH' ? 'Pilih Tanggal' : 'Tanggal Mulai'}
+              />
+            </div>
+            <div>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-3 py-2 border rounded-md"
+                disabled={selectedReport === 'ROH'}
+                placeholder="Tanggal Akhir"
+              />
             </div>
 
+            {/* Action Buttons */}
             <div className="flex gap-2">
-              <Button onClick={handleSubmit}>Submit</Button>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
-                    <Download className="mr-2 h-4 w-4" />
-                    Download
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => handleDownload('excel')}>
-                    Excel
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleDownload('pdf')}>
-                    PDF
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleDownload('word')}>
-                    Word
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button 
+                onClick={handleSubmit}
+                disabled={isSubmitDisabled}
+              >
+                Submit
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={handleDownloadPDF}
+                disabled={isDownloadDisabled}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Download PDF
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {showReport && selectedReport && (
-        <RohTable rohData={rohData} />
-        // <Card>
-        //   <CardHeader>
-        //     <CardTitle>
-        //       Report {reportOptions.find(opt => opt.value === selectedReport)?.label}
-        //     </CardTitle>
-        //   </CardHeader>
-        //   <CardContent>
-        //     <Table>
-        //       <TableHeader>
-        //         <TableRow>
-        //           <TableHead>Tanggal</TableHead>
-        //           <TableHead>Nilai</TableHead>
-        //         </TableRow>
-        //       </TableHeader>
-        //       <TableBody>
-        //         {sampleData[selectedReport as keyof typeof sampleData].map((item, index) => (
-        //           <TableRow key={index}>
-        //             <TableCell>{item.date}</TableCell>
-        //             <TableCell>{item.value}</TableCell>
-        //           </TableRow>
-        //         ))}
-        //       </TableBody>
-        //     </Table>
-        //   </CardContent>
-        // </Card>
+        <div ref={reportRef}>
+          {selectedReport === 'ROH' && <RohTable rohData={rohData} />}
+          {selectedReport === 'TMA' && <TmaTable tmaData={tmaData} />}
+          {selectedReport === 'inflow' && <InflowTable inflowData={inflowData} />}
+          {selectedReport === 'outflow' && <OutflowTable outflowData={outflowData} />}
+        </div>
       )}
     </div>
   );

@@ -29,7 +29,3 @@ export const fetchKedungomboLoadValue = async (): Promise<SensorValueResponse> =
   }
 };
 
-
-export function fetchSoedirmanLoadValue(fetchSoedirmanLoadValue: any) {
-  throw new Error('Function not implemented.');
-}

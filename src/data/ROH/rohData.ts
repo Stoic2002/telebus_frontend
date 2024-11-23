@@ -26,7 +26,7 @@ export const rohData = [
             'estimasi volume waduk setelah unit beroperasi' : '6.581.359,49 m3',
             'estimasi elevasi waduk setelah unit beroperasi' : '229,31 mdpl'
         },
-        "ESTIMASI PEMBEBANA PLTA PBS" : [
+        "ESTIMASI PEMBEBANAN PLTA PBS" : [
             {"jam" : "00:30",
               "PEMBEBANAN SESUAI ESTIMASI INFLOW" : 0
             },

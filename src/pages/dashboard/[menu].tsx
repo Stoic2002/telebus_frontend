@@ -6,8 +6,9 @@ import MachineLearningContent from '../../components/MachineLearning/MachineLear
 import TelePBSoedirmanContent from '../../components/TelemeteringPBSoedirman/TelemeteringPBSoedirmanContent';
 import TrendsContent from '../../components/Trends/TrendsContent';
 import HomeContent from '@/components/Home/HomeContent';
-import OperatorInputForm from '@/components/dataInputOperator/DataInputOperatorContent';
 import ReportContent from '@/components/report/ReportContent';
+import DataInputGhwContent from '@/components/dataInputGHW/DataInputGhwContent';
+import DataInputOperator from '@/components/dataInputOperator/DataInputOperatorContent';
 
 const DashboardPage = () => {
   const router = useRouter();
@@ -26,9 +27,11 @@ const DashboardPage = () => {
       case 'trends':
         return <TrendsContent />; 
       case 'data-input-operator':
-        return <OperatorInputForm/>
+        return <DataInputOperator/>
       case 'report':
         return <ReportContent/>
+      case 'data-input-ghw':
+        return <DataInputGhwContent/>
       default:
         return <div className="p-6">Select a menu item</div>;
     }

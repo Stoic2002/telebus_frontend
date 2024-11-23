@@ -159,9 +159,9 @@ const Sidebar = () => {
 
   return (
     <aside className="w-20 h-max bg-gray-800 text-white absolute shadow-lg">
-      <div className="p-4 text-xl font-bold border-b border-gray-700 flex justify-center items-center">
+      {/* <div className="p-4 text-xl font-bold border-b border-gray-700 flex justify-center items-center">
         <AiOutlineMenu onClick={toggleDropdown} className="cursor-pointer" />
-      </div>
+      </div> */}
       <ul className="space-y-4 p-2">
         {filteredMenuItems.map(({ path, label, Icon }) => (
           <li 
