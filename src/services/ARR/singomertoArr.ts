@@ -1,10 +1,10 @@
+import { API_BASE_URL_OPC } from '@/constants/apiKey';
 import { SensorValueResponse } from '../../types/sensorTypes';
 
-const API_BASE_URL = 'http://192.168.105.75';
 
 export const fetchSingomertoArrPerDay = async (): Promise<SensorValueResponse> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/readOPCTag`, {
+    const response = await fetch(`${API_BASE_URL_OPC}/readOPCTag`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -30,7 +30,7 @@ export const fetchSingomertoArrPerDay = async (): Promise<SensorValueResponse> =
 };
 export const fetchSingomertoArrPerSec = async (): Promise<SensorValueResponse> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/readOPCTag`, {
+    const response = await fetch(`${API_BASE_URL_OPC}/readOPCTag`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

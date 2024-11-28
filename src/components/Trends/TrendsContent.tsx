@@ -1,63 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import axios from 'axios';
-
-interface BebanData {
-  id: number;
-  name: string;
-  value: string;
-  timestamp: string;
-}
-
-interface OutflowData {
-  id: number;
-  name: string;
-  value: string;
-  timestamp: string;
-}
-
-interface TMAData {
-  id: number;
-  name: string;
-  value: string;
-  timestamp: string;
-}
-
-interface ARRData {
-  id: number;
-  name: string;
-  value: string;
-  timestamp: string;
-}
-
-interface InflowData {
-  id: number;
-  name: string;
-  value: string;
-  timestamp: string;
-}
-
-interface FormattedData {
-  time: string;
-  originalTime: Date;
-  bebanPB01?: number;
-  bebanPB02?: number;
-  bebanPB03?: number;
-  totalBeban?: number;
-  inflow?: number;
-  tma?: number;
-  outflow?: number;
-  arrST01?: number;
-  arrST02?: number;
-  arrST03?: number;
-  inflowSeparate?: number;
-}
+import { ARRData, BebanData, FormattedData, InflowData, OutflowData, riverFlow, TMAData } from '@/types/trendsTypes';
+import ErrorComponent from '../error/ErrorComponent';
+// import ErrorComponent from '../error/ErrorComponent';
 
 const TrendsContent = () => {
   const [data, setData] = useState<FormattedData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'trends1' | 'trends2' | 'trends3'>('trends1');
+  const [refreshKey, setRefreshKey] = React.useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -67,28 +20,28 @@ const TrendsContent = () => {
           outflowResponse, 
           tmaResponse, 
           arrResponse, 
-          inflowResponse
+          // inflowResponse,
+          riverflowResponse
         ] = await Promise.all([
           axios.get<BebanData[]>('http://192.168.105.90/pbs-beban-h'),
           axios.get<OutflowData[]>('http://192.168.105.90/pbs-outflow-h'),
           axios.get<TMAData[]>('http://192.168.105.90/pbs-tma-h'),
           axios.get<ARRData[]>('http://192.168.105.90/arr-st01-h'),
-          axios.get<InflowData[]>('http://192.168.105.90/pbs-inflow-h')
+          // axios.get<InflowData[]>('http://192.168.105.90/pbs-inflow-h'),
+          axios.get<riverFlow[]>('http://192.168.105.90/db-awlr-hour')
         ]);
 
-        // Get today's date at midnight for comparison
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         const groupedData: { [key: string]: FormattedData } = {};
 
-        // Helper function to check if a date is from today
         const isToday = (dateStr: string) => {
           const date = new Date(dateStr);
           return date.getTime() >= today.getTime() && date.getTime() < today.getTime() + 24 * 60 * 60 * 1000;
         };
 
-        // Process Beban data - filter for today only
+        // Process Beban data
         bebanResponse.data
           .filter(item => isToday(item.timestamp))
           .forEach((curr: BebanData) => {
@@ -114,7 +67,7 @@ const TrendsContent = () => {
             }
           });
 
-        // Process Outflow data - filter for today only
+        // Process Outflow data
         outflowResponse.data
           .filter(item => isToday(item.timestamp))
           .forEach((curr: OutflowData) => {
@@ -129,7 +82,7 @@ const TrendsContent = () => {
             }
           });
 
-        // Process TMA data - filter for today only
+        // Process TMA data
         tmaResponse.data
           .filter(item => isToday(item.timestamp))
           .forEach((curr: TMAData) => {
@@ -144,22 +97,56 @@ const TrendsContent = () => {
             }
           });
 
-        // Process Inflow data - filter for today only
-        inflowResponse.data
-          .filter(item => isToday(item.timestamp))
-          .forEach((curr: InflowData) => {
-            const originalTime = new Date(curr.timestamp);
+        // Process Inflow data
+        // inflowResponse.data
+        //   .filter(item => isToday(item.timestamp))
+        //   .forEach((curr: InflowData) => {
+        //     const originalTime = new Date(curr.timestamp);
+        //     const timeKey = originalTime.toLocaleTimeString('id-ID', {
+        //       hour: '2-digit',
+        //       minute: '2-digit'
+        //     });
+
+        //     if (groupedData[timeKey]) {
+        //       groupedData[timeKey].inflow = parseFloat(curr.value);
+        //     }
+        //   });
+
+        // Process riverflow data
+        riverflowResponse.data
+          .filter(item => isToday(item.kWaktu))
+          .forEach((curr: riverFlow) => {
+            const originalTime = new Date(curr.kWaktu);
             const timeKey = originalTime.toLocaleTimeString('id-ID', {
               hour: '2-digit',
               minute: '2-digit'
             });
 
-            if (groupedData[timeKey]) {
-              groupedData[timeKey].inflow = parseFloat(curr.value);
+            if (!groupedData[timeKey]) {
+              groupedData[timeKey] = {
+                time: timeKey,
+                originalTime: originalTime
+              };
+            }
+
+            if (curr.id_sensor_tide === 1) {
+              groupedData[timeKey].debitSerayu = parseFloat(curr.debit);
+            } else if (curr.id_sensor_tide === 2) {
+              groupedData[timeKey].debitMerawu = parseFloat(curr.debit);
+            } else if (curr.id_sensor_tide === 3) {
+              groupedData[timeKey].debitLumajang = parseFloat(curr.debit);
             }
           });
 
-        // Process ARR data - filter for today only
+        // Calculate total debit
+        Object.values(groupedData).forEach(item => {
+          const serayuInflow = item.debitSerayu || 0;
+          const merawuInflow = item.debitMerawu || 0;
+          const lumajangInflow = item.debitLumajang || 0;
+          item.totalDebit = serayuInflow + merawuInflow + lumajangInflow;
+        });
+
+        // Process ARR data
         arrResponse.data
           .filter(item => isToday(item.timestamp))
           .forEach((curr: ARRData) => {
@@ -194,6 +181,8 @@ const TrendsContent = () => {
 
         setData(formattedData);
         setLoading(false);
+        console.log('Grouped Data:', groupedData);
+        console.log('Data for Chart:', data);
       } catch (err) {
         setError('Failed to fetch data');
         console.error('Error:', err);
@@ -242,7 +231,7 @@ const TrendsContent = () => {
             />
             <Line 
               type="monotone" 
-              dataKey="inflow" 
+              dataKey="totalDebit" 
               name="Inflow"
               stroke="#16a34a"
               strokeWidth={2}
@@ -322,7 +311,7 @@ const TrendsContent = () => {
         lines = (
           <Line 
             type="monotone" 
-            dataKey="inflow" 
+            dataKey="totalDebit" 
             name="Inflow"
             stroke="#2563eb"
             strokeWidth={2}
@@ -397,44 +386,46 @@ const TrendsContent = () => {
     );
   }
 
+  const handleRefresh = () => {
+    setRefreshKey(prevKey => prevKey + 1); // Increment key to trigger re-fetch
+  };
+
   if (error) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg text-red-500">{error}</div>
-      </div>
+      <ErrorComponent message={'something wrong'} onRetry={ handleRefresh} />
     );
   }
 
   return (
     <div className="p-6">
-    <div className="w-full p-4 bg-white rounded-lg shadow-lg ">
-      <h2 className="text-xl font-bold mb-4 text-center">Trends</h2>
-      
-      <div className="flex justify-center mb-4">
-        <div className="flex space-x-4">
-          <button 
-            onClick={() => setActiveTab('trends1')}
-            className={`px-4 py-2 rounded ${activeTab === 'trends1' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-          >
-            Trends 1 (Total Beban, Inflow, TMA, Outflow)
-          </button>
-          <button 
-            onClick={() => setActiveTab('trends2')}
-            className={`px-4 py-2 rounded ${activeTab === 'trends2' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-          >
-            Trends 2 (ARR)
-          </button>
-          <button 
-            onClick={() => setActiveTab('trends3')}
-            className={`px-4 py-2 rounded ${activeTab === 'trends3' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-          >
-            Trends 3 (Inflow)
-          </button>
+      <div className="w-full p-4 bg-white rounded-lg shadow-lg ">
+        <h2 className="text-xl font-bold mb-4 text-center">Trends</h2>
+        
+        <div className="flex justify-center mb-4">
+          <div className="flex space-x-4">
+            <button 
+              onClick={() => setActiveTab('trends1')}
+              className={`px-4 py-2 rounded ${activeTab === 'trends1' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+            >
+              Trends 1 (Total Beban, Inflow, TMA, Outflow)
+            </button>
+            <button 
+              onClick={() => setActiveTab('trends2')}
+              className={`px-4 py-2 rounded ${activeTab === 'trends2' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+            >
+              Trends 2 (ARR)
+            </button>
+            <button 
+              onClick={() => setActiveTab('trends3')}
+              className={`px-4 py-2 rounded ${activeTab === 'trends3' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+            >
+              Trends 3 (Inflow)
+            </button>
+          </div>
         </div>
+        
+        {renderChart()}
       </div>
-      
-      {renderChart()}
-    </div>
     </div>
   );
 };

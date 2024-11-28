@@ -1,5 +1,3 @@
-// components/report/inflowTable.tsx
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -78,7 +76,7 @@ const InflowTable: React.FC<Props> = ({ inflowData }) => {
                 <div className="text-center mt-2 flex items-center gap-4">
                     {/* Div kiri: Logo */}
                     <div className="flex h-full w-1/3">
-                        <img src={data.header.logo} alt="Logo" />
+                        <img src={data.header.logo} alt="Logo" style={{width:300}}/>
                     </div>
 
                     {/* Div kanan: Informasi */}
@@ -119,7 +117,7 @@ const InflowTable: React.FC<Props> = ({ inflowData }) => {
 
                             {/* ATA, MAX, and MIN Rows */}
                             <tr>
-                                <td className="border border-black p-1 pb-2 text-center font-bold">ATA</td>
+                                <td className="border border-black p-1 pb-2 text-center font-bold">AVG</td>
                                 {tanggalKeys.map((tanggal) => (
                                     <td key={tanggal} className="border border-black p-1 pb-2 text-center">
                                         {ata[tanggal].toFixed(2)}

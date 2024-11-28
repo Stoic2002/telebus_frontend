@@ -1,10 +1,10 @@
+import { API_BASE_URL_OPC } from '@/constants/apiKey';
 import { SensorValueResponse } from '../../types/sensorTypes';
 
-const API_BASE_URL = 'http://192.168.105.75';
 
 export const fetchMricaArrPerDay = async (): Promise<SensorValueResponse> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/readOPCTag`, {
+    const response = await fetch(`${API_BASE_URL_OPC}/readOPCTag`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -12,9 +12,9 @@ export const fetchMricaArrPerDay = async (): Promise<SensorValueResponse> => {
       body: JSON.stringify({ nodeId: 'ns=2;s=MRC_TELEMETERING.ARR.ARR_GI_PERDAY' }),
     });
     
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    // if (!response.ok) {
+    //   throw new Error(`HTTP error! status: ${response.status}`);
+    // }
     
     const data: SensorValueResponse = await response.json();
     
@@ -30,7 +30,7 @@ export const fetchMricaArrPerDay = async (): Promise<SensorValueResponse> => {
 };
 export const fetchMricaArrPerSec = async (): Promise<SensorValueResponse> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/readOPCTag`, {
+    const response = await fetch(`${API_BASE_URL_OPC}/readOPCTag`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -38,9 +38,9 @@ export const fetchMricaArrPerSec = async (): Promise<SensorValueResponse> => {
       body: JSON.stringify({ nodeId: 'ns=2;s=MRC_TELEMETERING.ARR.ARR_GI_REALTIME' }),
     });
     
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    // if (!response.ok) {
+    //   throw new Error(`HTTP error! status: ${response.status}`);
+    // }
     
     const data: SensorValueResponse = await response.json();
     

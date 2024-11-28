@@ -17,7 +17,7 @@ export const fetchGarungLoadValue = async (): Promise<SensorValueResponse> => {
     
     const data: SensorValueResponse = await response.json();
     
-    if (!data?.data || !data.data.value || typeof data.data.value.value !== 'number') {
+    if (!data || typeof data.data.value.value !== 'number') {
         throw new Error('Invalid response structure');
     }
     
@@ -43,7 +43,7 @@ export const fetchGarungLoadSecondValue = async (): Promise<SensorValueResponse>
     
     const data: SensorValueResponse = await response.json();
     
-    if (!data?.data || !data.data.value || typeof data.data.value.value !== 'number') {
+    if (!data || typeof data.data.value.value !== 'number') {
         throw new Error('Invalid response structure');
     }
     

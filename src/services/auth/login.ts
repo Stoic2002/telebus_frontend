@@ -19,7 +19,7 @@ export const login = async (loginData: LoginData): Promise<LoginResponse> => {
 
     const data: LoginResponse = await response.json();
     // Simpan token dan refresh token jika ada
-    Cookies.set('__sessionId', data.token, {expires: 3,secure:true, sameSite : 'lax'});
+    Cookies.set('__sessionId', data.token, {expires: 3,secure:false, sameSite : 'strict'});
     localStorage.setItem('token', data.token);
     if (data.refreshToken) {
       localStorage.setItem('refreshToken', data.refreshToken);

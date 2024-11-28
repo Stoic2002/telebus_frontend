@@ -2,7 +2,7 @@
 
 export const inflowData = [
     {header : {
-        logo : '/assets/ip-mrica-logo.png',
+        logo : '/assets/ip-mrica-logo2.png',
         judul : 'LAPORAN INFLOW (M3/DETIK)',
         unit : 'UNIT PEMBANGKITAN MRICA',
         periode : '1 November 2024 - 30 November 2024',

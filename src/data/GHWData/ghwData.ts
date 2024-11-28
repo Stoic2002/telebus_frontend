@@ -70,3 +70,47 @@ export const ghwData = [
         ]
     },
 ]
+
+const RTOW = [
+    {
+        tahun: '2024',
+        data : [
+            {
+               bulan : 'januari',
+               hari : 1,
+                targetElevasi : 228.50 
+            },
+            {
+               bulan : 'januari',
+               hari : 2,
+                targetElevasi : 228.50 
+            },
+            {
+               bulan : 'januari',
+               hari : 3,
+                targetElevasi : 228.50 
+            },
+            {
+               bulan : 'januari',
+               hari : 4,
+                targetElevasi : 228.50 
+            },
+            {
+               bulan : 'januari',
+               hari : 5,
+                targetElevasi : 228.50 
+            },
+            {
+               bulan : 'januari',
+               hari : 6,
+                targetElevasi : 228.50 
+            },
+            {
+               bulan : 'januari',
+               hari : 7,
+                targetElevasi : 228.50 
+            },
+        ]
+    },
+   
+]

@@ -38,15 +38,21 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="flex">
-      <div className="flex-1 bg-gray-100">
-        <Header />
-        <Sidebar />
-        <main className="pl-16">
-          {renderContent()}
-        </main>
-      </div>
+    <div className="flex flex-col h-screen">
+    {/* Header di atas */}
+    <Header />
+
+    {/* Kontainer utama */}
+    <div className="flex flex-1">
+      {/* Sidebar di kiri */}
+      <Sidebar />
+
+      {/* Konten di kanan */}
+      <main className="flex-1 bg-gray-100">
+        {renderContent()}
+      </main>
     </div>
+  </div>
   );
 };
 

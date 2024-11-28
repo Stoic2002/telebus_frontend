@@ -11,6 +11,6 @@ export interface SensorValueResponse {
 export interface Location {
   position: LatLng;
   name: string;
-  waterLevel: string;
+  waterLevel: number | string;
   loadUnit: number | string;
 }

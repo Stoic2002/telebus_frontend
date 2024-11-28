@@ -6,7 +6,7 @@ interface UseSensorDataProps {
   interval?: number;
 }
 
-export const useSensorData = ({ fetchFunction, interval = 10000 }: UseSensorDataProps) => {
+export const useSensorData = ({ fetchFunction, interval = 30000 }: UseSensorDataProps) => {
   const [data, setData] = useState<SensorValueResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 

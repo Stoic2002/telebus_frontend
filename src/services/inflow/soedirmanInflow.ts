@@ -1,10 +1,10 @@
+import { API_BASE_URL_OPC } from '@/constants/apiKey';
 import { SensorValueResponse } from '../../types/sensorTypes';
 
-const API_BASE_URL = 'http://192.168.105.75';
 
 export const fetchSoedirmanInflowPerHour = async (): Promise<SensorValueResponse> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/readOPCTag`, {
+    const response = await fetch(`${API_BASE_URL_OPC}/readOPCTag`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -18,7 +18,7 @@ export const fetchSoedirmanInflowPerHour = async (): Promise<SensorValueResponse
     
     const data: SensorValueResponse = await response.json();
     
-    if (!data?.data || !data.data.value || typeof data.data.value.value !== 'number') {
+    if (!data|| typeof data.data.value.value !== 'number') {
         throw new Error('Invalid response structure');
     }
     
@@ -30,7 +30,7 @@ export const fetchSoedirmanInflowPerHour = async (): Promise<SensorValueResponse
 };
 export const fetchSoedirmanInflowPerSec = async (): Promise<SensorValueResponse> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/readOPCTag`, {
+    const response = await fetch(`${API_BASE_URL_OPC}/readOPCTag`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -44,7 +44,7 @@ export const fetchSoedirmanInflowPerSec = async (): Promise<SensorValueResponse>
     
     const data: SensorValueResponse = await response.json();
     
-    if (!data?.data || !data.data.value || typeof data.data.value.value !== 'number') {
+    if (!data || typeof data.data.value.value !== 'number') {
         throw new Error('Invalid response structure');
     }
     

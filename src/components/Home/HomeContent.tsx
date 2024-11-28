@@ -1,63 +1,38 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import dynamic from 'next/dynamic';
-import { SensorValueResponse } from '@/types/sensorTypes';
-import * as LoadUnitServices from '@/services/loadUnit/soedirmanLoadUnit';
-import * as WaterLevelServices from '@/services/waterLevel/soedirmanWaterLevel';
-import * as SedimenServices from '@/services/levelSedimen/soedirmanLevelSedimen';
-import RohTable from '../report/RohTable';
-import { rohData } from '@/data/ROH/rohData';
-import CustomTable from '../report/RohTable';
+import { fetchSoedirmanLoadSecondValue, fetchSoedirmanLoadThirdValue, fetchSoedirmanLoadValue } from '@/services/loadUnit/soedirmanLoadUnit';
+import { fetchSoedirmanWaterLevel } from '@/services/waterLevel/soedirmanWaterLevel';
+import { useSensorData } from '@/hooks/useSensorData';
+import { fetchSoedirmanLevelSedimen } from '@/services/levelSedimen/soedirmanLevelSedimen';
+import usePbsNodeData from '@/hooks/usePbsNodeData';
 
 // Dynamic import for MapContent to enable client-side rendering
 const MapContent = dynamic(() => import('../../components/Home/MapContent'), { 
   ssr: false 
 });
 
-// Custom hook for fetching sensor data
-const useSensorData = <T,>(
-  fetchFunction: () => Promise<SensorValueResponse | null>, 
-  interval = 10000
-) => {
-  const [value, setValue] = useState<SensorValueResponse | null>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetchFunction();
-        if (response?.data) {
-          setValue(response);
-        }
-      } catch (error) {
-        console.error('Error fetching sensor data:', error);
-      }
-    };
-
-    fetchData(); // Initial fetch
-    const intervalId = setInterval(fetchData, interval);
-
-    return () => clearInterval(intervalId);
-  }, [fetchFunction, interval]);
-
-  return value;
-};
 
 const HomeContent: React.FC = () => {
   // Use custom hook for sensor data fetching
-  const pbsLoadValue = useSensorData(LoadUnitServices.fetchSoedirmanLoadValue);
-  const pbsLoadSecondValue = useSensorData(LoadUnitServices.fetchSoedirmanLoadSecondValue);
-  const pbsLoadThirdValue = useSensorData(LoadUnitServices.fetchSoedirmanLoadThirdValue);
-  const pbsWaterLevelValue = useSensorData(WaterLevelServices.fetchSoedirmanWaterLevel);
-  const pbsLevelSedimenValue = useSensorData(SedimenServices.fetchSoedirmanLevelSedimen);
+  // const { data : pbsLevelSedimenValue, error: errSedimen} = useSensorData( {fetchFunction: fetchSoedirmanLevelSedimen});
+  // const { data: pbsLoad1, error: errLoad1 } = useSensorData({ fetchFunction: fetchSoedirmanLoadValue});
+  // const { data: pbsLoad2, error: errLoad2 } = useSensorData({ fetchFunction: fetchSoedirmanLoadSecondValue });
+  // const { data: pbsLoad3, error: erLoad3 } = useSensorData({ fetchFunction: fetchSoedirmanLoadThirdValue });
+  // const { data: pbsWaterLevel } = useSensorData({ fetchFunction: fetchSoedirmanWaterLevel });
 
-  // Calculate total load
-  const totalLoad = pbsLoadValue && pbsLoadSecondValue && pbsLoadThirdValue
-    ? (
-        pbsLoadValue.data.value.value + 
-        pbsLoadSecondValue.data.value.value + 
-        pbsLoadThirdValue.data.value.value
-      ).toFixed(2)
-    : 'N/A';
+  // // Calculate total load
+  // const totalLoad = pbsLoad1 && pbsLoad2 && pbsLoad3
+  //   ? (
+  //       pbsLoad1.data.value.value + 
+  //       pbsLoad2.data.value.value + 
+  //       pbsLoad3.data.value.value
+  //     ).toFixed(2)
+  //   : 'N/A';
+
+  const { 
+    soedirman
+  } = usePbsNodeData({ interval: 10000 });
 
   return (
     <div className="p-6" style={{height: 850}}>
@@ -69,7 +44,7 @@ const HomeContent: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {pbsWaterLevelValue?.data.value.value.toFixed(2) ?? 'N/A'} mdpl
+              {soedirman.levels.elevation?.toFixed(2) ?? 0} mdpl
             </div>
             <p className="text-gray-500">current condition</p>
           </CardContent>
@@ -82,7 +57,7 @@ const HomeContent: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {totalLoad} MW
+              {soedirman.activeLoads.total.toFixed(2) ?? 0} MW
             </div>
             <p className="text-gray-500">current condition</p>
           </CardContent>
@@ -104,7 +79,7 @@ const HomeContent: React.FC = () => {
             <CardTitle>Target Water Level</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">N/A MW</div>
+            <div className="text-2xl font-bold text-orange-600">N/A mdpl</div>
           </CardContent>
         </Card>
 
@@ -114,8 +89,8 @@ const HomeContent: React.FC = () => {
             <CardTitle>Level Sedimen</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              {pbsLevelSedimenValue?.data.value.value.toFixed(2) ?? "N/A"} mdpl
+            <div className="text-2xl font-bold text-pink-600">
+              {soedirman.levels.sediment?.toFixed(2) ?? 0} mdpl
             </div>
             <p className="text-gray-500">current condition</p>
           </CardContent>

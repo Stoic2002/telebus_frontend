@@ -158,7 +158,7 @@ const Sidebar = () => {
   }
 
   return (
-    <aside className="w-20 h-max bg-gray-800 text-white absolute shadow-lg">
+    <aside className="w-20 bg-gray-800 text-white flex-shrink-0 h-full flex flex-col">
       {/* <div className="p-4 text-xl font-bold border-b border-gray-700 flex justify-center items-center">
         <AiOutlineMenu onClick={toggleDropdown} className="cursor-pointer" />
       </div> */}

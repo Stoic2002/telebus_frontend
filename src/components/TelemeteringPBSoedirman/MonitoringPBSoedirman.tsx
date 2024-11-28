@@ -15,24 +15,11 @@ import { AWLRService } from "@/services/AWLR/awlr";
 import { AWLRData, AWLRPerHourData } from "@/types/awlrTypes";
 import { formatDate } from "@/lib/dateFormatter";
 import { cn } from "@/lib/utils";
+import { useSensorData } from "@/hooks/useSensorData";
+import { calculateTotalValue, formatValue } from "@/lib/sensorValueHelper";
+import usePbsNodeData from "@/hooks/usePbsNodeData";
 
 const MonitoringPbsComponent = () => {
-    const [pbsLoadValue, setPbsLoadValue] = useState<SensorValueResponse | null>(null);
-    const [pbsLoadSecondValue, setPbsLoadSecondValue] = useState<SensorValueResponse | null>(null);
-    const [pbsLoadThirdValue, setPbsLoadThirdValue] = useState<SensorValueResponse | null>(null);
-    const [pbsWaterLevelValue, setPbsWaterLevelValue] = useState<SensorValueResponse | null>(null);
-    const [pbsInflowValue, setPbsInflowValue] = useState<SensorValueResponse | null>(null);
-    const [pbsWaterDepthValue, setPbsWaterDepthValue] = useState<SensorValueResponse | null>(null);
-    const [pbsWaterDepthCalcValue, setPbsWaterDepthCalcValue] = useState<SensorValueResponse | null>(null);
-    const [pbsLevelSedimenValue, setPbsLevelSedimenValue] = useState<SensorValueResponse | null>(null);
-    const [pbsOutflowValue, setPbsOutflowValue] = useState<SensorValueResponse | null>(null);
-    const [pbsOutflowSecondValue, setPbsOutflowSecondValue] = useState<SensorValueResponse | null>(null);
-    const [pbsOutflowThirdValue, setPbsOutflowThirdValue] = useState<SensorValueResponse | null>(null);
-    const [pbsOutflowDdcValue, setPbsOutflowDdcValue] = useState<SensorValueResponse | null>(null);
-    const [pbsSpillwayValue, setPbsSpillwayValue] = useState<SensorValueResponse | null>(null);
-    const [pbsSpillwaySecondValue, setPbsSpillwaySecondValue] = useState<SensorValueResponse | null>(null);
-    const [pbsSpillwayThirdValue, setPbsSpillwayThirdValue] = useState<SensorValueResponse | null>(null);
-    const [pbsSpillwayFourthValue, setPbsSpillwayFourthValue] = useState<SensorValueResponse | null>(null);
     const [serayuValue, setSerayuValue] = useState<AWLRData | null>(null);
     const [merawuValue, setMerawuValue] = useState<AWLRData | null>(null);
     const [lumajangValue, setLumajangValue] = useState<AWLRData | null>(null);
@@ -40,336 +27,30 @@ const MonitoringPbsComponent = () => {
     const [merayuPerHourValue, setMerawuPerHourValue] = useState<AWLRPerHourData | null>(null);
     const [lumajangPerHourValue, setLumajangPerHourValue] = useState<AWLRPerHourData | null>(null);
 
+    // const { data : pbsLevelSedimen} = useSensorData( {fetchFunction: fetchSoedirmanLevelSedimen});
+    // const { data: pbsLoad1 } = useSensorData({ fetchFunction: fetchSoedirmanLoadValue});
+    // const { data: pbsLoad2 } = useSensorData({ fetchFunction: fetchSoedirmanLoadSecondValue });
+    // const { data: pbsLoad3 } = useSensorData({ fetchFunction: fetchSoedirmanLoadThirdValue });
+    // const { data: pbsWaterLevel } = useSensorData({ fetchFunction: fetchSoedirmanWaterLevel });
+    // // const { data: pbsInflow } = useSensorData({ fetchFunction: fetchSoedirmanWaterLevel });
+    // const { data: pbsWaterDepth } = useSensorData({ fetchFunction: fetchSoedirmanWaterDepth });
+    // // const { data: pbsWaterDepthCalc } = useSensorData({ fetchFunction: fetchSoedirmanWaterDepthCalculation});
+    // const { data: pbsOutflow1 } = useSensorData({ fetchFunction: fetchSoedirmanOutflowValue});
+    // const { data: pbsOutflow2 } = useSensorData({ fetchFunction: fetchSoedirmanOutflowSecondValue});
+    // const { data: pbsOutflow3 } = useSensorData({ fetchFunction: fetchSoedirmanOutflowThirdValue});
+    // const { data: pbsOutflowDdc } = useSensorData({ fetchFunction: fetchSoedirmanOutflowDdcValue});
+    // const { data: pbsOutflowSpillway1 } = useSensorData({ fetchFunction: fetchSoedirmanOutflowSpillwayValue});
+    // const { data: pbsOutflowSpillway2 } = useSensorData({ fetchFunction: fetchSoedirmanOutflowSecondSpillwayValue});
+    // const { data: pbsOutflowSpillway3 } = useSensorData({ fetchFunction: fetchSoedirmanOutflowThirdSpillwayValue});
+    // const { data: pbsOutflowSpillway4 } = useSensorData({ fetchFunction: fetchSoedirmanOutflowFourthSpillwayValue});
+
+    const { 
+      soedirman
+    } = usePbsNodeData({ interval: 10000 });
+    
+
     const awlrService = new AWLRService();
 
-    //beban unit 1 pbs
-    useEffect(() => {
-      const getPbsLoad = async () => {
-        try {
-          const response = await fetchSoedirmanLoadValue();
-          if (response?.data) {
-            setPbsLoadValue(response);
-          }
-        } catch (error) {
-          console.error('Error in getData:', error);
-        }
-      };
-      getPbsLoad();
-      
-      const intervalId = setInterval(getPbsLoad, 10000);
-  
-      return () => clearInterval(intervalId);
-    
-    }, []);
-  
-     //beban unit 2 pbs
-    useEffect(() => {
-  
-      const getPbsSecondLoad = async () => {
-        try {
-          const response = await fetchSoedirmanLoadSecondValue();
-          if (response?.data) {
-            setPbsLoadSecondValue(response);
-          }
-        } catch (error) {
-          console.error('Error in getData:', error);
-        }
-      };
-  
-      getPbsSecondLoad();
-  
-      const intervalId = setInterval(getPbsSecondLoad, 10000);
-   
-      return () => clearInterval(intervalId);
-    }, []);
-  
-    //beban unit 3 pbs
-    useEffect(() => {
-    
-      const getPbsThirdLoad = async () => {
-        try {
-          const response = await fetchSoedirmanLoadThirdValue();
-          if (response?.data) {
-            setPbsLoadThirdValue(response);
-          }
-        } catch (error) {
-          console.error('Error in getData:', error);
-        }
-      };
-  
-  
-      getPbsThirdLoad();
-   
-      const intervalId = setInterval(getPbsThirdLoad, 10000);
-  
-      return () => clearInterval(intervalId);
-    }, []);  
-  
-    // water level pbs
-    useEffect(() => {
-    
-      const getPbsWaterLevel = async () => {
-        try {
-          const response = await fetchSoedirmanWaterLevel();
-          if (response?.data) {
-            setPbsWaterLevelValue(response);
-          }
-        } catch (error) {
-          console.error('Error in getData:', error);
-        }
-      };
-  
-      getPbsWaterLevel();
-   
-      const intervalId = setInterval(getPbsWaterLevel, 10000);
-  
-      return () => clearInterval(intervalId);
-    }, []);  
-  
-    //inflow pbs
-    useEffect(() => {
-    
-      const getPbsInflow = async () => {
-        try {
-          const response = await fetchSoedirmanInflowPerSec();
-          if (response?.data) {
-            setPbsInflowValue(response);
-          }
-        } catch (error) {
-          console.error('Error in getData:', error);
-        }
-      };
-  
-      getPbsInflow();
-      
-      const intervalId = setInterval(getPbsInflow, 10000); 
-  
-      return () => clearInterval(intervalId);
-    }, []);  
-  
-    //water depth pbs
-    useEffect(() => {
-    
-      const getPbsWaterDepth = async () => {
-        try {
-          const response = await fetchSoedirmanWaterDepth();
-          if (response?.data) {
-            setPbsWaterDepthValue(response);
-          }
-        } catch (error) {
-          console.error('Error in getData:', error);
-        }
-      };
-  
-      getPbsWaterDepth();
-      
-      const intervalId = setInterval(getPbsWaterDepth, 10000); 
-  
-      return () => clearInterval(intervalId);
-    }, []);  
-  
-    //water depth calculation pbs
-    useEffect(() => {
-    
-      const getPbsWaterDepthCalc = async () => {
-        try {
-          const response = await fetchSoedirmanWaterDepthCalculation();
-          if (response?.data) {
-            setPbsWaterDepthCalcValue(response);
-          }
-        } catch (error) {
-          console.error('Error in getData:', error);
-        }
-      };
-  
-      getPbsWaterDepthCalc();
-      
-      const intervalId = setInterval(getPbsWaterDepthCalc, 10000); 
-  
-      return () => clearInterval(intervalId);
-    }, []);  
-  
-    //level sedimen  pbs
-    useEffect(() => {
-    
-      const getPbsLevelSedimen = async () => {
-        try {
-          const response = await fetchSoedirmanLevelSedimen();
-          if (response?.data) {
-            setPbsLevelSedimenValue(response);
-          }
-        } catch (error) {
-          console.error('Error in getData:', error);
-        }
-      };
-  
-      getPbsLevelSedimen();
-      
-      const intervalId = setInterval(getPbsLevelSedimen, 10000); 
-  
-      return () => clearInterval(intervalId);
-    }, []);  
-    //outflow turbin 1 pbs
-    useEffect(() => {
-    
-      const getPbsOutflow = async () => {
-        try {
-          const response = await fetchSoedirmanOutflowValue();
-          if (response?.data) {
-            setPbsOutflowValue(response);
-          }
-        } catch (error) {
-          console.error('Error in getData:', error);
-        }
-      };
-  
-      getPbsOutflow();
-      
-      const intervalId = setInterval(getPbsOutflow, 10000); 
-  
-      return () => clearInterval(intervalId);
-    }, []);  
-
-    //outflow turbin 2 pbs
-    useEffect(() => {
-    
-      const getPbsSecondOutflow = async () => {
-        try {
-          const response = await fetchSoedirmanOutflowSecondValue();
-          if (response?.data) {
-            setPbsOutflowSecondValue(response);
-          }
-        } catch (error) {
-          console.error('Error in getData:', error);
-        }
-      };
-  
-      getPbsSecondOutflow();
-      
-      const intervalId = setInterval(getPbsSecondOutflow, 10000); 
-  
-      return () => clearInterval(intervalId);
-    }, []);  
-    //outflow turbin 3 pbs
-    useEffect(() => {
-    
-      const getPbsThirdOutflow = async () => {
-        try {
-          const response = await fetchSoedirmanOutflowThirdValue();
-          if (response?.data) {
-            setPbsOutflowThirdValue(response);
-          }
-        } catch (error) {
-          console.error('Error in getData:', error);
-        }
-      };
-  
-      getPbsThirdOutflow();
-      
-      const intervalId = setInterval(getPbsThirdOutflow, 10000); 
-  
-      return () => clearInterval(intervalId);
-    }, []);  
-    //outflow ddc pbs
-    useEffect(() => {
-    
-      const getPbsOutflowDdc = async () => {
-        try {
-          const response = await fetchSoedirmanOutflowDdcValue();
-          if (response?.data) {
-            setPbsOutflowDdcValue(response);
-          }
-        } catch (error) {
-          console.error('Error in getData:', error);
-        }
-      };
-  
-      getPbsOutflowDdc();
-      
-      const intervalId = setInterval(getPbsOutflowDdc, 10000); 
-  
-      return () => clearInterval(intervalId);
-    }, []);  
-    //outflow spillway 1 pbs
-    useEffect(() => {
-    
-      const getPbsSpillway = async () => {
-        try {
-          const response = await fetchSoedirmanOutflowSpillwayValue();
-          if (response?.data) {
-            setPbsSpillwayValue(response);
-          }
-        } catch (error) {
-          console.error('Error in getData:', error);
-        }
-      };
-  
-      getPbsSpillway();
-      
-      const intervalId = setInterval(getPbsSpillway, 10000); 
-  
-      return () => clearInterval(intervalId);
-    }, []);  
-    //outflow spillway 2 pbs
-    useEffect(() => {
-    
-      const getPbsSecondSpillway = async () => {
-        try {
-          const response = await fetchSoedirmanOutflowSecondSpillwayValue();
-          if (response?.data) {
-            setPbsSpillwaySecondValue(response);
-          }
-        } catch (error) {
-          console.error('Error in getData:', error);
-        }
-      };
-  
-      getPbsSecondSpillway();
-      
-      const intervalId = setInterval(getPbsSecondSpillway, 10000); 
-  
-      return () => clearInterval(intervalId);
-    }, []);  
-    //outflow spillway 3 pbs
-    useEffect(() => {
-    
-      const getPbsThirdSpillway = async () => {
-        try {
-          const response = await fetchSoedirmanOutflowThirdSpillwayValue();
-          if (response?.data) {
-            setPbsSpillwayThirdValue(response);
-          }
-        } catch (error) {
-          console.error('Error in getData:', error);
-        }
-      };
-  
-      getPbsThirdSpillway();
-      
-      const intervalId = setInterval(getPbsThirdSpillway, 10000); 
-  
-      return () => clearInterval(intervalId);
-    }, []);  
-    //outflow spillway 4 pbs
-    useEffect(() => {
-    
-      const getPbsFourtSpillway = async () => {
-        try {
-          const response = await fetchSoedirmanOutflowFourthSpillwayValue();
-          if (response?.data) {
-            setPbsSpillwayFourthValue(response);
-          }
-        } catch (error) {
-          console.error('Error in getData:', error);
-        }
-      };
-  
-      getPbsFourtSpillway();
-      
-      const intervalId = setInterval(getPbsFourtSpillway, 10000); 
-  
-      return () => clearInterval(intervalId);
-    }, []);  
     // serayu
     useEffect(() => {
     
@@ -474,25 +155,19 @@ const MonitoringPbsComponent = () => {
     }, []);  
 
 
-    var ddcValue = pbsOutflowDdcValue !== null ? pbsOutflowDdcValue.data.value.value : 0
-    var ddcValue2 = pbsOutflowDdcValue !== null ? pbsOutflowDdcValue.data.value.value.toFixed(2) : 0
-    var spilwayValue = pbsSpillwayValue && 
-    pbsSpillwaySecondValue && 
-    pbsSpillwayThirdValue && 
-    pbsSpillwayFourthValue !== null
-? ((pbsSpillwayValue.data.value.value >= 6652 
-    ? 0 
-    : pbsSpillwayValue.data.value.value ) +
-    (pbsSpillwaySecondValue.data.value.value >= 6652 
-    ? 0 :
-      pbsSpillwaySecondValue.data.value.value) +
-      (pbsSpillwayThirdValue.data.value.value >= 6652 
-    ? 0 :
-      pbsSpillwayThirdValue.data.value.value) +
-      (pbsSpillwayFourthValue.data.value.value >= 6652 
-    ? 0 :
-      pbsSpillwayFourthValue.data.value.value))
-: 0
+    // var spilwayValue = ((soedirman.flows. >= 6652 
+    // ? 0 
+    // : pbsOutflowSpillway1.data.value.value ) +
+    // (pbsOutflowSpillway2.data.value.value >= 6652 
+    // ? 0 :
+    // pbsOutflowSpillway2.data.value.value) +
+    //   (pbsOutflowSpillway3.data.value.value >= 6652 
+    // ? 0 :
+    // pbsOutflowSpillway3.data.value.value) +
+    //   (pbsOutflowSpillway4.data.value.value >= 6652 
+    // ? 0 :
+    // pbsOutflowSpillway4.data.value.value))
+
     
 // Fungsi untuk menentukan warna status
 const getStatusColor = (status: string) => {
@@ -522,46 +197,46 @@ const getStatusColor = (status: string) => {
         {
           name: "Unit Load",
           item: [
-            { id: 'PBS 1', value: pbsLoadValue !== null ? pbsLoadValue.data.value.value.toFixed(2) : "N/A" },
-            { id: "PBS 2", value: pbsLoadSecondValue !== null ? pbsLoadSecondValue.data.value.value.toFixed(2) : "N/A" },
-            { id: 'PBS 3', value: pbsLoadThirdValue !== null ? pbsLoadThirdValue.data.value.value.toFixed(2) : "N/A" }
+            { id: 'PBS 1', value: soedirman.activeLoads.pb01?.toFixed(2) ?? 0},
+            { id: "PBS 2", value:  soedirman.activeLoads.pb01?.toFixed(2) ?? 0},
+            { id: 'PBS 3', value:  soedirman.activeLoads.pb01?.toFixed(2) ?? 0}
           ],
-          total :  pbsLoadValue && pbsLoadSecondValue && pbsLoadThirdValue !== null ? (pbsLoadValue.data.value.value + pbsLoadSecondValue.data.value.value + pbsLoadThirdValue.data.value.value).toFixed(2) : 'N/A'
+          total : soedirman.activeLoads.total.toFixed(2) ?? 0
         },
         {
           name: "Unit Outflow",
           item: [
-            { id: 'PBS 1', value: pbsOutflowValue !== null ? pbsOutflowValue.data.value.value.toFixed(2) : "N/A"  },
-            { id: 'PBS 2', value: pbsOutflowSecondValue !== null ? pbsOutflowSecondValue.data.value.value.toFixed(2) : "N/A"  },
-            { id: 'PBS 3', value: pbsOutflowThirdValue !== null ? pbsOutflowThirdValue.data.value.value.toFixed(2) : "N/A"  }
+            { id: 'PBS 1', value: soedirman.flows.turbine.pb01?.toFixed(2) ?? 0},
+            { id: 'PBS 2', value: soedirman.flows.turbine.pb02?.toFixed(2) ?? 0},
+            { id: 'PBS 3', value: soedirman.flows.turbine.pb03?.toFixed(2) ?? 0}
           ],
-          total :  pbsOutflowValue && pbsOutflowSecondValue && pbsOutflowThirdValue !== null ? (pbsOutflowValue.data.value.value + pbsOutflowSecondValue.data.value.value + pbsOutflowThirdValue.data.value.value).toFixed(2) : 'N/A'
+          total :  soedirman.flows.turbine.total.toFixed(2) ?? 0
         },
         {
           name: "Inflow",
           item: [
-            { id: 'Serayu', value: serayuValue !== null ? serayuValue.debit : "N/A"},
-            { id: 'Lumajang', value: merawuValue !== null ? merawuValue.debit : "N/A" },
-            { id: 'Merawu', value: lumajangValue !== null ? lumajangValue.debit : "N/A" }
+            { id: 'Serayu', value: serayuValue !== null ? serayuValue.debit : 0},
+            { id: 'Lumajang', value: merawuValue !== null ? merawuValue.debit : 0 },
+            { id: 'Merawu', value: lumajangValue !== null ? lumajangValue.debit : 0 }
           ],
           total :  serayuValue && merawuValue && lumajangValue !== null ? (serayuValue.debit + merawuValue.debit + lumajangValue.debit).toFixed(2) : 'N/A'
         },
         {
           name: "DAM",
           item: [
-            { id: 'TMA', value: pbsWaterLevelValue !== null ? pbsWaterLevelValue.data.value.value.toFixed(2) : "N/A"  },
-            { id: 'Sedimen lvl', value: pbsLevelSedimenValue !== null ? pbsLevelSedimenValue.data.value.value.toFixed(2) : "N/A"  },
-            { id: 'Water Depth', value: pbsWaterDepthValue !== null ? pbsWaterDepthValue.data.value.value.toFixed(2) : "N/A"  }
+            { id: 'TMA', value: soedirman.levels.elevation?.toFixed(2)?? 0 },
+            { id: 'Sedimen lvl', value:soedirman.levels.sediment?.toFixed(2) ?? 0},
+            { id: 'Water Depth', value: soedirman.levels.waterDepth?.toFixed(2) ?? 0}
           ]
         },
         {
           name: "Outflow",
           item: [
             { id: 'irigasi', value: 0 },
-            { id: 'ddc', value: ddcValue2},
-            { id: 'spillway', value:spilwayValue}
+            { id: 'ddc', value: soedirman.flows.ddc?.toFixed(2) ?? 0},
+            { id: 'spillway', value:soedirman.flows.spillway.total.toFixed(2) ?? 0}
           ],
-          total : (ddcValue + spilwayValue).toFixed(2) ?? 'N/A'
+          total : ((soedirman.flows.ddc ?? 0) + (soedirman.flows.spillway.total)).toFixed(2) ?? 0
         },
       ];
 

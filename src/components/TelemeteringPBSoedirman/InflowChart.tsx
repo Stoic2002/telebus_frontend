@@ -130,7 +130,6 @@ const InflowChartComponent = () => {
   );
 
 
-
   return (
     <div className="w-full p-4 bg-white rounded-lg shadow-lg mt-6">
     <h2 className="text-xl font-bold mb-4 text-center">Debit Air per Jam</h2>
