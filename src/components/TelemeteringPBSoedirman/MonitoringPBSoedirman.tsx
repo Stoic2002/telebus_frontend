@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { useSensorData } from "@/hooks/useSensorData";
 import { calculateTotalValue, formatValue } from "@/lib/sensorValueHelper";
 import usePbsNodeData from "@/hooks/usePbsNodeData";
+import useNodeBatch1 from "@/hooks/useNodeBatch1";
 
 const MonitoringPbsComponent = () => {
     const [serayuValue, setSerayuValue] = useState<AWLRData | null>(null);
@@ -47,6 +48,10 @@ const MonitoringPbsComponent = () => {
     const { 
       soedirman
     } = usePbsNodeData({ interval: 10000 });
+
+    const { 
+      soedirman2
+    } = useNodeBatch1({ interval: 10000 });
     
 
     const awlrService = new AWLRService();
@@ -198,17 +203,17 @@ const getStatusColor = (status: string) => {
           name: "Unit Load",
           item: [
             { id: 'PBS 1', value: soedirman.activeLoads.pb01?.toFixed(2) ?? 0},
-            { id: "PBS 2", value:  soedirman.activeLoads.pb01?.toFixed(2) ?? 0},
-            { id: 'PBS 3', value:  soedirman.activeLoads.pb01?.toFixed(2) ?? 0}
+            { id: "PBS 2", value:  soedirman.activeLoads.pb02?.toFixed(2) ?? 0},
+            { id: 'PBS 3', value:  soedirman.activeLoads.pb03?.toFixed(2) ?? 0}
           ],
           total : soedirman.activeLoads.total.toFixed(2) ?? 0
         },
         {
           name: "Unit Outflow",
           item: [
-            { id: 'PBS 1', value: soedirman.flows.turbine.pb01?.toFixed(2) ?? 0},
-            { id: 'PBS 2', value: soedirman.flows.turbine.pb02?.toFixed(2) ?? 0},
-            { id: 'PBS 3', value: soedirman.flows.turbine.pb03?.toFixed(2) ?? 0}
+            { id: 'PBS 1', value: soedirman2.flows.turbine.pb01?.toFixed(2) ?? 0},
+            { id: 'PBS 2', value: soedirman2.flows.turbine.pb02?.toFixed(2) ?? 0},
+            { id: 'PBS 3', value: soedirman2.flows.turbine.pb03?.toFixed(2) ?? 0}
           ],
           total :  soedirman.flows.turbine.total.toFixed(2) ?? 0
         },
@@ -233,10 +238,10 @@ const getStatusColor = (status: string) => {
           name: "Outflow",
           item: [
             { id: 'irigasi', value: 0 },
-            { id: 'ddc', value: soedirman.flows.ddc?.toFixed(2) ?? 0},
-            { id: 'spillway', value:soedirman.flows.spillway.total.toFixed(2) ?? 0}
+            { id: 'ddc', value: soedirman2.flows.ddc?.toFixed(2) ?? 0},
+            { id: 'spillway', value:soedirman2.flows.spillway.total.toFixed(2) ?? 0}
           ],
-          total : ((soedirman.flows.ddc ?? 0) + (soedirman.flows.spillway.total)).toFixed(2) ?? 0
+          total : ((soedirman2.flows.ddc ?? 0) + (soedirman2.flows.spillway.total)).toFixed(2) ?? 0
         },
       ];
 

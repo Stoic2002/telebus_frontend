@@ -1,19 +1,19 @@
 import { DataValue, NodeResponse } from "@/types/nodeTypes";
 
 const nodeIds = [
-     //garung
-     'ns=2;s=MRC_TCP.GR01.UNIT_1_ACTUAL_MW_TRANSDUCER',
-     'ns=2;s=MRC_TCP.GR02.UNIT1_ACTUAL_MW_TRANSDUCER' ,
-     //gunung wugul
-     'ns=2;s=MRC_S7.GW01.ACTIVE_POWER',
-     'ns=2;s=MRC_S7.GW02.ACTIVE_POWER',
-     'ns=2;s=MRC_S7.GW00.Head_Water',
-     //jelok
-     'ns=2;s=MRC_KWH.JL_NETTO1.kW',
-     'ns=2;s=MRC_KWH.JL_NETTO2.kW',
-     'ns=2;s=MRC_KWH.JL_NETTO3.kW',
-     'ns=2;s=MRC_KWH.JL_NETTO4.kW',
-     //kedungombo
+    //  //garung
+    //  'ns=2;s=MRC_TCP.GR01.UNIT_1_ACTUAL_MW_TRANSDUCER',
+    //  'ns=2;s=MRC_TCP.GR02.UNIT1_ACTUAL_MW_TRANSDUCER' ,
+    //  //gunung wugul
+    //  'ns=2;s=MRC_S7.GW01.ACTIVE_POWER',
+    //  'ns=2;s=MRC_S7.GW02.ACTIVE_POWER',
+    //  'ns=2;s=MRC_S7.GW00.Head_Water',
+    //  //jelok
+    //  'ns=2;s=MRC_KWH.JL_NETTO1.kW',
+    //  'ns=2;s=MRC_KWH.JL_NETTO2.kW',
+    //  'ns=2;s=MRC_KWH.JL_NETTO3.kW',
+    //  'ns=2;s=MRC_KWH.JL_NETTO4.kW',
+    //  //kedungombo
     //  'ns=2;s=MRC_GE.KD01.UNIT ACTIVE POWER',
     //  'ns=2;s=MRC_GE.KD01.KEDUNG OMBO WATER LEVEL',
     //  //ketenger
@@ -26,17 +26,17 @@ const nodeIds = [
     //  //pejengkolan
     //  'ns=2;s=MRC_TCP.PJ01.A40004_METER_KW',
      //plumbungan
-    //  'ns=2;s=MRC_TCP.PU01.AI_MW',
-    //  //sempor
-    // 'ns=2;s=MRC_TCP.SP01.Actual_MW',
-    // //sidorejo
-    // 'ns=2;s=MRC_TCP.SD01.AI_ACTIVE_POWER_MW',
-    // 'ns=2;s=MRC_TCP.SD01.AO_WATER_LEVEL_DISPLAY',
-    // //siteki
-    // 'ns=2;s=MRC_TCP.SK01.AI_MW_STK',
-    // //tapen
-    // 'ns=2;s=MRC_TCP.TP01.A41303_power_active_total',
-    // 'ns=2;s=MRC_TCP.TP01.A30043_downstream_water_level',
+     'ns=2;s=MRC_TCP.PU01.AI_MW',
+     //sempor
+    'ns=2;s=MRC_TCP.SP01.Actual_MW',
+    //sidorejo
+    'ns=2;s=MRC_TCP.SD01.AI_ACTIVE_POWER_MW',
+    'ns=2;s=MRC_TCP.SD01.AO_WATER_LEVEL_DISPLAY',
+    //siteki
+    'ns=2;s=MRC_TCP.SK01.AI_MW_STK',
+    //tapen
+    'ns=2;s=MRC_TCP.TP01.A41303_power_active_total',
+    'ns=2;s=MRC_TCP.TP01.A30043_downstream_water_level',
     // //timo
     // 'ns=2;s=MRC_KWH.TM_NETTO1.kW',
     // 'ns=2;s=MRC_KWH.TM_NETTO2.kW',
@@ -56,7 +56,7 @@ const nodeIds = [
 // services/allNode/allNode.ts
   
   
-  export class StationsService {
+  export class Stations3Service {
     private static readonly API_URL = 'http://192.168.105.90/readOPCTags';
   
     /**
@@ -110,5 +110,5 @@ const nodeIds = [
     }
   }
   
-  export default StationsService;
+  export default Stations3Service;
 

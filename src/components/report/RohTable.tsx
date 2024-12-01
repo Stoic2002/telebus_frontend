@@ -38,9 +38,8 @@ const RohTable: React.FC<Props> = ({ rohData }) => {
     // const midPoint = Math.ceil(filteredData.length / 2);
 
     return (
-        <Card>
-            <CardContent>
-                <div className="overflow-x-auto">
+       
+                <div className="overflow-x-auto p-6">
                     <table className="min-w-full bg-white border border-black h-full">
                         <tbody className="bg-gray-300">
                             <tr>
@@ -396,8 +395,7 @@ const RohTable: React.FC<Props> = ({ rohData }) => {
                         </tbody>
                     </table>
                 </div>
-            </CardContent>
-        </Card>
+           
     );
 };
 

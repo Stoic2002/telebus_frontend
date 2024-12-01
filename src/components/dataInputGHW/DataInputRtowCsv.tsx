@@ -57,10 +57,10 @@ const DataInputRtowCsv: React.FC = () => {
     try {
       const cleanValue = value.trim();
       const normalizedValue = cleanValue
-        .replace(/[.,]/g, "");
+        .replace(/[,]/g, "");
       
-      const calc = (parseFloat(normalizedValue)/100).toFixed(2);
-      return parseFloat(calc);
+      // const calc = (parseFloat(normalizedValue)/100).toFixed(2);
+      return parseFloat(normalizedValue);
     } catch (error) {
       console.error('Error parsing value:', value, error);
       return 0;
@@ -146,7 +146,7 @@ const DataInputRtowCsv: React.FC = () => {
         data: formData
       };
   
-      const response = await fetch('http://192.168.105.90/rtow', {
+      const response = await fetch('http://localhost:8000/v1/rtow', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -2,30 +2,30 @@ import { DataValue, NodeResponse } from "@/types/nodeTypes";
 
 const nodeIds = [
     // //soedirman pbs
-    "ns=2;s=MRC_TCP.PB01.ACTIVE_LOAD",
-     "ns=2;s=MRC_TCP.PB02.ACTIVE_LOAD", 
-     "ns=2;s=MRC_TCP.PB03.ACTIVE_LOAD",
-     "ns=2;s=MRC_TCP.PB00.inflow_waduk",
-     "ns=2;s=MRC_TELEMETERING.ARR.Level_Sedimen",
-      "ns=2;s=MRC_TCP.PB00SW.ELV",
-      // "ns=2;s=MRC_TCP.PB01.flow_turbin",
-      // "ns=2;s=MRC_TCP.PB02.flow_turbin",
-      // "ns=2;s=MRC_TCP.PB03.flow_turbin",
-      //  "ns=2;s=MRC_TCP.PB00.flow_ddc",
-      //  "ns=2;s=MRC_TCP.PB00SW.FLOW_SPW_G1",
-      //  "ns=2;s=MRC_TCP.PB00SW.FLOW_SPW_G2",
-      //  "ns=2;s=MRC_TCP.PB00SW.FLOW_SPW_G3",
-      //  "ns=2;s=MRC_TCP.PB00SW.FLOW_SPW_G4",
-      //  'ns=2;s=MRC_TCP.PB00SW.INFLOW_1H',
-       'ns=2;s=MRC_TELEMETERING.ARR1.water_depth',
-       'ns=2;s=MRC_TELEMETERING.ARR.Water_Depth_Calc',
+    // "ns=2;s=MRC_TCP.PB01.ACTIVE_LOAD",
+    //  "ns=2;s=MRC_TCP.PB02.ACTIVE_LOAD", 
+    //  "ns=2;s=MRC_TCP.PB03.ACTIVE_LOAD",
+    //  "ns=2;s=MRC_TCP.PB00.inflow_waduk",
+    //  "ns=2;s=MRC_TELEMETERING.ARR.Level_Sedimen",
+    //   "ns=2;s=MRC_TCP.PB00SW.ELV",
+      "ns=2;s=MRC_TCP.PB01.flow_turbin",
+      "ns=2;s=MRC_TCP.PB02.flow_turbin",
+      "ns=2;s=MRC_TCP.PB03.flow_turbin",
+       "ns=2;s=MRC_TCP.PB00.flow_ddc",
+       "ns=2;s=MRC_TCP.PB00SW.SPILWAY_FLOW_G1",
+       "ns=2;s=MRC_TCP.PB00SW.SPILWAY_FLOW_G2",
+       "ns=2;s=MRC_TCP.PB00SW.SPILWAY_FLOW_G3",
+       "ns=2;s=MRC_TCP.PB00SW.SPILWAY_FLOW_G4",
+       'ns=2;s=MRC_TCP.PB00SW.INFLOW_1H',
+    //    'ns=2;s=MRC_TELEMETERING.ARR1.water_depth',
+    //    'ns=2;s=MRC_TELEMETERING.ARR.Water_Depth_Calc',
 
 ]   
 
 // services/allNode/allNode.ts
   
   
-  export class pbsService {
+  export class nodeBatch1Service {
     private static readonly API_URL = 'http://192.168.105.90/readOPCTags';
   
     /**
@@ -79,5 +79,5 @@ const nodeIds = [
     }
   }
   
-  export default pbsService;
+  export default nodeBatch1Service;
 

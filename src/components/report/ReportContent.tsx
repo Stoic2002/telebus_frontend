@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
 import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
 
 // Shadcn UI Components
 import { 
@@ -24,12 +23,12 @@ import { Download, Loader2 } from 'lucide-react';
 import RohTable from './RohTable';
 import { rohData } from '@/data/ROH/rohData';
 import TmaTable from './TmaTable';
-import { tmaData } from '@/data/TMA/tmaData';
 import InflowTable from './InflowTable';
-import { inflowData } from '@/data/inflow/inflowData';
 import OutflowTable from './Outflow.table';
-import { outflowData } from '@/data/outflow/outflowData';
 import axios from 'axios';
+import ElevationTable from './ElevationTable';
+import RtowTable from './RtowTable';
+import html2canvas from 'html2canvas';
 
 
 // Types
@@ -49,6 +48,8 @@ const ReportContent: React.FC = () => {
   // State Management
   const [selectedReport, setSelectedReport] = useState<string>('');
   const [startDate, setStartDate] = useState<string>('');
+  const [elevationData, setElevationData] = useState<any>(null);
+  const [rtowData, setRtowData] = useState<any>(null);
   const [endDate, setEndDate] = useState<string>('');
   const [showReport, setShowReport] = useState<boolean>(false);
   const [tmaData, setTmaData] = useState<{ content: any[] }>({ content: [] });
@@ -65,8 +66,11 @@ const ReportContent: React.FC = () => {
     { value: 'inflow', label: 'Inflow' },
     { value: 'outflow', label: 'Outflow' },
     { value: 'TMA', label: 'TMA' },
+    { value: 'elevasi', label: 'Elevasi' },
+    { value: 'rtow', label: 'RTOW' },
   ];
 
+  const disabledReports = ['ROH', 'elevasi', 'rtow'];
   // Fetch TMA Data from API
   const fetchTmaData = async (start: string, end: string) => {
     try {
@@ -157,6 +161,72 @@ const ReportContent: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const fetchElevationData = async (year: string) => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`http://localhost:8000/v1/ghw/${year}`);
+      
+      // Transformasi data sesuai dengan format yang diharapkan oleh ElevationTable
+      const transformedData = {
+        id: response.data.id,
+        year: response.data.year,
+        status: response.data.status,
+        createdAt: response.data.createdAt,
+        updatedAt: response.data.updatedAt,
+        elevationData: response.data.elevationData.map((item: any) => ({
+          id: item.id,
+          ghwDataId: item.ghwDataId,
+          elevation: item.elevation,
+          volume: item.volume,
+          area: item.area,
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt,
+        })),
+      };
+      
+      setElevationData(transformedData); // Simpan data ke state
+      setShowReport(true);  // Mengembalikan data yang telah diproses
+    } catch (error) {
+      console.error('Error fetching elevation data:', error);
+      alert('Gagal mengambil data elevasi');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRtowData = async (year: string) => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`http://localhost:8000/v1/rtow/${year}`);
+      console.log('RTOW API Response:', response.data);
+      
+      // Transform the response data as needed for the RtowTable
+      const transformedData = {
+        id: response.data.id,
+        tahun: response.data.tahun,
+        createdAt: response.data.createdAt,
+        updatedAt: response.data.updatedAt,
+        data: response.data.data.map((item: any) => ({
+          id: item.id,
+          bulan: item.bulan,
+          hari: item.hari,
+          targetElevasi: item.targetElevasi,
+          rtowId: item.rtowId,
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt,
+        })),
+      };
+      console.log('Transformed RTOW Data:', transformedData);
+      setRtowData(transformedData)
+      setShowReport(true); // Show the report after fetching data// Return the transformed data
+    } catch (error) {
+      console.error('Error fetching RTOW data:', error);
+      alert('Gagal mengambil data RTOW');
+    } finally {
+      setLoading(false);
+    }
+  };
   
 
   // Process API data into TmaTable format
@@ -234,7 +304,7 @@ const ReportContent: React.FC = () => {
   };
 
   // Submit Handler
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (selectedReport === 'TMA' && startDate && endDate) {
       fetchTmaData(startDate, endDate);
     } else if (selectedReport === 'ROH' && startDate) {
@@ -243,6 +313,13 @@ const ReportContent: React.FC = () => {
       fetchInflowData(startDate, endDate);
     } else if (selectedReport === 'outflow' && startDate && endDate) {
       fetchOutflowData(startDate, endDate);
+    } else if (selectedReport === 'elevasi' && startDate) {
+      const year = startDate; // Menggunakan startDate sebagai tahun
+      await fetchElevationData(year);
+      // elevationData sudah disimpan dalam state di dalam fetchElevationData
+    } else if (selectedReport === 'rtow' && startDate) {
+      const year = startDate; // Using startDate as the year
+      await fetchRtowData(year);
     }
   };
 
@@ -286,12 +363,19 @@ const handleDownloadPDF = async () => {
   
 
   // Validate submit button state
-  const isSubmitDisabled = selectedReport === 'ROH' 
-    ? !startDate 
-    : !selectedReport || !startDate || !endDate;
+  // const isSubmitDisabled = selectedReport === 'ROH' 
+  //   ? !startDate 
+  //   : !selectedReport || !startDate || !endDate;
+  const isSubmitDisabled = selectedReport === 'ROH'
+  ? !startDate
+  : selectedReport === 'elevasi' || selectedReport === 'rtow'
+  ? !startDate // Cukup validasi tahun
+  : !selectedReport || !startDate || !endDate;
+
 
   // Validate download button state
-  const isDownloadDisabled = !showReport;
+  const isDownloadDisabled = !showReport || selectedReport === 'elevasi';
+
 
   return (
     <div className="p-6">
@@ -324,6 +408,15 @@ const handleDownloadPDF = async () => {
 
             {/* Date Inputs */}
             <div>
+            {selectedReport === 'elevasi' || selectedReport === 'rtow' ? (
+              <input
+                type="number"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-3 py-2 border rounded-md"
+                placeholder="Masukkan Tahun (YYYY)"
+              />
+            ) : (
               <input
                 type="date"
                 value={startDate}
@@ -331,14 +424,15 @@ const handleDownloadPDF = async () => {
                 className="w-full px-3 py-2 border rounded-md"
                 placeholder={selectedReport === 'ROH' ? 'Pilih Tanggal' : 'Tanggal Mulai'}
               />
-            </div>
+            )}
+          </div>
             <div>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 className="w-full px-3 py-2 border rounded-md"
-                disabled={selectedReport === 'ROH'}
+                disabled={disabledReports.includes(selectedReport)}
                 placeholder="Tanggal Akhir"
               />
             </div>
@@ -377,6 +471,8 @@ const handleDownloadPDF = async () => {
           {selectedReport === 'TMA' && <TmaTable tmaData={tmaData.content} />}
           {selectedReport === 'inflow' && <InflowTable inflowData={inflowData.content} />}
           {selectedReport === 'outflow' && <OutflowTable outflowData={outflowData.content} />}
+          {selectedReport === 'elevasi' && <ElevationTable report={elevationData} />}
+          {selectedReport === 'rtow' && <RtowTable rtowData={rtowData} />}
         </div>
       )}
     </div>

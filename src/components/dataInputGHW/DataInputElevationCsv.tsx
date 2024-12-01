@@ -179,7 +179,7 @@ const DataInputElevationCsv: React.FC = () => {
   
       console.log('Submitting data:', submissionData);
   
-      const response = await fetch('http://192.168.105.90/elevation', {
+      const response = await fetch('http://localhost:8000/v1/ghw', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
