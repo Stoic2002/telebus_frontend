@@ -165,7 +165,7 @@ const ReportContent: React.FC = () => {
   const fetchElevationData = async (year: string) => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost:8000/v1/ghw/${year}`);
+      const response = await axios.get(`http://192.168.105.90/elevation/${year}`);
       
       // Transformasi data sesuai dengan format yang diharapkan oleh ElevationTable
       const transformedData = {
@@ -198,7 +198,7 @@ const ReportContent: React.FC = () => {
   const fetchRtowData = async (year: string) => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost:8000/v1/rtow/${year}`);
+      const response = await axios.get(`http://192.168.105.90/rtow/${year}`);
       console.log('RTOW API Response:', response.data);
       
       // Transform the response data as needed for the RtowTable

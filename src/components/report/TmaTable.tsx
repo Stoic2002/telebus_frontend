@@ -1,36 +1,9 @@
-// components/report/TmaTable.tsx
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { TmaTableProps } from '@/types/reportTypes';
 
-interface Header {
-    logo: string;
-    judul: string;
-    unit: string;
-    periode: string;
-    lokasi: string;
-}
 
-interface Item {
-    jam: number;
-    tma: number;
-}
-
-interface Content {
-    tanggal: number;
-    item: Item[];
-}
-
-interface TmaData {
-    header: Header;
-    content: Content[];
-}
-
-interface Props {
-    tmaData: TmaData[]; // Expecting an array of TmaData
-}
-
-const TmaTable: React.FC<Props> = ({ tmaData }) => {
+const TmaTable: React.FC<TmaTableProps> = ({ tmaData }) => {
     const data = tmaData[0]; // Assuming tmaData has at least one entry
 
     // Prepare a map for TMA values by jam and tanggal

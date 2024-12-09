@@ -29,61 +29,22 @@ const MapContent: React.FC = () => {
     setMapReady(true);
   }, []);
 
-  // Fetch sensor data using custom hook
-  // const { data: pbsLoad1 } = useSensorData({ fetchFunction: fetchSoedirmanLoadValue});
-  // const { data: pbsLoad2 } = useSensorData({ fetchFunction: fetchSoedirmanLoadSecondValue });
-  // const { data: pbsLoad3 } = useSensorData({ fetchFunction: fetchSoedirmanLoadThirdValue });
-  // const { data: pbsWaterLevel } = useSensorData({ fetchFunction: fetchSoedirmanWaterLevel });
-  // const { data: gunungWugulLoad1 } = useSensorData({ fetchFunction: fetchGunungWugulLoadValue });
-  // const { data: gunungWugulLoad2 } = useSensorData({ fetchFunction: fetchGunungWugulLoadSecondValue });
-  // const { data: gunungWugulWaterLevel } = useSensorData({ fetchFunction: fetchGunungWugulWaterLevel });
-  // const { data: tapenLoad } = useSensorData({ fetchFunction: fetchTapenLoadValue });
-  // const { data: tapenWaterLevel } = useSensorData({ fetchFunction: fetchTapenWaterLevel });
-  // const { data: kedungomboLoad } = useSensorData({ fetchFunction: fetchKedungomboLoadValue });
-  // const { data: kedungomboWaterLevel } = useSensorData({ fetchFunction: fetchKedungomboWaterLevel });
-  // const { data: klambuLoad } = useSensorData({ fetchFunction: fetchKlambuLoadValue });
-  // const { data: klambuWaterLevel } = useSensorData({ fetchFunction: fetchKlambuWaterLevelAo });
-  // const { data: sidorejoLoad } = useSensorData({ fetchFunction: fetchSidorejoLoadValue });
-  // const { data: sidorejoWaterLevel } = useSensorData({ fetchFunction: fetchSidorejoWaterLevel });
-  // const { data: ketengerLoad1 } = useSensorData({ fetchFunction: fetchKetengerLoadValue });
-  // const { data: ketengerLoad2 } = useSensorData({ fetchFunction: fetchKetengerLoadSecondValue });
-  // const { data: ketengerLoad3 } = useSensorData({ fetchFunction: fetchKetengerLoadThirdValue });
-  // const { data: ketengerLoad4 } = useSensorData({ fetchFunction: fetchKetengerLoadFourthValue });
-  // const { data: garungLoad1 } = useSensorData({ fetchFunction: fetchGarungLoadValue });
-  // const { data: garungLoad2} = useSensorData({ fetchFunction: fetchGarungLoadSecondValue });
-  // const { data: jelokLoad1} = useSensorData({ fetchFunction: fetchJelokLoadValue });
-  // const { data: jelokLoad2} = useSensorData({ fetchFunction: fetchJelokLoadSecondValue });
-  // const { data: jelokLoad3} = useSensorData({ fetchFunction: fetchJelokLoadThirdValue });
-  // const { data: jelokLoad4} = useSensorData({ fetchFunction: fetchJelokLoadFourthValue });
-  // const { data: pejengkolanLoad} = useSensorData({ fetchFunction: fetchPejengkolanLoadValue });
-  // // const { data: plumbunganLoad} = useSensorData({ fetchFunction: fetchPlumbunganLoadValue });
-  // const { data: semporLoad} = useSensorData({ fetchFunction: fetchSemporLoadValue });
-  // const { data: sitekiLoad} = useSensorData({ fetchFunction: fetchSitekiLoadValue });
-  // const { data: timoLoad1} = useSensorData({ fetchFunction: fetchTimoLoadValue });
-  // const { data: timoLoad2} = useSensorData({ fetchFunction: fetchTimoLoadSecondValue });
-  // const { data: timoLoad3} = useSensorData({ fetchFunction: fetchTimoLoadThirdValue });
-  // const { data: tulisLoad1} = useSensorData({ fetchFunction: fetchTulisLoadValue });
-  // const { data: tulisLoad2} = useSensorData({ fetchFunction: fetchTulisLoadSecondValue });
-  // const { data: wadaslintangLoad1} = useSensorData({ fetchFunction: fetchWadaslintangLoadValue });
-  // const { data: wadaslintangLoad2} = useSensorData({ fetchFunction: fetchWadaslintangLoadSecondValue });
-  // const { data: wonogiriLoad1} = useSensorData({ fetchFunction: fetchWonogiriLoadValue });
-  // const { data: wonogiriLoad2} = useSensorData({ fetchFunction: fetchWonogiriLoadSecondValue });
 
   const { 
     stations,
-  } = useStationsNodeData({ interval: 10000 });
+  } = useStationsNodeData({ interval: 20000 });
   const { 
     stations2,
-  } = useStations2NodeData({ interval: 10000 });
+  } = useStations2NodeData({ interval: 20000 });
   const { 
     stations3,
-  } = useStations3NodeData({ interval: 10000 });
+  } = useStations3NodeData({ interval: 20000 });
   const { 
     stations4,
-  } = useStations4NodeData({ interval: 10000 });
-  const { 
-    soedirman,
-  } = usePbsNodeData({ interval: 10000 });
+  } = useStations4NodeData({ interval: 20000 });
+  // const { 
+  //   soedirman,
+  // } = usePbsNodeData({ interval: 10000 });
 
   // Update locations with sensor data
   useEffect(() => {
@@ -98,8 +59,6 @@ const MapContent: React.FC = () => {
         case 'PLTA Soedirman':
           return {
             ...location,
-            waterLevel: soedirman.levels.elevation?.toFixed(2) ?? 0,
-            loadUnit: soedirman.activeLoads.total.toFixed(2) ?? 0
           };
         case 'PLTA Gunung wugul'://1
           return {
@@ -198,7 +157,7 @@ const MapContent: React.FC = () => {
     });
     setLocations(updatedLocations);
   }, [
-    soedirman.activeLoads.pb01, soedirman.activeLoads.pb02, soedirman.activeLoads.pb03, soedirman.levels.elevation,
+    // soedirman.activeLoads.pb01, soedirman.activeLoads.pb02, soedirman.activeLoads.pb03, soedirman.levels.elevation,
     stations.gunungWugul1, stations.gunungWugul2, stations.gunungWugulHead,
     stations3.tapenActivePower, stations3.tapenWaterLevel,
     stations2.kedungomboLevel, stations2.kedungomboUnit,

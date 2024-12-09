@@ -20,8 +20,6 @@ export interface RohData {
         estimasiSpillwayTotalJamPembukaan : number;
         spillwayJam :number;
         //2
-        estimasiVolumeWaduk :number;
-        estimasiTotalDayaYangDiHasilkan: number;
         estimasiWadukSetelahOperasi: number;
         //3
         totalDaya: number

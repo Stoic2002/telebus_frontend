@@ -1,34 +1,10 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { InflowTableProps } from '@/types/reportTypes';
 
-interface Header {
-    logo: string;
-    judul: string;
-    unit: string;
-    periode: string;
-    lokasi: string;
-}
 
-interface Item {
-    jam: number;
-    inflow: number;
-}
 
-interface Content {
-    tanggal: number;
-    item: Item[];
-}
-
-interface InflowData {
-    header: Header;
-    content: Content[];
-}
-
-interface Props {
-    inflowData: InflowData[]; // Expecting an array of inflowData
-}
-
-const InflowTable: React.FC<Props> = ({ inflowData }) => {
+const InflowTable: React.FC<InflowTableProps> = ({ inflowData }) => {
     const data = inflowData[0]; // Assuming inflowData has at least one entry
 
     // Prepare a map for inflow values by jam and tanggal

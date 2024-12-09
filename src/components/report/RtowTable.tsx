@@ -1,22 +1,7 @@
+import { RtowData } from '@/types/reportTypes';
 import React from 'react';
 
-interface DataItem {
-    id: number;
-    bulan: string;
-    hari: number;
-    targetElevasi: number;
-    rtowId: number;
-    createdAt: string;
-    updatedAt: string;
-}
 
-interface RtowData {
-    id: number;
-    tahun: string;
-    createdAt: string;
-    updatedAt: string;
-    data: DataItem[];
-}
 
 const RtowTable: React.FC<{ rtowData: RtowData }> = ({ rtowData }) => {
     // Mengelompokkan data berdasarkan bulan dan hari

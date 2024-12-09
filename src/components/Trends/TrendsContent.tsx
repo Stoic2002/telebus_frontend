@@ -27,7 +27,6 @@ const TrendsContent = () => {
           axios.get<OutflowData[]>('http://192.168.105.90/pbs-outflow-h'),
           axios.get<TMAData[]>('http://192.168.105.90/pbs-tma-h'),
           axios.get<ARRData[]>('http://192.168.105.90/arr-st01-h'),
-          // axios.get<InflowData[]>('http://192.168.105.90/pbs-inflow-h'),
           axios.get<riverFlow[]>('http://192.168.105.90/db-awlr-hour')
         ]);
 
@@ -97,20 +96,6 @@ const TrendsContent = () => {
             }
           });
 
-        // Process Inflow data
-        // inflowResponse.data
-        //   .filter(item => isToday(item.timestamp))
-        //   .forEach((curr: InflowData) => {
-        //     const originalTime = new Date(curr.timestamp);
-        //     const timeKey = originalTime.toLocaleTimeString('id-ID', {
-        //       hour: '2-digit',
-        //       minute: '2-digit'
-        //     });
-
-        //     if (groupedData[timeKey]) {
-        //       groupedData[timeKey].inflow = parseFloat(curr.value);
-        //     }
-        //   });
 
         // Process riverflow data
         riverflowResponse.data
@@ -380,8 +365,11 @@ const TrendsContent = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Loading data...</div>
+      <div className="p-6">
+        <div className="animate-pulse">
+        <div className="h-6 bg-gray-300 rounded w-32 mb-4 mx-auto"></div>
+        <div className="h-96 bg-gray-200 rounded"></div>
+      </div>
       </div>
     );
   }

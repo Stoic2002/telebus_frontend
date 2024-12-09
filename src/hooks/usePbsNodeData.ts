@@ -1,5 +1,3 @@
-// hooks/useNodeData.ts
-
 import { useState, useEffect } from 'react';
 import { NodeResponse, UseNodeDataProps, UseNodeDataReturn } from '@/types/nodeTypes';
 import pbsService from '@/services/allNode/pbsServices';

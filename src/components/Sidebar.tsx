@@ -44,7 +44,6 @@ const Sidebar = () => {
     admin: [
       'home', 
       'machine-learning', 
-      'tele-pb-soedirman', 
       'trends', 
       'report', 
       'data-input-operator', 
@@ -55,7 +54,6 @@ const Sidebar = () => {
     ghw: [
       'home', 
       'mahine-learning',
-      'tele-pb-soedirman',
       'data-input-operator',
       'data-input-ghw', 
       'trends',
@@ -64,14 +62,12 @@ const Sidebar = () => {
     client: [
       'home', 
       'machine-learning', 
-      'tele-pb-soedirman', 
       'trends', 
       'report'
     ],
     opr: [
       'home', 
       'mahine-learning',
-      'tele-pb-soedirman',
       'data-input-operator',
       'trends',
       'report'
@@ -81,26 +77,12 @@ const Sidebar = () => {
   const menuItems = [
     { path: 'home', label: 'Home', Icon: AiOutlineHome },
     { path: 'machine-learning', label: 'Machine Learning', Icon: AiOutlineOpenAI },
-    { path: 'tele-pb-soedirman', label: 'Telemetering PB Soedirman', Icon: AiOutlineRadarChart },
     { path: 'trends', label: 'Trends', Icon: AiOutlineLineChart },
     { path: 'report', label: 'Report', Icon: AiOutlineFileText },
     { path: 'data-input-operator', label: 'Data Input Operator', Icon: AiOutlineForm },
     { path: 'data-input-ghw', label: 'Data Input GHW', Icon: AiOutlineDatabase },
     { path: 'data-calculation', label: 'Data Calculation', Icon: AiOutlineCalculator },
     { path: 'user-admin', label: 'User Admin', Icon: AiOutlineUserSwitch }
-  ];
-
-  const plantList = [
-    'PLTA PB SOEDIRMAN',
-    'PLTA TAPEN',
-    'PLTA SITEKI',
-    'PLTA PLUMBUNGAN',
-    'PLTA KETENGER',
-    'PLTA TULIS',
-    'PLTA GARUNG',
-    'PLTA WADASLINTANG',
-    'PLTA PEJENGKOLAN',
-    'PLTA SEMPOR'
   ];
 
   useEffect(() => {
@@ -179,20 +161,6 @@ const Sidebar = () => {
           </li>
         ))}
       </ul>
-      {isDropdownOpen && (
-        <div className="absolute left-16 top-0 h-screen bg-gray-700 w-40 shadow-lg z-30">
-          <ul className="space-y-4 p-2">
-            {plantList.map((plant) => (
-              <li 
-                key={plant} 
-                className="flex flex-col items-start hover:bg-gray-600 p-2 rounded cursor-pointer"
-              >
-                <span className="text-xs">{plant}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </aside>
   );
 };

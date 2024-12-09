@@ -1,42 +1,54 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import dynamic from 'next/dynamic';
-import { fetchSoedirmanLoadSecondValue, fetchSoedirmanLoadThirdValue, fetchSoedirmanLoadValue } from '@/services/loadUnit/soedirmanLoadUnit';
-import { fetchSoedirmanWaterLevel } from '@/services/waterLevel/soedirmanWaterLevel';
-import { useSensorData } from '@/hooks/useSensorData';
-import { fetchSoedirmanLevelSedimen } from '@/services/levelSedimen/soedirmanLevelSedimen';
 import usePbsNodeData from '@/hooks/usePbsNodeData';
+import MonitoringPbsComponent from './MonitoringPBSoedirman';
+import InflowChartComponent from './InflowChart';
+import RainfallComponent from './TelemeteringArr';
 
 // Dynamic import for MapContent to enable client-side rendering
-const MapContent = dynamic(() => import('../../components/Home/MapContent'), { 
-  ssr: false 
-});
-
+// const MapContent = dynamic(() => import('../../components/Home/MapContent'), { 
+//   ssr: false 
+// });
 
 const HomeContent: React.FC = () => {
-  // Use custom hook for sensor data fetching
-  // const { data : pbsLevelSedimenValue, error: errSedimen} = useSensorData( {fetchFunction: fetchSoedirmanLevelSedimen});
-  // const { data: pbsLoad1, error: errLoad1 } = useSensorData({ fetchFunction: fetchSoedirmanLoadValue});
-  // const { data: pbsLoad2, error: errLoad2 } = useSensorData({ fetchFunction: fetchSoedirmanLoadSecondValue });
-  // const { data: pbsLoad3, error: erLoad3 } = useSensorData({ fetchFunction: fetchSoedirmanLoadThirdValue });
-  // const { data: pbsWaterLevel } = useSensorData({ fetchFunction: fetchSoedirmanWaterLevel });
+  const [tmaData, setTmaData] = useState({ tmaValue: 0, volume: 0 });
 
-  // // Calculate total load
-  // const totalLoad = pbsLoad1 && pbsLoad2 && pbsLoad3
-  //   ? (
-  //       pbsLoad1.data.value.value + 
-  //       pbsLoad2.data.value.value + 
-  //       pbsLoad3.data.value.value
-  //     ).toFixed(2)
-  //   : 'N/A';
+  useEffect(() => {
+    // Function to fetch TMA data
+    const fetchTMA = async () => {
+      try {
+        const response = await fetch('http://192.168.105.90/last-tma');
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const data = await response.json();
+        if (data && data.length > 0) {
+          setTmaData({
+            tmaValue: parseFloat(data[0].tma_value),
+            volume: parseFloat(data[0].volume),
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching TMA data:', error);
+      }
+    };
 
-  const { 
-    soedirman
-  } = usePbsNodeData({ interval: 10000 });
+    // Initial fetch
+    fetchTMA();
+
+    // Set interval for fetching data every 1 hour (3600000 ms)
+    const intervalId = setInterval(fetchTMA, 3600000);
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(intervalId);
+  }, []);
+
+  const { soedirman } = usePbsNodeData({ interval: 30000 });
 
   return (
-    <div className="p-6" style={{height: 850}}>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div className="p-6" style={{ height: 850 }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
         {/* Water Level Card */}
         <Card>
           <CardHeader>
@@ -44,12 +56,25 @@ const HomeContent: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {soedirman.levels.elevation?.toFixed(2) ?? 0} mdpl
+              {tmaData.tmaValue.toFixed(2)} mdpl
             </div>
-            <p className="text-gray-500">current condition</p>
+            <p className="text-gray-500">per hour</p>
           </CardContent>
         </Card>
-        
+
+        {/* Volume Efektif Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Volume Effective</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              {tmaData.volume.toFixed(2)} m³
+            </div>
+            <p className="text-gray-500">per hour</p>
+          </CardContent>
+        </Card>
+
         {/* Total Load Card */}
         <Card>
           <CardHeader>
@@ -72,7 +97,7 @@ const HomeContent: React.FC = () => {
             <div className="text-2xl font-bold text-green-600">N/A MW</div>
           </CardContent>
         </Card>
-        
+
         {/* Target Water Level Card */}
         <Card>
           <CardHeader>
@@ -97,17 +122,29 @@ const HomeContent: React.FC = () => {
         </Card>
       </div>
 
+      <InflowChartComponent/>
+
       {/* Map Card */}
-      <Card className="mt-6">
+      {/* <Card className="mt-6">
         <CardHeader>
           <CardTitle>Map PLTA</CardTitle>
         </CardHeader>
-        <CardContent style={{height: 500}}>
+        <CardContent style={{ height: 500 }}>
           <MapContent />
         </CardContent>
-      </Card>
+      </Card> */}
+        <Card className='mt-6'>
+          <CardHeader className='bg-gradient-to-r from-green-500 to-gray-300 text-white rounded-md'>
+            <CardTitle>Telemetering PB Soedirman</CardTitle>
+          </CardHeader>
+        </Card>
 
+      <MonitoringPbsComponent/>
 
+{/* chart debit */}
+    {/* <InflowChartComponent/> */}
+
+    <RainfallComponent/>
     </div>
   );
 };

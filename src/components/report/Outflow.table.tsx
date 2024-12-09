@@ -1,36 +1,10 @@
-// components/report/OutflowTable.tsx
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { OutflowTableProps } from '@/types/reportTypes';
 
-interface Header {
-    logo: string;
-    judul: string;
-    unit: string;
-    periode: string;
-    lokasi: string;
-}
 
-interface Item {
-    jam: number;
-    outflow: number;
-}
 
-interface Content {
-    tanggal: number;
-    item: Item[];
-}
-
-interface OutflowData {
-    header: Header;
-    content: Content[];
-}
-
-interface Props {
-    outflowData: OutflowData[]; // Expecting an array of outflowData
-}
-
-const OutflowTable: React.FC<Props> = ({ outflowData }) => {
+const OutflowTable: React.FC<OutflowTableProps> = ({ outflowData }) => {
     const data = outflowData[0]; // Assuming outflowData has at least one entry
 
     // Prepare a map for outflow values by jam and tanggal

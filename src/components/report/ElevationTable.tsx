@@ -1,24 +1,9 @@
 import React, { useRef, useState } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { ElevationTableProps } from '@/types/reportTypes';
 
-interface ElevationData {
-    id: number;
-    elevation: string;
-    volume: string;
-    area: string;
-}
 
-interface ReportData {
-    id: number;
-    year: number;
-    status: string;
-    elevationData: ElevationData[];
-}
-
-interface ElevationTableProps {
-    report: ReportData;
-}
 
 const ElevationTable: React.FC<ElevationTableProps> = ({ report }) => {
     const itemsPerTable = 30; // Number of items per table
