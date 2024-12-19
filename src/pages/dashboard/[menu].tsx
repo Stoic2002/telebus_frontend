@@ -7,10 +7,10 @@ import TrendsContent from '../../components/Trends/TrendsContent';
 import HomeContent from '@/components/Home/HomeContent';
 import ReportContent from '@/components/report/ReportContent';
 import DataInputGhwContent from '@/components/dataInput/DataInputGhwContent';
-import DataInputOperator from '@/components/dataInput/DataInputOperatorContent';
 import UserAdminContent from '@/components/dataInput/UserAdminContent';
-import DataCalculationContent from '@/components/dataInput/DataCalculationContent';
-import { dummyCalcData } from '@/data/dataInput/calculationData';
+// import DataCalculationContent from '@/components/dataInput/DataCalculationContent';
+// import { dummyCalcData } from '@/data/dataInput/calculationData';
+import DataInputOperatorContent from '@/components/dataInput/DataInputOperatorContent';
 
 const DashboardPage = () => {
   const router = useRouter();
@@ -27,15 +27,15 @@ const DashboardPage = () => {
       case 'trends':
         return <TrendsContent />; 
       case 'data-input-operator':
-        return <DataInputOperator/>
+        return <DataInputOperatorContent/>
       case 'report':
         return <ReportContent/>
       case 'data-input-ghw':
         return <DataInputGhwContent/>
       case 'user-admin':
         return <UserAdminContent/>
-      case 'data-calculation':
-        return <DataCalculationContent calcData={[dummyCalcData]}/>
+      // case 'data-calculation':
+      //   return <DataCalculationContent calcData={[dummyCalcData]}/>
       default:
         return <div className="p-6">Select a menu item</div>;
     }

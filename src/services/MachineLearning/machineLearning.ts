@@ -40,7 +40,7 @@ export const last24HDataService = {
 
       // Update data based on source table
       switch(item.source_table) {
-        case 'pbs_inflow_h':
+        case 'inflow_cal_h':
           hourlyData.INFLOW = parseFloat(parseFloat(item.value).toFixed(2));
           break;
         case 'pbs_outflow_h':

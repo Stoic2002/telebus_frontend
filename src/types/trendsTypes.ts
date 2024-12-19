@@ -32,18 +32,7 @@ export interface BebanData {
     value: string;
     timestamp: string;
   }
-  
- export  interface riverFlow {
-      id_sensor_tide_jam: number;
-      id_sensor_tide: number;
-      kWaktu: string;
-      water_level: number;
-      battery: number;
-      debit: string;
-      month: number;
-      created_by: string;
-      date_created: string
-  }
+
   
  export  interface FormattedData {
     time: string;

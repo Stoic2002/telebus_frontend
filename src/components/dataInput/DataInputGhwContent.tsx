@@ -13,7 +13,7 @@ const DataInputGhwContent = () => {
             value="elevation"
             className="data-[state=active]:bg-blue-500 data-[state=active]:text-white transition-colors duration-200  border border-black"
           >
-            Data Input Elevation CSV
+            Data Input Volume Efektif CSV
           </TabsTrigger>
           <TabsTrigger 
             value="rtow"

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import axios from 'axios';
-import { ARRData, BebanData, FormattedData, InflowData, OutflowData, riverFlow, TMAData } from '@/types/trendsTypes';
+import { ARRData, BebanData, FormattedData, InflowData, OutflowData, TMAData } from '@/types/trendsTypes';
 import ErrorComponent from '../error/ErrorComponent';
 // import ErrorComponent from '../error/ErrorComponent';
 
@@ -20,14 +20,13 @@ const TrendsContent = () => {
           outflowResponse, 
           tmaResponse, 
           arrResponse, 
-          // inflowResponse,
-          riverflowResponse
+          inflowResponse,
         ] = await Promise.all([
-          axios.get<BebanData[]>('http://192.168.105.90/pbs-beban-h'),
-          axios.get<OutflowData[]>('http://192.168.105.90/pbs-outflow-h'),
-          axios.get<TMAData[]>('http://192.168.105.90/pbs-tma-h'),
+          axios.get<BebanData[]>('http://192.168.105.90/pbs-beban-last-24-h'),
+          axios.get<OutflowData[]>('http://192.168.105.90/pbs-outflow-last-24-h'),
+          axios.get<TMAData[]>('http://192.168.105.90/pbs-tma-last-24-h'),
           axios.get<ARRData[]>('http://192.168.105.90/arr-st01-h'),
-          axios.get<riverFlow[]>('http://192.168.105.90/db-awlr-hour')
+          axios.get<InflowData[]>('http://192.168.105.90/pbs-inflow-last-24-h')
         ]);
 
         const today = new Date();
@@ -90,47 +89,33 @@ const TrendsContent = () => {
               hour: '2-digit',
               minute: '2-digit'
             });
+            console.log(timeKey)
+
 
             if (groupedData[timeKey]) {
               groupedData[timeKey].tma = parseFloat(curr.value);
+              console.log(groupedData[timeKey].tma)
             }
           });
 
-
-        // Process riverflow data
-        riverflowResponse.data
-          .filter(item => isToday(item.kWaktu))
-          .forEach((curr: riverFlow) => {
-            const originalTime = new Date(curr.kWaktu);
+          inflowResponse.data
+          .filter(item => isToday(item.timestamp))
+          .forEach((curr: InflowData) => {
+            const originalTime = new Date(curr.timestamp);
             const timeKey = originalTime.toLocaleTimeString('id-ID', {
               hour: '2-digit',
               minute: '2-digit'
             });
-
-            if (!groupedData[timeKey]) {
-              groupedData[timeKey] = {
-                time: timeKey,
-                originalTime: originalTime
-              };
+            const convertedTimeKey = timeKey.replace('15','00');
+            console.log(convertedTimeKey)
+        
+            if (groupedData[convertedTimeKey]) {
+              groupedData[convertedTimeKey].inflow = parseFloat(curr.value);
+              // console.log(groupedData[timeKey].inflow)
             }
-
-            if (curr.id_sensor_tide === 1) {
-              groupedData[timeKey].debitSerayu = parseFloat(curr.debit);
-            } else if (curr.id_sensor_tide === 2) {
-              groupedData[timeKey].debitMerawu = parseFloat(curr.debit);
-            } else if (curr.id_sensor_tide === 3) {
-              groupedData[timeKey].debitLumajang = parseFloat(curr.debit);
-            }
+            // console.log(groupedData)
           });
-
-        // Calculate total debit
-        Object.values(groupedData).forEach(item => {
-          const serayuInflow = item.debitSerayu || 0;
-          const merawuInflow = item.debitMerawu || 0;
-          const lumajangInflow = item.debitLumajang || 0;
-          item.totalDebit = serayuInflow + merawuInflow + lumajangInflow;
-        });
-
+        
         // Process ARR data
         arrResponse.data
           .filter(item => isToday(item.timestamp))
@@ -166,7 +151,7 @@ const TrendsContent = () => {
 
         setData(formattedData);
         setLoading(false);
-        console.log('Grouped Data:', groupedData);
+        // console.log('Grouped Data:', groupedData);
         console.log('Data for Chart:', data);
       } catch (err) {
         setError('Failed to fetch data');
@@ -216,7 +201,7 @@ const TrendsContent = () => {
             />
             <Line 
               type="monotone" 
-              dataKey="totalDebit" 
+              dataKey="inflow" 
               name="Inflow"
               stroke="#16a34a"
               strokeWidth={2}
@@ -296,7 +281,7 @@ const TrendsContent = () => {
         lines = (
           <Line 
             type="monotone" 
-            dataKey="totalDebit" 
+            dataKey="inflow" 
             name="Inflow"
             stroke="#2563eb"
             strokeWidth={2}

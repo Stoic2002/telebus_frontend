@@ -1,86 +1,117 @@
-import React, { useState } from 'react';
+import React, { useState, ChangeEvent } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 
-const DataInputOperator = () => {
-  const [formData, setFormData] = useState({
+interface FormData {
+  tanggal: string;
+  jam: string;
+  targetLevel: string;
+  outflowIrigasi: string;
+  outflowDdcJam: string;
+  outflowDdcM3s: string;
+  outflowSpillwayJam: string;
+  outflowSpillwayM3s: string;
+}
+
+interface StatusMessage {
+  type: string;
+  message: string;
+}
+
+const DataInputOperator: React.FC = () => {
+  const [formData, setFormData] = useState<FormData>({
     tanggal: '',
-    targetLevel: '',
+    jam: '',
+    targetLevel: '0',
     outflowIrigasi: '',
-    outflowDDCJam: '',
-    outflowDDCM3s: '',
-    outflowSpillwayJam: '',
-    outflowSpillwayM3s: ''
+    outflowDdcJam: '1',
+    outflowDdcM3s: '',
+    outflowSpillwayJam: '1',
+    outflowSpillwayM3s: '',
   });
 
-  const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState({ type: '', message: '' });
+  const [loading, setLoading] = useState<boolean>(false);
+  const [status, setStatus] = useState<StatusMessage>({ type: '', message: '' });
 
-  const handleChange = (e:any) => {
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
-  const handleSubmit = async (e:any) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setStatus({ type: '', message: '' });
 
-    const requestBody = {
-      tanggal: formData.tanggal,
-      target_level: parseFloat(formData.targetLevel) || 0,
-      outflow_irigasi: parseFloat(formData.outflowIrigasi) || 0,
-      outflow_ddc_jam: parseFloat(formData.outflowDDCJam) || 0,
-      outflow_ddc_m3s: parseFloat(formData.outflowDDCM3s) || 0,
-      outflow_spillway_jam: parseFloat(formData.outflowSpillwayJam) || 0,
-      outflow_spillway_m3s: parseFloat(formData.outflowSpillwayM3s) || 0
-    };
-
     try {
+      // Combine date and time into the required format
+      const combinedDateTime = `${formData.tanggal} ${formData.jam}:00`;
+
+      // console.log(combinedDateTime);
+
+      // Prepare request body
+      const requestBody = {
+        tanggal: combinedDateTime,
+        target_level: parseFloat(formData.targetLevel) || 0,
+        outflow_irigasi: parseFloat(formData.outflowIrigasi) || 0,
+        outflow_ddc_jam: parseInt(formData.outflowDdcJam, 10) || 0,
+        outflow_ddc_m3s: parseFloat(formData.outflowDdcM3s) || 0,
+        outflow_spillway_jam: parseInt(formData.outflowSpillwayJam, 10) || 0,
+        outflow_spillway_m3s: parseFloat(formData.outflowSpillwayM3s) || 0,
+      };
+
       const response = await fetch('http://192.168.105.90/api-target-harian', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestBody)
+      
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
         throw new Error('Gagal menyimpan data');
       }
 
+      console.log(requestBody);
+
       setStatus({
         type: 'success',
-        message: 'Data berhasil disimpan!'
+        message: 'Data berhasil disimpan!',
       });
-      
+
       // Reset form after successful submission
       setFormData({
         tanggal: '',
-        targetLevel: '',
+        jam: '',
+        targetLevel: '0',
         outflowIrigasi: '',
-        outflowDDCJam: '',
-        outflowDDCM3s: '',
-        outflowSpillwayJam: '',
-        outflowSpillwayM3s: ''
+        outflowDdcJam: '1',
+        outflowDdcM3s: '',
+        outflowSpillwayJam: '1',
+        outflowSpillwayM3s: '',
       });
-
     } catch (error) {
+      console.error(error);
       setStatus({
         type: 'error',
-        message: 'Terjadi kesalahan saat menyimpan data'
+        message: 'Terjadi kesalahan saat menyimpan data',
       });
     } finally {
       setLoading(false);
     }
   };
 
+  // Generate hour options from 00:00 to 23:00
+  const hourOptions = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
+
+
   return (
-    <Card className="w-full max-w-lg mx-auto shadow-lg mt-6 mb-24">
+    <Card className="w-full max-w-2xl mx-auto shadow-lg mt-6 mb-24">
       <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-800">
         <CardTitle className="text-center text-white text-xl">
           Form Input Target Operasi Harian
@@ -94,21 +125,41 @@ const DataInputOperator = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">
-              Tanggal
-            </label>
-            <input
-              type="date"
-              name="tanggal"
-              value={formData.tanggal}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-              required
-            />
+          <div className="flex space-x-4">
+            <div className="flex-1 space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">
+                Tanggal
+              </label>
+              <input
+                type="date"
+                name="tanggal"
+                value={formData.tanggal}
+                onChange={handleInputChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                required
+              />
+            </div>
+
+            <div className="flex-1 space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">
+                Jam
+              </label>
+              <select
+                name="jam"
+                value={formData.jam}
+                onChange={handleInputChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                required
+              >
+                <option value="">Pilih Jam</option>
+                {hourOptions.map(hour => (
+                  <option key={hour} value={hour}>{hour}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <label className="block text-sm font-semibold text-gray-700">
               Target Level (mdpl)
             </label>
@@ -116,13 +167,13 @@ const DataInputOperator = () => {
               type="number"
               name="targetLevel"
               value={formData.targetLevel}
-              onChange={handleChange}
+              onChange={handleInputChange}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               step="0.01"
               required
               placeholder="Contoh: 228.50"
             />
-          </div>
+          </div> */}
 
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-gray-700">
@@ -132,7 +183,7 @@ const DataInputOperator = () => {
               type="number"
               name="outflowIrigasi"
               value={formData.outflowIrigasi}
-              onChange={handleChange}
+              onChange={handleInputChange}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               step="0.01"
               required
@@ -140,73 +191,69 @@ const DataInputOperator = () => {
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">
-              Outflow DDC
-            </label>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <input
-                  type="number"
-                  name="outflowDDCJam"
-                  value={formData.outflowDDCJam}
-                  onChange={handleChange}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                  step="0.01"
-                  required
-                  placeholder="Jam"
-                />
-                <span className="text-xs text-gray-500 mt-1 block">Jam</span>
-              </div>
-              <div>
-                <input
-                  type="number"
-                  name="outflowDDCM3s"
-                  value={formData.outflowDDCM3s}
-                  onChange={handleChange}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                  step="0.01"
-                  required
-                  placeholder="m³/s"
-                />
-                <span className="text-xs text-gray-500 mt-1 block">m³/s</span>
-              </div>
+          {/* <div className="flex space-x-4">
+            <div className="flex-1 space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">
+                Outflow DDC (Jam)
+              </label>
+              <input
+                type="number"
+                name="outflowDdcJam"
+                value={formData.outflowDdcJam}
+                onChange={handleInputChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                required
+                placeholder="Jam outflow DDC"
+              />
+            </div> */}
+            <div className="flex-1 space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">
+                Outflow DDC (m³/s)
+              </label>
+              <input
+                type="number"
+                name="outflowDdcM3s"
+                value={formData.outflowDdcM3s}
+                onChange={handleInputChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                step="0.01"
+                required
+                placeholder="Debit DDC"
+              />
             </div>
-          </div>
+          {/* </div> */}
 
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">
-              Outflow Spillway
-            </label>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <input
-                  type="number"
-                  name="outflowSpillwayJam"
-                  value={formData.outflowSpillwayJam}
-                  onChange={handleChange}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                  step="0.01"
-                  required
-                  placeholder="Jam"
-                />
-                <span className="text-xs text-gray-500 mt-1 block">Jam</span>
-              </div>
-              <div>
-                <input
-                  type="number"
-                  name="outflowSpillwayM3s"
-                  value={formData.outflowSpillwayM3s}
-                  onChange={handleChange}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                  step="0.01"
-                  required
-                  placeholder="m³/s"
-                />
-                <span className="text-xs text-gray-500 mt-1 block">m³/s</span>
-              </div>
+          {/* <div className="flex space-x-4">
+            <div className="flex-1 space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">
+                Outflow Spillway (Jam)
+              </label>
+              <input
+                type="number"
+                name="outflowSpillwayJam"
+                value={formData.outflowSpillwayJam}
+                onChange={handleInputChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                required
+                placeholder="Jam outflow Spillway"
+              />
+            </div> */}
+            <div className="flex-1 space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">
+                Outflow Spillway (m³/s)
+              </label>
+              <input
+                type="number"
+                name="outflowSpillwayM3s"
+                value={formData.outflowSpillwayM3s}
+                onChange={handleInputChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                step="0.01"
+                required
+                placeholder="Debit Spillway"
+              />
             </div>
-          </div>
+          {/* </div> */}
 
           <button
             type="submit"

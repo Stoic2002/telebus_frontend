@@ -196,8 +196,8 @@ const getStatusColor = (status: string) => {
           name: "Inflow",
           item: [
             { id: 'Serayu', value: serayuValue !== null ? serayuValue.debit : 0},
-            { id: 'Lumajang', value: merawuValue !== null ? merawuValue.debit : 0 },
-            { id: 'Merawu', value: lumajangValue !== null ? lumajangValue.debit : 0 }
+            { id: 'Merawu', value: merawuValue !== null ? merawuValue.debit : 0 },
+            { id: 'Lumajang', value: lumajangValue !== null ? lumajangValue.debit : 0 }
           ],
           total :  serayuValue && merawuValue && lumajangValue !== null ? (serayuValue.debit + merawuValue.debit + lumajangValue.debit).toFixed(2) : 'N/A'
         },

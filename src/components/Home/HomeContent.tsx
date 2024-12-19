@@ -1,18 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import dynamic from 'next/dynamic';
 import usePbsNodeData from '@/hooks/usePbsNodeData';
 import MonitoringPbsComponent from './MonitoringPBSoedirman';
 import InflowChartComponent from './InflowChart';
 import RainfallComponent from './TelemeteringArr';
 
-// Dynamic import for MapContent to enable client-side rendering
-// const MapContent = dynamic(() => import('../../components/Home/MapContent'), { 
-//   ssr: false 
-// });
-
 const HomeContent: React.FC = () => {
   const [tmaData, setTmaData] = useState({ tmaValue: 0, volume: 0 });
+  const [targetElevasi, setTargetElevasi] = useState<number | null>(null); // State untuk target elevasi
 
   useEffect(() => {
     // Function to fetch TMA data
@@ -34,11 +29,31 @@ const HomeContent: React.FC = () => {
       }
     };
 
+    // Function to fetch Target Elevasi data
+    const fetchTargetElevasi = async () => {
+      try {
+        const response = await fetch('http://192.168.105.90/rtow-by-today');
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const data = await response.json();
+        if (data && data.targetElevasi) {
+          setTargetElevasi(parseFloat(data.targetElevasi));
+        }
+      } catch (error) {
+        console.error('Error fetching Target Elevasi data:', error);
+      }
+    };
+
     // Initial fetch
     fetchTMA();
+    fetchTargetElevasi();
 
     // Set interval for fetching data every 1 hour (3600000 ms)
-    const intervalId = setInterval(fetchTMA, 3600000);
+    const intervalId = setInterval(() => {
+      fetchTMA();
+      fetchTargetElevasi();
+    }, 3600000);
 
     // Cleanup interval on component unmount
     return () => clearInterval(intervalId);
@@ -104,7 +119,10 @@ const HomeContent: React.FC = () => {
             <CardTitle>Target Water Level</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">N/A mdpl</div>
+            <div className="text-2xl font-bold text-orange-600">
+              {targetElevasi !== null ? `${targetElevasi.toFixed(2)} mdpl` : 'Loading...'}
+            </div>
+            <p className="text-gray-500">per day</p>
           </CardContent>
         </Card>
 
@@ -122,29 +140,17 @@ const HomeContent: React.FC = () => {
         </Card>
       </div>
 
-      <InflowChartComponent/>
+      <InflowChartComponent />
 
-      {/* Map Card */}
-      {/* <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Map PLTA</CardTitle>
+      <Card className="mt-6">
+        <CardHeader className="bg-gradient-to-r from-green-500 to-gray-300 text-white rounded-md">
+          <CardTitle>Telemetering PB Soedirman</CardTitle>
         </CardHeader>
-        <CardContent style={{ height: 500 }}>
-          <MapContent />
-        </CardContent>
-      </Card> */}
-        <Card className='mt-6'>
-          <CardHeader className='bg-gradient-to-r from-green-500 to-gray-300 text-white rounded-md'>
-            <CardTitle>Telemetering PB Soedirman</CardTitle>
-          </CardHeader>
-        </Card>
+      </Card>
 
-      <MonitoringPbsComponent/>
+      <MonitoringPbsComponent />
 
-{/* chart debit */}
-    {/* <InflowChartComponent/> */}
-
-    <RainfallComponent/>
+      <RainfallComponent />
     </div>
   );
 };

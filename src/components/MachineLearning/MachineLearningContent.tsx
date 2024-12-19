@@ -23,7 +23,7 @@ const MachineLearningContent: React.FC = () => {
 
   // Fetch predictions from API
   const fetchPredictions = async () => {
-    const parameters: PredictionParameter[] = ['INFLOW', 'OUTFLOW', 'TMA', 'BEBAN'];
+    const parameters: PredictionParameter[] = ['INFLOW','OUTFLOW', 'TMA', 'BEBAN'];
 
     
     try {
@@ -79,6 +79,7 @@ const MachineLearningContent: React.FC = () => {
   useEffect(() => {
     if (dataLast24H && dataLast24H.length > 0) {
       fetchPredictions();
+      console.log('data last ',dataLast24H)
     }
   }, [dataLast24H]);
 
@@ -160,7 +161,7 @@ const MachineLearningContent: React.FC = () => {
           </div>
           <div className="space-x-2">
             {/* Parameter selection buttons */}
-            {(['INFLOW', 'OUTFLOW', 'TMA', 'BEBAN'] as PredictionParameter[]).map((param) => (
+            {(['INFLOW','TMA','BEBAN'] as PredictionParameter[]).map((param) => (
               <button
                 key={param}
                 onClick={() => setSelectedParameter(param)}

@@ -14,7 +14,7 @@ export interface InputData {
   }
   
   // Prediction parameters
-export type PredictionParameter = 'INFLOW' | 'OUTFLOW' | 'TMA' | 'BEBAN';
+export type PredictionParameter = 'INFLOW' |'OUTFLOW' |'TMA' | 'BEBAN';
 
 
 // Color mapping for different parameters

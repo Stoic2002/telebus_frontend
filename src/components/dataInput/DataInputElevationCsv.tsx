@@ -8,7 +8,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { Loader2, Save, Info } from "lucide-react";
+import { Loader2, Save, Info, Download } from "lucide-react";
 
 interface GHWData {
   [elevation: number]: {
@@ -38,6 +38,16 @@ const DataInputElevationCsv: React.FC = () => {
       (_, index) => 2000 + index
     );
   };
+
+  const downloadCsvTemplate = () => {
+    const link = document.createElement("a");
+    link.href = "/volume_efektif_format.csv"; // Path ke file di public/
+    link.setAttribute("download", "volume_efektif_format.csv"); // Nama file saat diunduh
+    document.body.appendChild(link); // Tambahkan link ke DOM sementara
+    link.click(); // Trigger klik untuk download
+    document.body.removeChild(link); // Hapus link dari DOM setelah selesai
+  };
+  
 
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [loading, setLoading] = useState<boolean>(false);
@@ -229,6 +239,8 @@ const DataInputElevationCsv: React.FC = () => {
             </ul>
           </AlertDescription>
         </Alert>
+
+        
          {/* Pilih Tahun */}
  <div className="flex flex-col space-y-2">
  <label className="text-sm font-medium">Pilih Tahun</label>
@@ -276,6 +288,15 @@ const DataInputElevationCsv: React.FC = () => {
    {Object.keys(formData).length > 0 && JSON.stringify(formData, null, 2)}
  </pre>
 </div> */}
+
+ {/* Tombol Download Template */}
+ <button 
+          onClick={downloadCsvTemplate} 
+          className="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700 flex items-center justify-center space-x-2"
+        >
+          <Download />
+          <span>Unduh Template CSV</span>
+        </button>
 
 {/* Tombol Simpan */}
 <button 

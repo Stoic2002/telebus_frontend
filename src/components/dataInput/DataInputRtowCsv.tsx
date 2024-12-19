@@ -8,7 +8,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { Loader2, Save, Info } from "lucide-react";
+import { Loader2, Save, Info, Download } from "lucide-react";
 
 interface RTOWData {
   bulan: string;
@@ -30,6 +30,15 @@ const DataInputRtowCsv: React.FC = () => {
       { length: currentYear + 5 - 2000 + 1 }, 
       (_, index) => 2000 + index
     );
+  };
+
+  const downloadCsvTemplate = () => {
+    const link = document.createElement("a");
+    link.href = "/rtow_format.csv"; // Path ke file di public/
+    link.setAttribute("download", "rtow_format.csv"); // Nama file saat diunduh
+    document.body.appendChild(link); // Tambahkan link ke DOM sementara
+    link.click(); // Trigger klik untuk download
+    document.body.removeChild(link); // Hapus link dari DOM setelah selesai
   };
 
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
@@ -218,6 +227,14 @@ const DataInputRtowCsv: React.FC = () => {
             <AlertDescription>{status.message}</AlertDescription>
           </Alert>
         )}
+         {/* Tombol Download Template */}
+        <button 
+          onClick={downloadCsvTemplate} 
+          className="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700 flex items-center justify-center space-x-2"
+        >
+          <Download />
+          <span>Unduh Template CSV</span>
+        </button>
 
         <button 
           onClick={handleSubmit} 

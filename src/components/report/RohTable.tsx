@@ -1,5 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import axios from 'axios';
+import { report } from 'process';
+import { rohData } from '../../data/ROH/rohData';
 
 export interface RohData {
     header: {
@@ -7,30 +10,64 @@ export interface RohData {
         judul: string;
     };
     content: {
-        //1
-        hariOrTanggal : string;
-        estimasiInflow : number;
-        targetELevasiHariIni : number;
-        volumeTargetELevasiHariIni : number;
-        realisasiElevasi : number;
-        volumeRealisasiElevasi : number;
-        estimasiIrigasi : number;
-        estimasiDdcXTotalJamPembukaan : number;
-        ddcJam : number;
-        estimasiSpillwayTotalJamPembukaan : number;
-        spillwayJam :number;
-        //2
-        estimasiWadukSetelahOperasi: number;
-        //3
-        totalDaya: number
+        hariOrTanggal: string;
+        estimasiInflow: number;
+        targetELevasiHariIni: number;
+        volumeTargetELevasiHariIni: number;
+        realisasiElevasi: number;
+        volumeRealisasiElevasi: number;
+        estimasiIrigasi: number;
+        estimasiDdcXTotalJamPembukaan: number;
+        ddcJam: number;
+        estimasiSpillwayTotalJamPembukaan: number;
+        spillwayJam: number;
+        estimasiElevasiWadukSetelahOperasi: number;
+        estimasiVolumeWadukSetelahOperasi: number;
+        totalOutflow: number;
+        estimasiVolumeWaduk: number;
+        estimasiOutflow:number;
+        totalDaya: number;
     };
 }
 
-interface Props {
+export interface rohDataProps {
     rohData: RohData[];
 }
 
-const RohTable: React.FC<Props> = ({ rohData }) => {
+export interface ApiReportData {
+    targetElv: {
+        targetElevasi: string;
+        volume: string;
+    };
+    realisasiElv: {
+        tma_value: string;
+        volume: string;
+        timestamp: string;
+    };
+    outflow: {
+        // total_target_level: number;
+        total_outflow_irigasi: number;
+        total_outflow_ddc_jam: number;
+        total_outflow_ddc_m3s: number;
+        total_outflow_spillway_jam: number;
+        total_outflow_spillway_m3s: number;
+    };
+    estimationInflow: {
+        inflow_estimation: string;
+    };
+}
+
+export interface ApiElevationData {
+    interpolated_elevation: string;
+}
+
+const RohTable: React.FC<rohDataProps> = ({rohData}) => {
+    
+
+   
+    // if (isLoading) return <div>Loading...</div>;
+    // if (error) return <div>Error: {error}</div>;
+
     const data = rohData[0];
     // const filteredData = data.content['ESTIMASI PEMBEBANAN PLTA PBS'].filter((item: any) => item.jam);
     // const midPoint = Math.ceil(filteredData.length / 2);
@@ -83,13 +120,13 @@ const RohTable: React.FC<Props> = ({ rohData }) => {
                                     ESTIMASI INFLOW
                                 </td>
                                 < td colSpan={1} className="border border-black p-2 text-center" style={{ width: '10%' }}>
-                                    {data.content.estimasiInflow}
+                                    {data.content.estimasiInflow.toFixed(2)}
                                 </td>
                                 <td colSpan={1} className="border border-black p-2" style={{ width: '10%' }}>
                                     m³/s
                                 </td>
                                 <td colSpan={1} className="border border-black p-2 text-center" style={{ width: '10%' }}>
-                                    {data.content.estimasiInflow * 24 * 3600}
+                                    {(data.content.estimasiInflow * 24 * 3600).toFixed(2)}
                                 </td>
                                 <td colSpan={1} className="border border-black p-2" style={{ width: '10%' }}>
                                     m³
@@ -102,13 +139,13 @@ const RohTable: React.FC<Props> = ({ rohData }) => {
                                     TARGET ELEVASI HARI INI
                                 </td>
                                 <td className="border border-black p-2 text-center" style={{ width: '10%' }}>
-                                    {data.content.targetELevasiHariIni}
+                                    {data.content.targetELevasiHariIni.toFixed(2)}
                                 </td>
                                 <td className="border border-black p-2" style={{ width: '10%' }}>
                                     Mdpl
                                 </td>
                                 <td className="border border-black p-2 text-center" style={{ width: '10%' }}>
-                                    {data.content.volumeTargetELevasiHariIni}
+                                    {(data.content.volumeTargetELevasiHariIni).toFixed(2)}
                                 </td>
                                 <td className="border border-black p-2" style={{ width: '10%' }}>
                                     m³
@@ -121,13 +158,13 @@ const RohTable: React.FC<Props> = ({ rohData }) => {
                                     REALISASI ELEVASI H-1 PUKUL 09.00
                                 </td>
                                 <td className="border border-black p-2 text-center" style={{ width: '10%' }}>
-                                    {data.content.realisasiElevasi}
+                                    {data.content.realisasiElevasi.toFixed(2)}
                                 </td>
                                 <td className="border border-black p-2" style={{ width: '10%' }}>
                                     Mpdl
                                 </td>
                                 <td className="border border-black p-2 text-center" style={{ width: '10%' }}>
-                                    {data.content.volumeRealisasiElevasi}
+                                    {(data.content.volumeRealisasiElevasi).toFixed(2)}
                                 </td>
                                 <td className="border border-black p-2" style={{ width: '10%' }}>
                                     m³
@@ -216,12 +253,7 @@ const RohTable: React.FC<Props> = ({ rohData }) => {
                                     ESTIMASI VOLUME WADUK
                                 </td>
                                 <td colSpan={2} className="border border-black p-2 text-center" style={{ width: '20%' }}>
-                                    {data.content.volumeRealisasiElevasi + 
-                                    (data.content.estimasiInflow * 24 * 3600) - 
-                                    data.content.volumeTargetELevasiHariIni - 
-                                    (data.content.estimasiIrigasi * 24 * 3600) - 
-                                    (data.content.estimasiDdcXTotalJamPembukaan * 3600 * data.content.ddcJam) 
-                                    - (data.content.estimasiSpillwayTotalJamPembukaan * 3600 * data.content.spillwayJam)}
+                                    {data.content.estimasiVolumeWaduk.toFixed(2)}
                                 </td>
                                 <td colSpan={2} className="border border-black p-2" style={{ width: '20%' }}>
                                     m³
@@ -234,12 +266,8 @@ const RohTable: React.FC<Props> = ({ rohData }) => {
                                     ESTIMASI TOTAL DAYA YANG DIHASILKAN
                                 </td>
                                 <td colSpan={2} className="border border-black p-2 text-center" style={{ width: '20%' }}>
-                                {((data.content.volumeRealisasiElevasi + 
-                                    (data.content.estimasiInflow * 24 * 3600) - 
-                                    data.content.volumeTargetELevasiHariIni - 
-                                    (data.content.estimasiIrigasi * 24 * 3600) - 
-                                    (data.content.estimasiDdcXTotalJamPembukaan * 3600 * data.content.ddcJam) 
-                                    - (data.content.estimasiSpillwayTotalJamPembukaan * 3600 * data.content.spillwayJam))-(data.content.estimasiIrigasi * 24 * 3600))/4.080}
+                                {((data.content.estimasiVolumeWaduk -
+                                (data.content.estimasiIrigasi * 24 * 3600))/4080).toFixed(2)}
                                 </td>
                                 <td colSpan={2} className="border border-black p-2" style={{ width: '20%' }}>
                                     MW
@@ -252,12 +280,8 @@ const RohTable: React.FC<Props> = ({ rohData }) => {
                                     ESTIMASI DAYA PER JAM
                                 </td>
                                 <td colSpan={2} className="border border-black p-2 text-center" style={{ width: '20%' }}>
-                                {(((data.content.volumeRealisasiElevasi + 
-                                    (data.content.estimasiInflow * 24 * 3600) - 
-                                    data.content.volumeTargetELevasiHariIni - 
-                                    (data.content.estimasiIrigasi * 24 * 3600) - 
-                                    (data.content.estimasiDdcXTotalJamPembukaan * 3600 * data.content.ddcJam) 
-                                    - (data.content.estimasiSpillwayTotalJamPembukaan * 3600 * data.content.spillwayJam))-(data.content.estimasiIrigasi * 24 * 3600))/4.080)/24}
+                                {(((data.content.estimasiVolumeWaduk -
+                                (data.content.estimasiIrigasi * 24 * 3600))/4080)/24).toFixed(2)}
                                 </td>
                                 <td colSpan={2} className="border border-black p-2" style={{ width: '20%' }}>
                                     MW
@@ -270,7 +294,7 @@ const RohTable: React.FC<Props> = ({ rohData }) => {
                                     ESTIMASI OUTFLOW
                                 </td>
                                 <td colSpan={2} className="border border-black p-2 text-center" style={{ width: '20%' }}>
-                                    {(data.content.totalDaya * 4.080) + (data.content.estimasiIrigasi * 24 * 3600)}
+                                    {data.content.estimasiOutflow.toFixed(2)}
                                 </td>
                                 <td colSpan={2} className="border border-black p-2" style={{ width: '20%' }}>
                                 m³
@@ -281,7 +305,7 @@ const RohTable: React.FC<Props> = ({ rohData }) => {
                                     WATER CONSUMPTION 1 MW
                                 </td>
                                 <td colSpan={2} className="border border-black p-2 text-center" style={{ width: '20%' }}>
-                                    1,16
+                                    1,13
                                 </td>
                                 <td colSpan={2} className="border border-black p-2" style={{ width: '20%' }}>
                                 </td>
@@ -291,7 +315,7 @@ const RohTable: React.FC<Props> = ({ rohData }) => {
                                     WATER CONSUMPTION 1 MW TO 1 HOUR
                                 </td>
                                 <td colSpan={2} className="border border-black p-2 text-center" style={{ width: '20%' }}>
-                                    4,080
+                                    4080
                                 </td>
                                 <td colSpan={2} className="border border-black p-2">
                                 </td>
@@ -301,13 +325,7 @@ const RohTable: React.FC<Props> = ({ rohData }) => {
                                     ESTIMASI VOLUME WADUK SETELAH UNIT BEROPERASI
                                 </td>
                                 <td colSpan={2} className="border border-black p-2 text-center" style={{ width: '20%' }}>
-                                    {data.content.volumeRealisasiElevasi + 
-                                    (data.content.estimasiInflow * 24 * 3600) - 
-                                    (data.content.totalDaya * 4.080) + 
-                                    (data.content.estimasiIrigasi * 24 * 3600) - 
-                                    (data.content.estimasiIrigasi * 24 * 3600) -
-                                    (data.content.estimasiDdcXTotalJamPembukaan * 3600 * data.content.ddcJam) -
-                                    (data.content.estimasiSpillwayTotalJamPembukaan * 3600 * data.content.spillwayJam)
+                                    {data.content.estimasiVolumeWadukSetelahOperasi.toFixed(2)
                                     }
                                 </td>
                                 
@@ -320,7 +338,7 @@ const RohTable: React.FC<Props> = ({ rohData }) => {
                                     ESTIMASI ELEVASI WADUK SETELAH UNIT BEROPERASI
                                 </td>
                                 <td colSpan={2} className="border border-black p-2 text-center" style={{ width: '20%' }}>
-                                    {data.content.estimasiWadukSetelahOperasi}
+                                    {data.content.estimasiElevasiWadukSetelahOperasi}
                                 </td>
                                 <td colSpan={2} className="border border-black p-2" style={{ width: '20%' }}>
                                     Mdpl
@@ -333,7 +351,7 @@ const RohTable: React.FC<Props> = ({ rohData }) => {
                                     ESTIMASI PEMBEBANAN PLTA PBS
                                 </td>
                             </tr>
-                            <tr>
+                            {/* <tr>
                                 <td colSpan={2} className="border border-black p-2 text-center font-semibold" style={{ width: '15%' }}>
                                     JAM
                                 </td>
@@ -346,7 +364,7 @@ const RohTable: React.FC<Props> = ({ rohData }) => {
                                 <td colSpan={3} className="border border-black p-2 text-center font-semibold" style={{ width: '40%' }}>
                                     PEMBEBANAN SESUAI ESTIMASI INFLOW S/D TARGET ELEVASI (MW)
                                 </td>
-                            </tr>
+                            </tr> */}
                         </tbody>
                         {/* <tbody>
                             {filteredData.slice(0, midPoint).map((item: any, index: number) => (
@@ -380,20 +398,19 @@ const RohTable: React.FC<Props> = ({ rohData }) => {
                                     Total
                                 </td>
                                 <td colSpan={9} className="border border-black p-2 text-center font-semibold" style={{ width: '85%' }}>
-                                    {data.content.totalDaya} 
+                                    {data.content.totalDaya.toFixed(2)} 
                                 </td>
                             </tr>
                         </tbody>
                         <tbody>
                             <tr>
                                 <td colSpan={10} className="border border-black p-2 text-center">
-                                    OK
+                                    {data.content.estimasiVolumeWadukSetelahOperasi < data.content.targetELevasiHariIni ? "OK" : "WARNING"}
                                 </td>
                             </tr>
                         </tbody>
                     </table>
-                </div>
-           
+                </div> 
     );
 };
 

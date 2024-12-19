@@ -47,7 +47,7 @@ const Header = () => {
       'report', 
       'data-input-operator', 
       'data-input-ghw', 
-      'data-calculation', 
+      // 'data-calculation', 
       'user-admin'
     ],
     ghw: [

@@ -20,7 +20,7 @@ import {
 import { Download, Loader2 } from 'lucide-react';
 
 // Components and Data
-import RohTable from './RohTable';
+import RohTable, { ApiElevationData, ApiReportData, RohData } from './RohTable';
 import { rohData } from '@/data/ROH/rohData';
 import TmaTable from './TmaTable';
 import InflowTable from './InflowTable';
@@ -66,11 +66,117 @@ const ReportContent: React.FC = () => {
     { value: 'inflow', label: 'Inflow' },
     { value: 'outflow', label: 'Outflow' },
     { value: 'TMA', label: 'TMA' },
-    { value: 'elevasi', label: 'Elevasi' },
+    { value: 'elevasi', label: 'Volume efektif' },
     { value: 'rtow', label: 'RTOW' },
   ];
 
   const disabledReports = ['ROH', 'elevasi', 'rtow'];
+
+  const [rohData, setRohData] = useState<RohData[]>([{
+    header: {
+        logo: '/assets/ip-mrica-logo.png',
+        judul: 'Rencana Operasi Harian'
+    },
+    content: {
+        hariOrTanggal: '',
+        estimasiInflow: 0,
+        targetELevasiHariIni: 0,
+        volumeTargetELevasiHariIni: 0,
+        realisasiElevasi: 0,
+        volumeRealisasiElevasi: 0,
+        estimasiIrigasi: 0,
+        estimasiDdcXTotalJamPembukaan: 0,
+        ddcJam: 0,
+        estimasiSpillwayTotalJamPembukaan: 0,
+        spillwayJam: 0,
+        totalOutflow: 0,
+        estimasiVolumeWaduk: 0,
+        estimasiOutflow:0,
+        estimasiElevasiWadukSetelahOperasi: 0,
+        estimasiVolumeWadukSetelahOperasi: 0,
+        totalDaya: 0
+    }
+}]);
+// const [isLoading, setIsLoading] = useState(true);
+// const [error, setError] = useState<string | null>(null);
+
+    const fetchDataRoh = async (date: string) => {
+
+      console.log(date)
+        try {
+          setLoading(true);
+            // Fetch report data
+            const reportResponse = await axios.post<ApiReportData>('http://192.168.105.90/report-data', {
+                date: date
+            });
+            const totalOutflow = (reportResponse.data.outflow.total_outflow_irigasi * 24 * 3600)  + 
+                (reportResponse.data.outflow.total_outflow_ddc_m3s * 3600 * reportResponse.data.outflow.total_outflow_ddc_jam) 
+                + (reportResponse.data.outflow.total_outflow_spillway_m3s * 3600 * reportResponse.data.outflow.total_outflow_spillway_jam);
+
+            const estimasiVolumeWaduk = parseFloat(reportResponse.data.realisasiElv.volume) +
+             ((parseFloat(reportResponse.data.estimationInflow.inflow_estimation)/2) * 3600 * 24) - 
+                parseFloat(reportResponse.data.targetElv.volume) - totalOutflow;
+           
+
+            const totalDaya = ((
+                estimasiVolumeWaduk -
+                (reportResponse.data.outflow.total_outflow_irigasi * 24 * 3600))/4080) - 50
+            // Calculate volume for elevation after operation
+
+            const estimasiOutflow = (totalDaya * 4080)+ reportResponse.data.outflow.total_outflow_irigasi * 3600 * 24
+
+
+            const volumeAfterOperation = parseFloat(reportResponse.data.realisasiElv.volume) + 
+                ((parseFloat(reportResponse.data.estimationInflow.inflow_estimation)/2)* 24 * 3600) - 
+                estimasiOutflow - totalOutflow
+
+            
+
+            // Fetch elevation after operation
+            const elevationResponse = await axios.post<ApiElevationData>('http://192.168.105.90/elevation-after', {
+                volume: volumeAfterOperation.toString(),
+                year: new Date().getFullYear().toString()
+            });
+
+            // function formatCustomDate(date: string | number | Date) {
+            //   const options = { day: '2-digit', month: 'long', year: 'numeric' };
+            //   return new Date(date).toLocaleDateString('id-ID', options );
+            // }
+            
+            // Update state with fetched data
+            setRohData([{
+                ...rohData[0],
+                content: {
+                    ...rohData[0].content,
+                    hariOrTanggal: new Date(date).toLocaleDateString('id-ID',{day:"2-digit",month:"long",year:"numeric"}),
+                    estimasiInflow: parseFloat(reportResponse.data.estimationInflow.inflow_estimation) / 2,
+                    targetELevasiHariIni: parseFloat(reportResponse.data.targetElv.targetElevasi),
+                    volumeTargetELevasiHariIni: parseFloat(reportResponse.data.targetElv.volume),
+                    realisasiElevasi: parseFloat(reportResponse.data.realisasiElv.tma_value),
+                    volumeRealisasiElevasi: parseFloat(reportResponse.data.realisasiElv.volume),
+                    estimasiIrigasi: reportResponse.data.outflow.total_outflow_irigasi,
+                    estimasiDdcXTotalJamPembukaan: reportResponse.data.outflow.total_outflow_ddc_m3s,
+                    ddcJam: reportResponse.data.outflow.total_outflow_ddc_jam,
+                    estimasiSpillwayTotalJamPembukaan: reportResponse.data.outflow.total_outflow_spillway_m3s,
+                    spillwayJam: reportResponse.data.outflow.total_outflow_spillway_jam,
+                    estimasiElevasiWadukSetelahOperasi: parseFloat(elevationResponse.data.interpolated_elevation),
+                    estimasiVolumeWadukSetelahOperasi: volumeAfterOperation,
+                    totalDaya: totalDaya,
+                    estimasiOutflow: estimasiOutflow,
+                    estimasiVolumeWaduk:estimasiVolumeWaduk,
+                }
+            }]);
+
+            setShowReport(true);
+            setLoading(false)
+        } catch (err) {
+            // setError('Failed to fetch data');
+            setLoading(false);
+        }
+    };
+
+
+
   // Fetch TMA Data from API
   const fetchTmaData = async (start: string, end: string) => {
     try {
@@ -308,7 +414,7 @@ const ReportContent: React.FC = () => {
     if (selectedReport === 'TMA' && startDate && endDate) {
       fetchTmaData(startDate, endDate);
     } else if (selectedReport === 'ROH' && startDate) {
-      setShowReport(true);
+      fetchDataRoh(startDate)
     } else if (selectedReport === 'inflow' && startDate && endDate) {
       fetchInflowData(startDate, endDate);
     } else if (selectedReport === 'outflow' && startDate && endDate) {
