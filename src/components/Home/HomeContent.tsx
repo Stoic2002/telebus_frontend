@@ -62,7 +62,7 @@ const HomeContent: React.FC = () => {
   const { soedirman } = usePbsNodeData({ interval: 30000 });
 
   return (
-    <div className="p-6" style={{ height: 850 }}>
+    <div className="p-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
         {/* Water Level Card */}
         <Card>

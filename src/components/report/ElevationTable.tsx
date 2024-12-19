@@ -3,8 +3,6 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { ElevationTableProps } from '@/types/reportTypes';
 
-
-
 const ElevationTable: React.FC<ElevationTableProps> = ({ report }) => {
     const itemsPerTable = 30; // Number of items per table
     const tablesPerPage = 3; // Number of tables per page
@@ -56,6 +54,26 @@ const ElevationTable: React.FC<ElevationTableProps> = ({ report }) => {
         }
     };
 
+    // Function to generate page numbers
+    const getPageNumbers = () => {
+        const pageNumbers = [];
+        const maxButtons = 5; // Maximum number of page buttons to show
+        
+        let startPage = Math.max(0, currentPage - Math.floor(maxButtons / 2));
+        let endPage = Math.min(totalPages - 1, startPage + maxButtons - 1);
+        
+        // Adjust start if we're near the end
+        if (endPage - startPage + 1 < maxButtons) {
+            startPage = Math.max(0, endPage - maxButtons + 1);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            pageNumbers.push(i);
+        }
+        
+        return pageNumbers;
+    };
+
     return (
         <div className="flex">
             <div className="flex-1 p-4" ref={reportRef}>
@@ -103,24 +121,38 @@ const ElevationTable: React.FC<ElevationTableProps> = ({ report }) => {
                 <div>
                     <button 
                         onClick={downloadPDF} 
-                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold                        py-2 px-4 rounded mb-4"
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4 w-full"
                     >
                         Download PDF
                     </button>
 
-                    <div className="flex justify-between">
+                    <div className="flex flex-wrap items-center justify-center gap-2">
                         <button 
                             onClick={previousPage} 
-                            className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded"
+                            disabled={currentPage === 0}
+                            className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded disabled:opacity-50"
                         >
                             Previous
                         </button>
-                        <div className="text-center mt-4">
-                            <p>Page {currentPage + 1} of {totalPages}</p>
-                        </div>
+                        
+                        {getPageNumbers().map((pageNum) => (
+                            <button
+                                key={pageNum}
+                                onClick={() => setCurrentPage(pageNum)}
+                                className={`py-2 px-4 rounded font-bold ${
+                                    currentPage === pageNum
+                                        ? 'bg-blue-500 text-white'
+                                        : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+                                }`}
+                            >
+                                {pageNum + 1}
+                            </button>
+                        ))}
+                        
                         <button 
                             onClick={nextPage} 
-                            className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded"
+                            disabled={currentPage === totalPages - 1}
+                            className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded disabled:opacity-50"
                         >
                             Next
                         </button>

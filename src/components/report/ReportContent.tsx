@@ -17,7 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Download, Loader2 } from 'lucide-react';
+import { AlertCircle, Download, Loader2 } from 'lucide-react';
 
 // Components and Data
 import RohTable, { ApiElevationData, ApiReportData, RohData } from './RohTable';
@@ -29,6 +29,8 @@ import axios from 'axios';
 import ElevationTable from './ElevationTable';
 import RtowTable from './RtowTable';
 import html2canvas from 'html2canvas';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { error } from 'console';
 
 
 // Types
@@ -44,6 +46,16 @@ interface ApiData {
   timestamp: string;
 }
 
+const NoDataAlert = () => (
+  <Alert variant="destructive" className="my-4">
+    <AlertCircle className="h-4 w-4" />
+    <AlertTitle>Data Tidak Tersedia</AlertTitle>
+    <AlertDescription>
+      Tidak dapat menemukan data untuk periode yang dipilih. Silakan coba dengan periode yang berbeda.
+    </AlertDescription>
+  </Alert>
+);
+
 const ReportContent: React.FC = () => {
   // State Management
   const [selectedReport, setSelectedReport] = useState<string>('');
@@ -56,6 +68,7 @@ const ReportContent: React.FC = () => {
   const [inflowData, setInflowData] = useState<{ content: any[] }>({ content: [] });
   const [outflowData, setOutflowData] = useState<{ content: any[] }>({ content: [] });
   const [loading, setLoading] = useState<boolean>(false);
+  const [hasError, setHasError] = useState(false);
   
   // Refs
   const reportRef = useRef<HTMLDivElement>(null);
@@ -75,7 +88,7 @@ const ReportContent: React.FC = () => {
   const [rohData, setRohData] = useState<RohData[]>([{
     header: {
         logo: '/assets/ip-mrica-logo.png',
-        judul: 'Rencana Operasi Harian'
+        judul: 'PT. PLN INDONESIA POWER'
     },
     content: {
         hariOrTanggal: '',
@@ -105,10 +118,17 @@ const ReportContent: React.FC = () => {
       console.log(date)
         try {
           setLoading(true);
+          setHasError(false);
             // Fetch report data
             const reportResponse = await axios.post<ApiReportData>('http://192.168.105.90/report-data', {
                 date: date
             });
+
+            if (!reportResponse.data || Object.keys(reportResponse.data).length === 0) {
+              setHasError(true);
+              setShowReport(false);
+              return;
+            }
             const totalOutflow = (reportResponse.data.outflow.total_outflow_irigasi * 24 * 3600)  + 
                 (reportResponse.data.outflow.total_outflow_ddc_m3s * 3600 * reportResponse.data.outflow.total_outflow_ddc_jam) 
                 + (reportResponse.data.outflow.total_outflow_spillway_m3s * 3600 * reportResponse.data.outflow.total_outflow_spillway_jam);
@@ -131,11 +151,12 @@ const ReportContent: React.FC = () => {
                 estimasiOutflow - totalOutflow
 
             
-
+              const year = date.split('-')[0];
+              console.log('year',year)
             // Fetch elevation after operation
             const elevationResponse = await axios.post<ApiElevationData>('http://192.168.105.90/elevation-after', {
                 volume: volumeAfterOperation.toString(),
-                year: new Date().getFullYear().toString()
+                year: year
             });
 
             // function formatCustomDate(date: string | number | Date) {
@@ -171,7 +192,10 @@ const ReportContent: React.FC = () => {
             setLoading(false)
         } catch (err) {
             // setError('Failed to fetch data');
+            setHasError(true);
             setLoading(false);
+        } finally {
+          setLoading(false);
         }
     };
 
@@ -181,12 +205,16 @@ const ReportContent: React.FC = () => {
   const fetchTmaData = async (start: string, end: string) => {
     try {
       setLoading(true);
+      setHasError(false);
       const response = await axios.get('http://192.168.105.90/pbs-tma-h-date', {
-        params: {
-          startDate: start,
-          endDate: end
-        }
+        params: { startDate: start, endDate: end }
       });
+
+      if (!response.data || response.data.length === 0) {
+        setHasError(true);
+        setShowReport(false);
+        return;
+      }
 
       // Transform API data to match TmaTable's expected format
       const transformedData = {
@@ -203,8 +231,8 @@ const ReportContent: React.FC = () => {
       setTmaData({ content: [transformedData] });
       setShowReport(true);
     } catch (error) {
-      console.error('Error fetching TMA data:', error);
-      alert('Gagal mengambil data TMA');
+      setHasError(true);
+      setShowReport(false);
     } finally {
       setLoading(false);
     }
@@ -213,10 +241,17 @@ const ReportContent: React.FC = () => {
   const fetchInflowData = async (start: string, end: string) => {
     try {
       setLoading(true);
+      setHasError(false);
       const response = await axios.get('http://192.168.105.90/pbs-inflow-h-date', {
         params: { startDate: start, endDate: end },
       });
-      console.log(response)
+
+
+      if (!response.data || response.data.length === 0) {
+        setHasError(true);
+        setShowReport(false);
+        return;
+      }
   
       const transformedData = {
         header: {
@@ -232,8 +267,8 @@ const ReportContent: React.FC = () => {
       setInflowData({ content: [transformedData] });
       setShowReport(true);
     } catch (error) {
-      console.error('Error fetching inflow data:', error);
-      alert('Gagal mengambil data inflow');
+      setHasError(true);
+      setShowReport(false);
     } finally {
       setLoading(false);
     }
@@ -242,10 +277,17 @@ const ReportContent: React.FC = () => {
   const fetchOutflowData = async (start: string, end: string) => {
     try {
       setLoading(true);
+      setHasError(false)
+      setHasError
       const response = await axios.get('http://192.168.105.90/pbs-outflow-h-date', {
         params: { startDate: start, endDate: end },
       });
       console.log(response)
+      if (!response.data || response.data.length === 0) {
+        setHasError(true);
+        setShowReport(false);
+        return;
+      }
   
       const transformedData = {
         header: {
@@ -261,8 +303,8 @@ const ReportContent: React.FC = () => {
       setOutflowData({ content: [transformedData] });
       setShowReport(true);
     } catch (error) {
-      console.error('Error fetching outflow data:', error);
-      alert('Gagal mengambil data outflow');
+      setHasError(true);
+      setShowReport(false);
     } finally {
       setLoading(false);
     }
@@ -271,8 +313,14 @@ const ReportContent: React.FC = () => {
   const fetchElevationData = async (year: string) => {
     try {
       setLoading(true);
+      setHasError(false);
       const response = await axios.get(`http://192.168.105.90/elevation/${year}`);
       
+      if (!response.data || response.data.length === 0) {
+        setHasError(true);
+        setShowReport(false);
+        return;
+      }
       // Transformasi data sesuai dengan format yang diharapkan oleh ElevationTable
       const transformedData = {
         id: response.data.id,
@@ -294,8 +342,8 @@ const ReportContent: React.FC = () => {
       setElevationData(transformedData); // Simpan data ke state
       setShowReport(true);  // Mengembalikan data yang telah diproses
     } catch (error) {
-      console.error('Error fetching elevation data:', error);
-      alert('Gagal mengambil data elevasi');
+      setHasError(true);
+      setShowReport(false);
     } finally {
       setLoading(false);
     }
@@ -304,8 +352,14 @@ const ReportContent: React.FC = () => {
   const fetchRtowData = async (year: string) => {
     try {
       setLoading(true);
+      setHasError(false)
       const response = await axios.get(`http://192.168.105.90/rtow/${year}`);
       console.log('RTOW API Response:', response.data);
+      if (!response.data || response.data.length === 0) {
+        setHasError(true);
+        setShowReport(false);
+        return;
+      }
       
       // Transform the response data as needed for the RtowTable
       const transformedData = {
@@ -327,8 +381,8 @@ const ReportContent: React.FC = () => {
       setRtowData(transformedData)
       setShowReport(true); // Show the report after fetching data// Return the transformed data
     } catch (error) {
-      console.error('Error fetching RTOW data:', error);
-      alert('Gagal mengambil data RTOW');
+      setHasError(true);
+      setShowReport(false);
     } finally {
       setLoading(false);
     }
@@ -571,14 +625,24 @@ const handleDownloadPDF = async () => {
         </div>
       )}
 
-      {showReport && selectedReport && (
+      {hasError && <NoDataAlert />}
+
+      {showReport && selectedReport && !hasError && (
         <div ref={reportRef}>
-          {selectedReport === 'ROH' && <RohTable rohData={rohData}/>}
-          {selectedReport === 'TMA' && <TmaTable tmaData={tmaData.content} />}
-          {selectedReport === 'inflow' && <InflowTable inflowData={inflowData.content} />}
-          {selectedReport === 'outflow' && <OutflowTable outflowData={outflowData.content} />}
-          {selectedReport === 'elevasi' && <ElevationTable report={elevationData} />}
-          {selectedReport === 'rtow' && <RtowTable rtowData={rtowData} />}
+          {selectedReport === 'ROH' && rohData && rohData.length > 0 && <RohTable rohData={rohData} />}
+          {selectedReport === 'TMA' && tmaData.content && tmaData.content.length > 0 && (
+            <TmaTable tmaData={tmaData.content} />
+          )}
+          {selectedReport === 'inflow' && inflowData.content && inflowData.content.length > 0 && (
+            <InflowTable inflowData={inflowData.content} />
+          )}
+          {selectedReport === 'outflow' && outflowData.content && outflowData.content.length > 0 && (
+            <OutflowTable outflowData={outflowData.content} />
+          )}
+          {selectedReport === 'elevasi' && elevationData && (
+            <ElevationTable report={elevationData} />
+          )}
+          {selectedReport === 'rtow' && rtowData && <RtowTable rtowData={rtowData} />}
         </div>
       )}
     </div>

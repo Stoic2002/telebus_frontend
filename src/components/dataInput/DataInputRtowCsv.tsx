@@ -186,9 +186,19 @@ const DataInputRtowCsv: React.FC = () => {
               <li>Format angka menggunakan titik (.) sebagai pemisah ribuan</li>
               <li>Format desimal menggunakan koma (,)</li>
               <li>Kolom: Bulan (1-12); Hari (1-31); Target Elevasi</li>
+              <li>Untuk lebih jelasnya bisa mendownload template csv di bawah ini</li>
             </ul>
           </AlertDescription>
         </Alert>
+
+         {/* Tombol Download Template */}
+         <button 
+          onClick={downloadCsvTemplate} 
+          className="w-full bg-blue-600 text-white p-2 rounded hover:bg-green-700 flex items-center justify-center space-x-2"
+        >
+          <Download />
+          <span>Unduh Template CSV</span>
+        </button>
 
         <div className="flex flex-col space-y-2">
           <label className="text-sm font-medium">Pilih Tahun</label>
@@ -227,14 +237,6 @@ const DataInputRtowCsv: React.FC = () => {
             <AlertDescription>{status.message}</AlertDescription>
           </Alert>
         )}
-         {/* Tombol Download Template */}
-        <button 
-          onClick={downloadCsvTemplate} 
-          className="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700 flex items-center justify-center space-x-2"
-        >
-          <Download />
-          <span>Unduh Template CSV</span>
-        </button>
 
         <button 
           onClick={handleSubmit} 

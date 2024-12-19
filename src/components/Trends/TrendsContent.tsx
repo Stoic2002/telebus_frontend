@@ -3,6 +3,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import axios from 'axios';
 import { ARRData, BebanData, FormattedData, InflowData, OutflowData, TMAData } from '@/types/trendsTypes';
 import ErrorComponent from '../error/ErrorComponent';
+import { Card, CardContent } from '../ui/card';
 // import ErrorComponent from '../error/ErrorComponent';
 
 const TrendsContent = () => {
@@ -10,155 +11,158 @@ const TrendsContent = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'trends1' | 'trends2' | 'trends3'>('trends1');
-  const [refreshKey, setRefreshKey] = React.useState(0);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [
-          bebanResponse, 
-          outflowResponse, 
-          tmaResponse, 
-          arrResponse, 
-          inflowResponse,
-        ] = await Promise.all([
-          axios.get<BebanData[]>('http://192.168.105.90/pbs-beban-last-24-h'),
-          axios.get<OutflowData[]>('http://192.168.105.90/pbs-outflow-last-24-h'),
-          axios.get<TMAData[]>('http://192.168.105.90/pbs-tma-last-24-h'),
-          axios.get<ARRData[]>('http://192.168.105.90/arr-st01-h'),
-          axios.get<InflowData[]>('http://192.168.105.90/pbs-inflow-last-24-h')
-        ]);
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [
+        bebanResponse, 
+        outflowResponse, 
+        tmaResponse, 
+        arrResponse, 
+        inflowResponse,
+      ] = await Promise.all([
+        axios.get<BebanData[]>('http://192.168.105.90/pbs-beban-last-24-h'),
+        axios.get<OutflowData[]>('http://192.168.105.90/pbs-outflow-last-24-h'),
+        axios.get<TMAData[]>('http://192.168.105.90/pbs-tma-last-24-h'),
+        axios.get<ARRData[]>('http://192.168.105.90/arr-st01-h'),
+        axios.get<InflowData[]>('http://192.168.105.90/pbs-inflow-last-24-h')
+      ]);
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-        const groupedData: { [key: string]: FormattedData } = {};
+      const groupedData: { [key: string]: FormattedData } = {};
 
-        const isToday = (dateStr: string) => {
-          const date = new Date(dateStr);
-          return date.getTime() >= today.getTime() && date.getTime() < today.getTime() + 24 * 60 * 60 * 1000;
-        };
+      const isToday = (dateStr: string) => {
+        const date = new Date(dateStr);
+        return date.getTime() >= today.getTime() && date.getTime() < today.getTime() + 24 * 60 * 60 * 1000;
+      };
 
-        // Process Beban data
-        bebanResponse.data
-          .filter(item => isToday(item.timestamp))
-          .forEach((curr: BebanData) => {
-            const originalTime = new Date(curr.timestamp);
-            const timeKey = originalTime.toLocaleTimeString('id-ID', {
-              hour: '2-digit',
-              minute: '2-digit'
-            });
-
-            if (!groupedData[timeKey]) {
-              groupedData[timeKey] = {
-                time: timeKey,
-                originalTime: originalTime
-              };
-            }
-
-            if (curr.name.includes('PB01.ACTIVE_LOAD')) {
-              groupedData[timeKey].bebanPB01 = parseFloat(curr.value);
-            } else if (curr.name.includes('PB02.ACTIVE_LOAD')) {
-              groupedData[timeKey].bebanPB02 = parseFloat(curr.value);
-            } else if (curr.name.includes('PB03.ACTIVE_LOAD')) {
-              groupedData[timeKey].bebanPB03 = parseFloat(curr.value);
-            }
+      // Process Beban data
+      bebanResponse.data
+        .filter(item => isToday(item.timestamp))
+        .forEach((curr: BebanData) => {
+          const originalTime = new Date(curr.timestamp);
+          const timeKey = originalTime.toLocaleTimeString('id-ID', {
+            hour: '2-digit',
+            // minute: '2-digit'
           });
 
-        // Process Outflow data
-        outflowResponse.data
-          .filter(item => isToday(item.timestamp))
-          .forEach((curr: OutflowData) => {
-            const originalTime = new Date(curr.timestamp);
-            const timeKey = originalTime.toLocaleTimeString('id-ID', {
-              hour: '2-digit',
-              minute: '2-digit'
-            });
+          if (!groupedData[timeKey]) {
+            groupedData[timeKey] = {
+              time: timeKey,
+              originalTime: originalTime
+            };
+          }
 
-            if (groupedData[timeKey]) {
-              groupedData[timeKey].outflow = parseFloat(curr.value);
-            }
-          });
-
-        // Process TMA data
-        tmaResponse.data
-          .filter(item => isToday(item.timestamp))
-          .forEach((curr: TMAData) => {
-            const originalTime = new Date(curr.timestamp);
-            const timeKey = originalTime.toLocaleTimeString('id-ID', {
-              hour: '2-digit',
-              minute: '2-digit'
-            });
-            console.log(timeKey)
-
-
-            if (groupedData[timeKey]) {
-              groupedData[timeKey].tma = parseFloat(curr.value);
-              console.log(groupedData[timeKey].tma)
-            }
-          });
-
-          inflowResponse.data
-          .filter(item => isToday(item.timestamp))
-          .forEach((curr: InflowData) => {
-            const originalTime = new Date(curr.timestamp);
-            const timeKey = originalTime.toLocaleTimeString('id-ID', {
-              hour: '2-digit',
-              minute: '2-digit'
-            });
-            const convertedTimeKey = timeKey.replace('15','00');
-            console.log(convertedTimeKey)
-        
-            if (groupedData[convertedTimeKey]) {
-              groupedData[convertedTimeKey].inflow = parseFloat(curr.value);
-              // console.log(groupedData[timeKey].inflow)
-            }
-            // console.log(groupedData)
-          });
-        
-        // Process ARR data
-        arrResponse.data
-          .filter(item => isToday(item.timestamp))
-          .forEach((curr: ARRData) => {
-            const originalTime = new Date(curr.timestamp);
-            const timeKey = originalTime.toLocaleTimeString('id-ID', {
-              hour: '2-digit',
-              minute: '2-digit'
-            });
-
-            if (groupedData[timeKey]) {
-              if (curr.name.includes('ARR_ST01_RT')) {
-                groupedData[timeKey].arrST01 = parseFloat(curr.value);
-              } else if (curr.name.includes('ARR_ST02_RT')) {
-                groupedData[timeKey].arrST02 = parseFloat(curr.value);
-              } else if (curr.name.includes('ARR_ST03_RT')) {
-                groupedData[timeKey].arrST03 = parseFloat(curr.value);
-              }
-            }
-          });
-
-        // Calculate total beban
-        Object.values(groupedData).forEach(item => {
-          const beban1 = item.bebanPB01 || 0;
-          const beban2 = item.bebanPB02 || 0;
-          const beban3 = item.bebanPB03 || 0;
-          item.totalBeban = beban1 + beban2 + beban3;
+          if (curr.name.includes('PB01.ACTIVE_LOAD')) {
+            groupedData[timeKey].bebanPB01 = parseFloat(curr.value);
+          } else if (curr.name.includes('PB02.ACTIVE_LOAD')) {
+            groupedData[timeKey].bebanPB02 = parseFloat(curr.value);
+          } else if (curr.name.includes('PB03.ACTIVE_LOAD')) {
+            groupedData[timeKey].bebanPB03 = parseFloat(curr.value);
+          }
         });
 
-        // Convert to array and sort by time
-        const formattedData = Object.values(groupedData)
-          .sort((a, b) => a.originalTime.getTime() - b.originalTime.getTime());
+      // Process Outflow data
+      outflowResponse.data
+        .filter(item => isToday(item.timestamp))
+        .forEach((curr: OutflowData) => {
+          const originalTime = new Date(curr.timestamp);
+          const timeKey = originalTime.toLocaleTimeString('id-ID', {
+            hour: '2-digit',
+            // minute: '2-digit'
+          });
 
-        setData(formattedData);
-        setLoading(false);
-        // console.log('Grouped Data:', groupedData);
-        console.log('Data for Chart:', data);
-      } catch (err) {
-        setError('Failed to fetch data');
-        console.error('Error:', err);
-        setLoading(false);
-      }
-    };
+          if (groupedData[timeKey]) {
+            groupedData[timeKey].outflow = parseFloat(curr.value);
+          }
+        });
+
+      // Process TMA data
+      tmaResponse.data
+        .filter(item => isToday(item.timestamp))
+        .forEach((curr: TMAData) => {
+          const originalTime = new Date(curr.timestamp);
+          const timeKey = originalTime.toLocaleTimeString('id-ID', {
+            hour: '2-digit',
+            // minute: '2-digit'
+          });
+          console.log(timeKey)
+
+
+          if (groupedData[timeKey]) {
+            groupedData[timeKey].tma = parseFloat(curr.value);
+            // console.log(groupedData[timeKey].tma)
+          }
+        });
+
+        inflowResponse.data
+        .filter(item => isToday(item.timestamp))
+        .forEach((curr: InflowData) => {
+          const originalTime = new Date(curr.timestamp);
+          const timeKey = originalTime.toLocaleTimeString('id-ID', {
+            hour: '2-digit',
+            // minute: '2-digit'
+          });
+
+
+      
+          if (groupedData[timeKey]) {
+            groupedData[timeKey].inflow = parseFloat(curr.value);
+            // console.log(groupedData[timeKey].inflow)
+          }
+          // console.log(groupedData)
+        });
+      
+      // Process ARR data
+      arrResponse.data
+        .filter(item => isToday(item.timestamp))
+        .forEach((curr: ARRData) => {
+          const originalTime = new Date(curr.timestamp);
+          const timeKey = originalTime.toLocaleTimeString('id-ID', {
+            hour: '2-digit',
+            // minute: '2-digit'
+          });
+
+          if (groupedData[timeKey]) {
+            if (curr.name.includes('ARR_ST01_RT')) {
+              groupedData[timeKey].arrST01 = parseFloat(curr.value);
+            } else if (curr.name.includes('ARR_ST02_RT')) {
+              groupedData[timeKey].arrST02 = parseFloat(curr.value);
+            } else if (curr.name.includes('ARR_ST03_RT')) {
+              groupedData[timeKey].arrST03 = parseFloat(curr.value);
+            }
+          }
+        });
+
+      // Calculate total beban
+      Object.values(groupedData).forEach(item => {
+        const beban1 = item.bebanPB01 || 0;
+        const beban2 = item.bebanPB02 || 0;
+        const beban3 = item.bebanPB03 || 0;
+        item.totalBeban = beban1 + beban2 + beban3;
+      });
+
+      // Convert to array and sort by time
+      const formattedData = Object.values(groupedData)
+        .sort((a, b) => a.originalTime.getTime() - b.originalTime.getTime());
+
+      setData(formattedData);
+      setError(null);
+      // console.log('Grouped Data:', groupedData);
+      setLoading(false)
+      console.log('Data for Chart:', data);
+    } catch (err) {
+      setError('Failed to fetch data');
+      console.error('Error:', err);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    
 
     fetchData();
 
@@ -359,13 +363,22 @@ const TrendsContent = () => {
     );
   }
 
-  const handleRefresh = () => {
-    setRefreshKey(prevKey => prevKey + 1); // Increment key to trigger re-fetch
-  };
 
   if (error) {
     return (
-      <ErrorComponent message={'something wrong'} onRetry={ handleRefresh} />
+      <Card className="w-full max-w-6xl mx-auto bg-gradient-to-br from-red-50 to-red-100 shadow-lg">
+        <CardContent className="flex flex-col items-center justify-center p-8 space-y-4">
+          <div className="text-red-600 text-lg font-semibold text-center">
+            {error}
+          </div>
+          <button 
+            onClick={fetchData} 
+            className="px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md"
+          >
+            Retry Connection
+          </button>
+        </CardContent>
+      </Card>
     );
   }
 

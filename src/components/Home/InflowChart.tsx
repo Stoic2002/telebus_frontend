@@ -165,7 +165,7 @@ const InflowChartComponent = () => {
             textAnchor="end"
             interval={0}
             height={40}
-            label={{value:'date', position: 'bottom'}}
+            label={{value:'jam', position: 'bottom'}}
             tick={{ fontSize: 12 }}
           />
           <YAxis 

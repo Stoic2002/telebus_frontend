@@ -236,9 +236,20 @@ const DataInputElevationCsv: React.FC = () => {
               <li>Format angka menggunakan titik (.) sebagai pemisah ribuan</li>
               <li>Format desimal menggunakan koma (,)</li>
               <li>Rentang elevasi valid: {MIN_ELEVATION} - {MAX_ELEVATION} mdpl</li>
+              <li>Untuk lebih jelasnya bisa mendownload template csv di bawah ini</li>
             </ul>
           </AlertDescription>
         </Alert>
+
+
+{/* Tombol Download Template */}
+<button 
+          onClick={downloadCsvTemplate} 
+          className="w-full bg-blue-600 text-white p-2 rounded hover:bg-green-700 flex items-center justify-center space-x-2"
+        >
+          <Download />
+          <span>Unduh Template CSV</span>
+        </button>
 
         
          {/* Pilih Tahun */}
@@ -289,14 +300,7 @@ const DataInputElevationCsv: React.FC = () => {
  </pre>
 </div> */}
 
- {/* Tombol Download Template */}
- <button 
-          onClick={downloadCsvTemplate} 
-          className="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700 flex items-center justify-center space-x-2"
-        >
-          <Download />
-          <span>Unduh Template CSV</span>
-        </button>
+ 
 
 {/* Tombol Simpan */}
 <button 
