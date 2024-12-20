@@ -20,7 +20,6 @@ import {
 import { AlertCircle, Download, Loader2 } from 'lucide-react';
 
 // Components and Data
-import RohTable, { ApiElevationData, ApiReportData, RohData } from './RohTable';
 import { rohData } from '@/data/ROH/rohData';
 import TmaTable from './TmaTable';
 import InflowTable from './InflowTable';
@@ -31,6 +30,9 @@ import RtowTable from './RtowTable';
 import html2canvas from 'html2canvas';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { error } from 'console';
+import { fetchWithRetry } from '@/hooks/fetchWithRetry';
+import { ApiElevationData, ApiReportData, RohData } from '@/types/reportTypes';
+import RohTable from './RohTable';
 
 
 // Types
@@ -113,6 +115,7 @@ const ReportContent: React.FC = () => {
 // const [isLoading, setIsLoading] = useState(true);
 // const [error, setError] = useState<string | null>(null);
 
+
     const fetchDataRoh = async (date: string) => {
 
       console.log(date)
@@ -120,16 +123,19 @@ const ReportContent: React.FC = () => {
           setLoading(true);
           setHasError(false);
             // Fetch report data
-            const reportResponse = await axios.post<ApiReportData>('http://192.168.105.90/report-data', {
+            const reportResponse = await fetchWithRetry(
+              () => axios.post<ApiReportData>('http://192.168.105.90/report-data', {
                 date: date
-            });
-
+              }),
+              3, // max attempts
+              1000 // delay in ms
+            );
             if (!reportResponse.data || Object.keys(reportResponse.data).length === 0) {
               setHasError(true);
               setShowReport(false);
               return;
             }
-            const totalOutflow = (reportResponse.data.outflow.total_outflow_irigasi * 24 * 3600)  + 
+            const totalOutflow = (reportResponse.data.outflow.average_outflow_irigasi * 24 * 3600)  + 
                 (reportResponse.data.outflow.total_outflow_ddc_m3s * 3600 * reportResponse.data.outflow.total_outflow_ddc_jam) 
                 + (reportResponse.data.outflow.total_outflow_spillway_m3s * 3600 * reportResponse.data.outflow.total_outflow_spillway_jam);
 
@@ -140,10 +146,10 @@ const ReportContent: React.FC = () => {
 
             const totalDaya = ((
                 estimasiVolumeWaduk -
-                (reportResponse.data.outflow.total_outflow_irigasi * 24 * 3600))/4080) - 50
+                (reportResponse.data.outflow.average_outflow_irigasi * 24 * 3600))/4080) - 50
             // Calculate volume for elevation after operation
 
-            const estimasiOutflow = (totalDaya * 4080)+ reportResponse.data.outflow.total_outflow_irigasi * 3600 * 24
+            const estimasiOutflow = (totalDaya * 4080)+ reportResponse.data.outflow.average_outflow_irigasi * 3600 * 24
 
 
             const volumeAfterOperation = parseFloat(reportResponse.data.realisasiElv.volume) + 
@@ -175,7 +181,7 @@ const ReportContent: React.FC = () => {
                     volumeTargetELevasiHariIni: parseFloat(reportResponse.data.targetElv.volume),
                     realisasiElevasi: parseFloat(reportResponse.data.realisasiElv.tma_value),
                     volumeRealisasiElevasi: parseFloat(reportResponse.data.realisasiElv.volume),
-                    estimasiIrigasi: reportResponse.data.outflow.total_outflow_irigasi,
+                    estimasiIrigasi: reportResponse.data.outflow.average_outflow_irigasi,
                     estimasiDdcXTotalJamPembukaan: reportResponse.data.outflow.total_outflow_ddc_m3s,
                     ddcJam: reportResponse.data.outflow.total_outflow_ddc_jam,
                     estimasiSpillwayTotalJamPembukaan: reportResponse.data.outflow.total_outflow_spillway_m3s,
@@ -206,9 +212,16 @@ const ReportContent: React.FC = () => {
     try {
       setLoading(true);
       setHasError(false);
-      const response = await axios.get('http://192.168.105.90/pbs-tma-h-date', {
-        params: { startDate: start, endDate: end }
-      });
+      const response = await fetchWithRetry(
+        () => axios.get('http://192.168.105.90/pbs-tma-h-date', {
+          params: { startDate: start, endDate: end }
+        }),
+        3, // max attempts
+        1000 // delay in ms
+      );
+      console.log(start)
+      console.log(end)
+      
 
       if (!response.data || response.data.length === 0) {
         setHasError(true);
@@ -242,9 +255,13 @@ const ReportContent: React.FC = () => {
     try {
       setLoading(true);
       setHasError(false);
-      const response = await axios.get('http://192.168.105.90/pbs-inflow-h-date', {
-        params: { startDate: start, endDate: end },
-      });
+      const response = await fetchWithRetry(
+        () => axios.get('http://192.168.105.90/pbs-inflow-h-date', {
+          params: { startDate: start, endDate: end }
+        }),
+        3, // max attempts
+        1000 // delay in ms
+      );
 
 
       if (!response.data || response.data.length === 0) {
@@ -278,10 +295,14 @@ const ReportContent: React.FC = () => {
     try {
       setLoading(true);
       setHasError(false)
-      setHasError
-      const response = await axios.get('http://192.168.105.90/pbs-outflow-h-date', {
-        params: { startDate: start, endDate: end },
-      });
+
+      const response = await fetchWithRetry(
+        () => axios.get('http://192.168.105.90/pbs-outflow-h-date', {
+          params: { startDate: start, endDate: end }
+        }),
+        3, // max attempts
+        1000 // delay in ms
+      );
       console.log(response)
       if (!response.data || response.data.length === 0) {
         setHasError(true);
@@ -314,7 +335,12 @@ const ReportContent: React.FC = () => {
     try {
       setLoading(true);
       setHasError(false);
-      const response = await axios.get(`http://192.168.105.90/elevation/${year}`);
+
+      const response = await fetchWithRetry(
+        () => axios.get(`http://192.168.105.90/elevation/${year}`),
+        3, // max attempts
+        1000 // delay in ms
+      );
       
       if (!response.data || response.data.length === 0) {
         setHasError(true);
@@ -353,8 +379,12 @@ const ReportContent: React.FC = () => {
     try {
       setLoading(true);
       setHasError(false)
-      const response = await axios.get(`http://192.168.105.90/rtow/${year}`);
-      console.log('RTOW API Response:', response.data);
+      const response = await fetchWithRetry(
+        () => axios.get(`http://192.168.105.90/rtow/${year}`),
+        3, // max attempts
+        1000 // delay in ms
+      );
+
       if (!response.data || response.data.length === 0) {
         setHasError(true);
         setShowReport(false);

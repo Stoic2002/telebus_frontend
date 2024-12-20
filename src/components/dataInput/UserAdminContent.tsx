@@ -25,6 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, CheckCircle } from 'lucide-react';
+import { fetchWithRetry } from '@/hooks/fetchWithRetry';
 
 interface User {
   username: string;
@@ -58,7 +59,11 @@ const UserAdminContent: React.FC = () => {
   // Fetch all users
   const fetchUsers = async () => {
     try {
-      const response = await axios.get('http://192.168.105.90/users');
+      const response = await fetchWithRetry(
+              () => axios.get('http://192.168.105.90/users'),
+              3, // max attempts
+              1000 // delay in ms
+            );
       setUsers(response.data);
     } catch (error) {
       setAlert({
@@ -71,7 +76,11 @@ const UserAdminContent: React.FC = () => {
   // Search users by username
   const searchUsers = async () => {
     try {
-      const response = await axios.get(`http://192.168.105.90/search?username=${searchUsername}`);
+      const response = await fetchWithRetry(
+        () => axios.get(`http://192.168.105.90/search?username=${searchUsername}`),
+        3, // max attempts
+        1000 // delay in ms
+      );
       setUsers(response.data);
     } catch (error) {
       setAlert({
@@ -93,7 +102,11 @@ const UserAdminContent: React.FC = () => {
         return;
       }
 
-      await axios.post('http://192.168.105.90/users', newUser);
+      await fetchWithRetry(
+        () => axios.post('http://192.168.105.90/users', newUser),
+        3, // max attempts
+        1000 // delay in ms
+      );
       
       // Reset form and refresh users
       setNewUser({ username: '', password: '', role: undefined });

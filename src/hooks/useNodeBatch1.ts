@@ -34,6 +34,7 @@ export interface UseNodeDataProps {
           g4: number | null;
           total: number; // Should be a number
         };
+        irigasi: number | null
       };
       levels: {
         sediment: number | null;
@@ -126,7 +127,8 @@ export const useNodeBatch1= ({ interval = 30000 }: UseNodeDataProps = {}): UseNo
           g3: null,
           g4: null,
           total: 0
-        }
+        },
+        irigasi: null
       },
       levels: {
         sediment: null,
@@ -226,7 +228,8 @@ export const useNodeBatch1= ({ interval = 30000 }: UseNodeDataProps = {}): UseNo
               g3: nodeBatch1.getNodeValueById("ns=2;s=MRC_TCP.PB00SW.FLOW_SPW_G3", response),
               g4: nodeBatch1.getNodeValueById("ns=2;s=MRC_TCP.PB00SW.FLOW_SPW_G4", response),
               total: 0 // Placeholder
-            }
+            },
+            irigasi: nodeBatch1.getNodeValueById("ns=2;s=MRC_TCP.TP01.flow_htg_tapen", response),
           },
           levels: {
             sediment: nodeBatch1.getNodeValueById("ns=2;s=MRC_TELEMETERING.ARR.Level_Sedimen", response),

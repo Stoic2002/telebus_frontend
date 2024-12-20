@@ -7,7 +7,6 @@ interface FormData {
   tanggal: string;
   jam: string;
   targetLevel: string;
-  outflowIrigasi: string;
   outflowDdcJam: string;
   outflowDdcM3s: string;
   outflowSpillwayJam: string;
@@ -24,7 +23,6 @@ const DataInputOperator: React.FC = () => {
     tanggal: '',
     jam: '',
     targetLevel: '0',
-    outflowIrigasi: '',
     outflowDdcJam: '1',
     outflowDdcM3s: '',
     outflowSpillwayJam: '1',
@@ -57,7 +55,6 @@ const DataInputOperator: React.FC = () => {
       const requestBody = {
         tanggal: combinedDateTime,
         target_level: parseFloat(formData.targetLevel) || 0,
-        outflow_irigasi: parseFloat(formData.outflowIrigasi) || 0,
         outflow_ddc_jam: parseInt(formData.outflowDdcJam, 10) || 0,
         outflow_ddc_m3s: parseFloat(formData.outflowDdcM3s) || 0,
         outflow_spillway_jam: parseInt(formData.outflowSpillwayJam, 10) || 0,
@@ -89,7 +86,6 @@ const DataInputOperator: React.FC = () => {
         tanggal: '',
         jam: '',
         targetLevel: '0',
-        outflowIrigasi: '',
         outflowDdcJam: '1',
         outflowDdcM3s: '',
         outflowSpillwayJam: '1',
@@ -175,21 +171,6 @@ const DataInputOperator: React.FC = () => {
             />
           </div> */}
 
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">
-              Outflow Irigasi (m³/s)
-            </label>
-            <input
-              type="number"
-              name="outflowIrigasi"
-              value={formData.outflowIrigasi}
-              onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-              step="0.01"
-              required
-              placeholder="Masukkan nilai outflow irigasi"
-            />
-          </div>
 
           {/* <div className="flex space-x-4">
             <div className="flex-1 space-y-2">

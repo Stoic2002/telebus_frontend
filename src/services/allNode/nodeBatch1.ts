@@ -17,6 +17,7 @@ const nodeIds = [
        "ns=2;s=MRC_TCP.PB00SW.SPILWAY_FLOW_G3",
        "ns=2;s=MRC_TCP.PB00SW.SPILWAY_FLOW_G4",
        'ns=2;s=MRC_TCP.PB00SW.INFLOW_1H',
+       "ns=2;s=MRC_TCP.TP01.flow_htg_tapen",
     //    'ns=2;s=MRC_TELEMETERING.ARR1.water_depth',
     //    'ns=2;s=MRC_TELEMETERING.ARR.Water_Depth_Calc',
 

@@ -46,8 +46,9 @@ const TmaTable: React.FC<TmaTableProps> = ({ tmaData }) => {
     });
 
     return (
-        <Card>
-            <CardContent>
+        // <Card>
+        //     <CardContent>
+        <div className="overflow-x-auto p-6 bg-white">
                 <div className="text-center mt-2 flex items-center gap-4">
                     {/* Div kiri: Logo */}
                     <div className="flex h-full w-1/3">
@@ -118,8 +119,9 @@ const TmaTable: React.FC<TmaTableProps> = ({ tmaData }) => {
                         </tbody>
                     </table>
                 </div>
-            </CardContent>
-        </Card>
+                </div>
+        //     </CardContent>
+        // </Card>
     );
 };
 

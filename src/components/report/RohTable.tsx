@@ -3,63 +3,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import axios from 'axios';
 import { report } from 'process';
 import { rohData } from '../../data/ROH/rohData';
+import { rohDataProps } from '@/types/reportTypes';
 
-export interface RohData {
-    header: {
-        logo: string;
-        judul: string;
-    };
-    content: {
-        hariOrTanggal: string;
-        estimasiInflow: number;
-        targetELevasiHariIni: number;
-        volumeTargetELevasiHariIni: number;
-        realisasiElevasi: number;
-        volumeRealisasiElevasi: number;
-        estimasiIrigasi: number;
-        estimasiDdcXTotalJamPembukaan: number;
-        ddcJam: number;
-        estimasiSpillwayTotalJamPembukaan: number;
-        spillwayJam: number;
-        estimasiElevasiWadukSetelahOperasi: number;
-        estimasiVolumeWadukSetelahOperasi: number;
-        totalOutflow: number;
-        estimasiVolumeWaduk: number;
-        estimasiOutflow:number;
-        totalDaya: number;
-    };
-}
 
-export interface rohDataProps {
-    rohData: RohData[];
-}
-
-export interface ApiReportData {
-    targetElv: {
-        targetElevasi: string;
-        volume: string;
-    };
-    realisasiElv: {
-        tma_value: string;
-        volume: string;
-        timestamp: string;
-    };
-    outflow: {
-        // total_target_level: number;
-        total_outflow_irigasi: number;
-        total_outflow_ddc_jam: number;
-        total_outflow_ddc_m3s: number;
-        total_outflow_spillway_jam: number;
-        total_outflow_spillway_m3s: number;
-    };
-    estimationInflow: {
-        inflow_estimation: string;
-    };
-}
-
-export interface ApiElevationData {
-    interpolated_elevation: string;
-}
 
 const RohTable: React.FC<rohDataProps> = ({rohData}) => {
     
@@ -177,13 +123,13 @@ const RohTable: React.FC<rohDataProps> = ({rohData}) => {
                                     ESTIMASI IRIGASI
                                 </td>
                                 <td className="border border-black p-2 text-center" style={{ width: '10%' }}>
-                                    {data.content.estimasiIrigasi}
+                                    {data.content.estimasiIrigasi.toFixed(2)}
                                 </td>
                                 <td className="border border-black p-2" style={{ width: '10%' }}>
                                     m³/s
                                 </td>
                                 <td className="border border-black p-2 text-center" style={{ width: '10%' }}>
-                                    {data.content.estimasiIrigasi * 24 * 3600}
+                                    {(data.content.estimasiIrigasi * 24 * 3600).toFixed(2)}
                                 </td>
                                 <td className="border border-black p-2" style={{ width: '10%' }}>
                                     m³
@@ -403,11 +349,19 @@ const RohTable: React.FC<rohDataProps> = ({rohData}) => {
                             </tr>
                         </tbody>
                         <tbody>
-                            <tr>
-                                <td colSpan={10} className="border border-black p-2 text-center">
+                        <tr>
+                                <td 
+                                    colSpan={10} 
+                                    className={`border border-black p-2 text-center ${
+                                        data.content.estimasiVolumeWadukSetelahOperasi < data.content.targetELevasiHariIni
+                                            ? "bg-green-500 text-white"
+                                            : "bg-red-500 text-white"
+                                    }`}
+                                >
                                     {data.content.estimasiVolumeWadukSetelahOperasi < data.content.targetELevasiHariIni ? "OK" : "WARNING"}
                                 </td>
                             </tr>
+
                         </tbody>
                     </table>
                 </div> 

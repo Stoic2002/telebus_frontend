@@ -212,7 +212,7 @@ const getStatusColor = (status: string) => {
         {
           name: "Outflow",
           item: [
-            { id: 'irigasi', value: 0 },
+            { id: 'irigasi', value: soedirman2.flows.irigasi?.toFixed(2) ?? 0},
             { id: 'ddc', value: soedirman2.flows.ddc?.toFixed(2) ?? 0},
             { id: 'spillway', value:soedirman2.flows.spillway.total.toFixed(2) ?? 0}
           ],
