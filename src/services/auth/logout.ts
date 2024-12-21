@@ -1,5 +1,8 @@
 import { API_BASE_URL_AUTH } from "@/constants/apiKey";
+import { fetchWithRetry } from "@/hooks/fetchWithRetry";
+import axios from "axios";
 import Cookies from "js-cookie";
+import { headers } from "next/headers";
 
 export const logout = async () => {
   const token = Cookies.get('__sessionId');
@@ -10,12 +13,17 @@ export const logout = async () => {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL_AUTH}/logout`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+     const response = await fetchWithRetry(
+                              () => fetch(`${API_BASE_URL_AUTH}/logout`, {
+                                method: 'POST',
+                                headers: {
+                                  Authorization: `Bearer ${token}`,
+                                },
+                              }),
+                              3, // max attempts
+                              1000 // delay in ms
+                            );
+
 
     if (!response.ok) {
       const contentType = response.headers.get('Content-Type');

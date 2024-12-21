@@ -1,16 +1,23 @@
 import { API_BASE_URL_AUTH } from "@/constants/apiKey";
+import { fetchWithRetry } from "@/hooks/fetchWithRetry";
 import { LoginData, LoginResponse } from "@/types/userTypes";
 import Cookies from "js-cookie";
 
 export const login = async (loginData: LoginData): Promise<LoginResponse> => {
   try {
-    const response = await fetch(`${API_BASE_URL_AUTH}/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(loginData),
-    });
+    
+
+    const response = await fetchWithRetry(
+                                  () => fetch(`${API_BASE_URL_AUTH}/login`, {
+                                    method: 'POST',
+                                    headers: {
+                                      'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify(loginData),
+                                  }),
+                                  3, // max attempts
+                                  1000 // delay in ms
+                                );
 
     if (!response.ok) {
       const errorData = await response.json();
