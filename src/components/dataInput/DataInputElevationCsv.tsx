@@ -9,6 +9,8 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Loader2, Save, Info, Download } from "lucide-react";
+import { fetchWithRetry } from '@/hooks/fetchWithRetry';
+import axios from 'axios';
 
 interface GHWData {
   [elevation: number]: {
@@ -188,24 +190,30 @@ const DataInputElevationCsv: React.FC = () => {
       };
   
       console.log('Submitting data:', submissionData);
+
+      const response = await fetchWithRetry(
+                          () => axios.post('http://192.168.105.90/elevation', submissionData),
+                          3, // max attempts
+                          1000 // delay in ms
+                        );
   
-      const response = await fetch('http://192.168.105.90/elevation', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(submissionData)
-      });
+      // const response = await fetch('http://192.168.105.90/elevation', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify(submissionData)
+      // });
   
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Network response was not ok');
-      }
+      // if (!response.ok) {
+      //   const errorData = await response.json();
+      //   throw new Error(errorData.error || 'Network response was not ok');
+      // }
   
-      const result = await response.json();
+      // const result = await response.json();
       setStatus({
         type: 'success',
-        message: result.message
+        message: 'Data berhasil disimpan'
       });
     } catch (error) {
       console.error('Submit error:', error);

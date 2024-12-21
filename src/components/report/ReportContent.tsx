@@ -140,7 +140,7 @@ const ReportContent: React.FC = () => {
                 + (reportResponse.data.outflow.total_outflow_spillway_m3s * 3600 * reportResponse.data.outflow.total_outflow_spillway_jam);
 
             const estimasiVolumeWaduk = parseFloat(reportResponse.data.realisasiElv.volume) +
-             ((parseFloat(reportResponse.data.estimationInflow.inflow_estimation)/2) * 3600 * 24) - 
+             ((parseFloat(reportResponse.data.estimationInflow.inflow_estimation)) * 3600 * 24) - 
                 parseFloat(reportResponse.data.targetElv.volume) - totalOutflow;
            
 
@@ -153,7 +153,7 @@ const ReportContent: React.FC = () => {
 
 
             const volumeAfterOperation = parseFloat(reportResponse.data.realisasiElv.volume) + 
-                ((parseFloat(reportResponse.data.estimationInflow.inflow_estimation)/2)* 24 * 3600) - 
+                ((parseFloat(reportResponse.data.estimationInflow.inflow_estimation))* 24 * 3600) - 
                 estimasiOutflow - totalOutflow
 
             
@@ -176,7 +176,7 @@ const ReportContent: React.FC = () => {
                 content: {
                     ...rohData[0].content,
                     hariOrTanggal: new Date(date).toLocaleDateString('id-ID',{day:"2-digit",month:"long",year:"numeric"}),
-                    estimasiInflow: parseFloat(reportResponse.data.estimationInflow.inflow_estimation) / 2,
+                    estimasiInflow: parseFloat(reportResponse.data.estimationInflow.inflow_estimation),
                     targetELevasiHariIni: parseFloat(reportResponse.data.targetElv.targetElevasi),
                     volumeTargetELevasiHariIni: parseFloat(reportResponse.data.targetElv.volume),
                     realisasiElevasi: parseFloat(reportResponse.data.realisasiElv.tma_value),

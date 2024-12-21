@@ -9,6 +9,8 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Loader2, Save, Info, Download } from "lucide-react";
+import axios from 'axios';
+import { fetchWithRetry } from '@/hooks/fetchWithRetry';
 
 interface RTOWData {
   bulan: string;
@@ -139,24 +141,30 @@ const DataInputRtowCsv: React.FC = () => {
         tahun: selectedYear.toString(),
         data: formData
       };
+
+      const response = await fetchWithRetry(
+                    () => axios.post('http://192.168.105.90/rtow', submissionData),
+                    3, // max attempts
+                    1000 // delay in ms
+                  );
   
-      const response = await fetch('http://192.168.105.90/rtow', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(submissionData)
-      });
+      // const response = await fetch('http://192.168.105.90/rtow', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify(submissionData)
+      // });
   
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Network response was not ok');
-      }
+      // if (!response.ok) {
+      //   const errorData = await response.json();
+      //   throw new Error(errorData.error || 'Network response was not ok');
+      // }
   
-      const result = await response.json();
+      // const result = await response.json();
       setStatus({
         type: 'success',
-        message: result.message || 'Data berhasil disimpan'
+        message: 'Data berhasil disimpan'
       });
     } catch (error) {
       console.error('Submit error:', error);
