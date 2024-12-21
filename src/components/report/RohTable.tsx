@@ -1,8 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import axios from 'axios';
-import { report } from 'process';
-import { rohData } from '../../data/ROH/rohData';
 import { rohDataProps } from '@/types/reportTypes';
 
 

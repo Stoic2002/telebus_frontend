@@ -7,7 +7,7 @@ import RainfallComponent from './TelemeteringArr';
 import { fetchWithRetry } from '@/hooks/fetchWithRetry';
 import axios from 'axios';
 import { ApiElevationData, ApiReportData, RohData } from '@/types/reportTypes';
-import { rohData } from '../../data/ROH/rohData';
+
 
 const HomeContent: React.FC = () => {
   const [tmaData, setTmaData] = useState({ tmaValue: 0, volume: 0 });
