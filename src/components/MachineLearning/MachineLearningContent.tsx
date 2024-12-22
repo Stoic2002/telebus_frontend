@@ -37,7 +37,7 @@ const MachineLearningContent: React.FC = () => {
 
       // Fetch predictions for each parameter
       for (const param of parameters) {
-        const response = await fetch('http://192.168.105.90:8989/predict', {
+        const response = await fetch('http://localhost:8989/predict', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -55,6 +55,7 @@ const MachineLearningContent: React.FC = () => {
         }
   
         const data = await response.json();
+        // console.log(data)
         
 
         // Map API response to Prediction type

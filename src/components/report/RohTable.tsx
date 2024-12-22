@@ -349,12 +349,12 @@ const RohTable: React.FC<rohDataProps> = ({rohData}) => {
                                 <td 
                                     colSpan={10} 
                                     className={`border border-black p-2 text-center ${
-                                        data.content.estimasiVolumeWadukSetelahOperasi < data.content.targetELevasiHariIni
+                                        data.content.estimasiVolumeWadukSetelahOperasi > data.content.targetELevasiHariIni
                                             ? "bg-green-500 text-white"
                                             : "bg-red-500 text-white"
                                     }`}
                                 >
-                                    {data.content.estimasiVolumeWadukSetelahOperasi < data.content.targetELevasiHariIni ? "OK" : "WARNING"}
+                                    {data.content.estimasiVolumeWadukSetelahOperasi > data.content.targetELevasiHariIni ? "OK" : "WARNING"}
                                 </td>
                             </tr>
 
