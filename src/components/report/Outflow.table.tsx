@@ -47,8 +47,8 @@ const OutflowTable: React.FC<OutflowTableProps> = ({ outflowData }) => {
     });
 
     return (
-        <div className="overflow-x-auto p-6 bg-white">
-                <div className="text-center mt-2 flex items-center gap-4">
+       <div className="overflow-x-auto p-4 bg-white">
+  <div className="text-center mt-2 flex items-center gap-4">
                     {/* Div kiri: Logo */}
                     <div className="flex h-full w-1/3">
                         <img src={data.header.logo} alt="Logo"  style={{width:300}}/>
@@ -63,62 +63,67 @@ const OutflowTable: React.FC<OutflowTableProps> = ({ outflowData }) => {
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="min-w-full bg-white border border-gray-300 mt-6">
-                        <thead className='bg-slate-300'>
-                            <tr>
-                                <th className="border border-black p-1 pb-2 text-center" rowSpan={2}>Jam</th>
-                                <th className="border border-black p-1 pb-2 text-center" colSpan={tanggalKeys.length}>Tanggal</th>
-                            </tr>
-                            <tr>
-                                {tanggalKeys.map((tanggal) => (
-                                    <th key={tanggal} className="border border-black p-1 pb-2 text-center">
-                                        {tanggal}
-                                    </th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {jamKeys.map((jam) => (
-                                <tr key={jam}>
-                                    <td className="border border-black p-1 pb-2 text-center">{jam}</td>
-                                    {tanggalKeys.map((tanggal) => (
-                                        <td key={tanggal} className="border border-black p-1 pb-2 text-center">
-                                            {outflowMap[jam][tanggal] !== undefined ? outflowMap[jam][tanggal] : '-'}
-                                        </td>
-                                    ))}
-                                </tr>
-                            ))}
+  <div className="overflow-x-auto mt-4">
+    <table className="min-w-full bg-white border border-gray-300">
+      <thead className="bg-slate-300">
+        <tr>
+          <th className="border border-black text-[11px] p-1 pb-2 text-center" rowSpan={2}>
+            Jam
+          </th>
+          <th className="border border-black text-[11px] p-1 pb-2 text-center" colSpan={tanggalKeys.length}>
+            Tanggal
+          </th>
+        </tr>
+        <tr>
+          {tanggalKeys.map((tanggal) => (
+            <th key={tanggal} className="border border-black text-[11px] p-1 pb-2 text-center">
+              {tanggal}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {jamKeys.map((jam) => (
+          <tr key={jam}>
+            <td className="border border-black text-[11px] p-1 pb-2 text-center">{jam}</td>
+            {tanggalKeys.map((tanggal) => (
+              <td key={tanggal} className="border border-black text-[11px] p-1 pb-2 text-center">
+                {outflowMap[jam][tanggal] !== undefined ? outflowMap[jam][tanggal] : '-'}
+              </td>
+            ))}
+          </tr>
+        ))}
 
-                            {/* ATA, MAX, and MIN Rows */}
-                            <tr>
-                                <td className="border border-black p-1 pb-2 text-center font-bold">AVG</td>
-                                {tanggalKeys.map((tanggal) => (
-                                    <td key={tanggal} className="border border-black p-1 pb-2 text-center">
-                                        {ata[tanggal].toFixed(2)}
-                                    </td>
-                                ))}
-                            </tr>
-                            <tr>
-                                <td className="border border-black p-1 pb-2 text-center font-bold">MAX</td>
-                                {tanggalKeys.map((tanggal) => (
-                                    <td key={tanggal} className="border border-black p-1 pb-2 text-center">
-                                        {max[tanggal] !== Number.NEGATIVE_INFINITY ? max[tanggal] : '-'}
-                                    </td>
-                                ))}
-                            </tr>
-                            <tr>
-                                <td className="border border-black p-1 pb-2 text-center font-bold">MIN</td>
-                                {tanggalKeys.map((tanggal) => (
-                                    <td key={tanggal} className="border border-black p-1 pb-2 text-center">
-                                        {min[tanggal] !== Number.POSITIVE_INFINITY ? min[tanggal] : '-'}
-                                    </td>
-                                ))}
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                </div>
+        {/* AVG, MAX, and MIN Rows */}
+        <tr>
+          <td className="border border-black text-[11px] p-1 pb-2 text-center font-bold">AVG</td>
+          {tanggalKeys.map((tanggal) => (
+            <td key={tanggal} className="border border-black text-[11px] p-1 pb-2 text-center">
+              {ata[tanggal].toFixed(2)}
+            </td>
+          ))}
+        </tr>
+        <tr>
+          <td className="border border-black text-[11px] p-1 pb-2 text-center font-bold">MAX</td>
+          {tanggalKeys.map((tanggal) => (
+            <td key={tanggal} className="border border-black text-[11px] p-1 pb-2 text-center">
+              {max[tanggal] !== Number.NEGATIVE_INFINITY ? max[tanggal] : '-'}
+            </td>
+          ))}
+        </tr>
+        <tr>
+          <td className="border border-black text-[11px] p-1 pb-2 text-center font-bold">MIN</td>
+          {tanggalKeys.map((tanggal) => (
+            <td key={tanggal} className="border border-black text-[11px] p-1 pb-2 text-center">
+              {min[tanggal] !== Number.POSITIVE_INFINITY ? min[tanggal] : '-'}
+            </td>
+          ))}
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
     );
 };
 

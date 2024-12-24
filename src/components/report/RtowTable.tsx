@@ -19,7 +19,22 @@ const RtowTable: React.FC<{ rtowData: RtowData }> = ({ rtowData }) => {
     const days = Array.from({ length: 31 }, (_, i) => i + 1); // 1 to 31
 
     return (
-        <div className="overflow-x-auto p-6">
+        <div className="overflow-x-auto p-6 bg-white">
+            <div className="text-center mt-2 flex items-center gap-4">
+                    {/* Div kiri: Logo */}
+                    <div className="flex h-full w-1/3">
+                        <img src="/assets/ip-mrica-logo2.png" alt="Logo" style={{width:300}}/>
+                    </div>
+
+                    {/* Div kanan: Informasi */}
+                    <div className="items-center text-center p-4">
+                        <h1 className="text-xl font-bold">PT. PLN INDONESIA POWER</h1>
+                        <p>RENCANA TAHUNAN OPERASI WADUK</p>
+                        <p>WADUK PLTA PB SOEDIRMAN</p>
+                        <p>2024</p>
+                        
+                    </div>
+                </div>
             <table className="min-w-full bg-white border border-gray-300 mt-6">
                 <thead className='bg-slate-300'>
                     <tr>
