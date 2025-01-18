@@ -48,6 +48,7 @@ const Header = () => {
       'data-input-operator', 
       'data-input-ghw', 
       // 'data-calculation', 
+      'telemetering-pjt',
       'user-admin'
     ],
     ghw: [
@@ -127,6 +128,12 @@ const Header = () => {
         route: 'home',
         icon: AiOutlineHome,
         show: rolePermissions.includes('home')
+      },
+      {
+        label: 'Telemetering PJT',
+        route: 'telemetering-pjt',
+        icon: AiOutlineHome,
+        show: rolePermissions.includes('telemetering-pjt')
       },
       {
         label: 'Machine Learning',

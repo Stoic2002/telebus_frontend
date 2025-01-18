@@ -11,6 +11,7 @@ import UserAdminContent from '@/components/dataInput/UserAdminContent';
 // import DataCalculationContent from '@/components/dataInput/DataCalculationContent';
 // import { dummyCalcData } from '@/data/dataInput/calculationData';
 import DataInputOperatorContent from '@/components/dataInput/DataInputOperatorContent';
+import TelemeteringPJTContent from '@/components/telemetering-pjt/TelemeteringPJTContent';
 
 const DashboardPage = () => {
   const router = useRouter();
@@ -34,6 +35,8 @@ const DashboardPage = () => {
         return <DataInputGhwContent/>
       case 'user-admin':
         return <UserAdminContent/>
+      case 'telemetering-pjt':
+        return <TelemeteringPJTContent/>
       // case 'data-calculation':
       //   return <DataCalculationContent calcData={[dummyCalcData]}/>
       default:
