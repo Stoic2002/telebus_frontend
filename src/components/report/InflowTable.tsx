@@ -7,6 +7,7 @@ import { InflowTableProps } from '@/types/reportTypes';
 const InflowTable: React.FC<InflowTableProps> = ({ inflowData }) => {
     const data = inflowData[0]; // Assuming inflowData has at least one entry
 
+    console.log(data);
     // Prepare a map for inflow values by jam and tanggal
     const inflowMap: { [key: number]: { [key: number]: number } } = {};
 
@@ -85,7 +86,7 @@ const InflowTable: React.FC<InflowTableProps> = ({ inflowData }) => {
                                     <td className="border border-black p-1 pb-2 text-center text-[11px]">{jam}</td>
                                     {tanggalKeys.map((tanggal) => (
                                         <td key={tanggal} className="border border-black p-1 pb-2 text-center text-[11px]">
-                                            {inflowMap[jam][tanggal] !== undefined ? inflowMap[jam][tanggal] : '-'}
+                                            {inflowMap[jam][tanggal] !== undefined ? inflowMap[jam][tanggal] : '0'}
                                         </td>
                                     ))}
                                 </tr>
@@ -104,7 +105,7 @@ const InflowTable: React.FC<InflowTableProps> = ({ inflowData }) => {
                                 <td className="border border-black p-1 pb-2 text-center font-bold text-[11px]">MAX</td>
                                 {tanggalKeys.map((tanggal) => (
                                     <td key={tanggal} className="border border-black p-1 pb-2 text-center text-[11px]">
-                                        {max[tanggal] !== Number.NEGATIVE_INFINITY ? max[tanggal] : '-'}
+                                        {max[tanggal] !== Number.NEGATIVE_INFINITY ? max[tanggal] : '0'}
                                     </td>
                                 ))}
                             </tr>
@@ -112,7 +113,7 @@ const InflowTable: React.FC<InflowTableProps> = ({ inflowData }) => {
                                 <td className="border border-black p-1 pb-2 text-center font-bold text-[11px]">MIN</td>
                                 {tanggalKeys.map((tanggal) => (
                                     <td key={tanggal} className="border border-black p-1 pb-2 text-center text-[11px]">
-                                        {min[tanggal] !== Number.POSITIVE_INFINITY ? min[tanggal] : '-'}
+                                        {min[tanggal] !== Number.POSITIVE_INFINITY ? min[tanggal] : '0'}
                                     </td>
                                 ))}
                             </tr>

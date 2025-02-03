@@ -88,7 +88,7 @@ const OutflowTable: React.FC<OutflowTableProps> = ({ outflowData }) => {
             <td className="border border-black text-[11px] p-1 pb-2 text-center">{jam}</td>
             {tanggalKeys.map((tanggal) => (
               <td key={tanggal} className="border border-black text-[11px] p-1 pb-2 text-center">
-                {outflowMap[jam][tanggal] !== undefined ? outflowMap[jam][tanggal] : '-'}
+                {outflowMap[jam][tanggal] !== undefined ? outflowMap[jam][tanggal] : '0'}
               </td>
             ))}
           </tr>
@@ -107,7 +107,7 @@ const OutflowTable: React.FC<OutflowTableProps> = ({ outflowData }) => {
           <td className="border border-black text-[11px] p-1 pb-2 text-center font-bold">MAX</td>
           {tanggalKeys.map((tanggal) => (
             <td key={tanggal} className="border border-black text-[11px] p-1 pb-2 text-center">
-              {max[tanggal] !== Number.NEGATIVE_INFINITY ? max[tanggal] : '-'}
+              {max[tanggal] !== Number.NEGATIVE_INFINITY ? max[tanggal] : '0'}
             </td>
           ))}
         </tr>
@@ -115,7 +115,7 @@ const OutflowTable: React.FC<OutflowTableProps> = ({ outflowData }) => {
           <td className="border border-black text-[11px] p-1 pb-2 text-center font-bold">MIN</td>
           {tanggalKeys.map((tanggal) => (
             <td key={tanggal} className="border border-black text-[11px] p-1 pb-2 text-center">
-              {min[tanggal] !== Number.POSITIVE_INFINITY ? min[tanggal] : '-'}
+              {min[tanggal] !== Number.POSITIVE_INFINITY ? min[tanggal] : '0'}
             </td>
           ))}
         </tr>

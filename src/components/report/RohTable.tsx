@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { rohDataProps } from '@/types/reportTypes';
+import { formatNumber } from '@/lib/formatNumber';
 
 
 
@@ -62,13 +63,13 @@ const RohTable: React.FC<rohDataProps> = ({rohData}) => {
                                     ESTIMASI INFLOW
                                 </td>
                                 < td colSpan={1} className="border border-black p-2 text-center" style={{ width: '10%' }}>
-                                    {data.content.estimasiInflow.toFixed(2)}
+                                    {formatNumber(data.content.estimasiInflow)}
                                 </td>
                                 <td colSpan={1} className="border border-black p-2" style={{ width: '10%' }}>
                                     m³/s
                                 </td>
                                 <td colSpan={1} className="border border-black p-2 text-center" style={{ width: '10%' }}>
-                                    {(data.content.estimasiInflow * 24 * 3600).toFixed(2)}
+                                    {formatNumber(data.content.estimasiInflow * 24 * 3600)}
                                 </td>
                                 <td colSpan={1} className="border border-black p-2" style={{ width: '10%' }}>
                                     m³
@@ -87,7 +88,7 @@ const RohTable: React.FC<rohDataProps> = ({rohData}) => {
                                     Mdpl
                                 </td>
                                 <td className="border border-black p-2 text-center" style={{ width: '10%' }}>
-                                    {(data.content.volumeTargetELevasiHariIni).toFixed(2)}
+                                    {formatNumber(data.content.volumeTargetELevasiHariIni)}
                                 </td>
                                 <td className="border border-black p-2" style={{ width: '10%' }}>
                                     m³
@@ -106,7 +107,7 @@ const RohTable: React.FC<rohDataProps> = ({rohData}) => {
                                     Mpdl
                                 </td>
                                 <td className="border border-black p-2 text-center" style={{ width: '10%' }}>
-                                    {(data.content.volumeRealisasiElevasi).toFixed(2)}
+                                    {formatNumber(data.content.volumeRealisasiElevasi)}
                                 </td>
                                 <td className="border border-black p-2" style={{ width: '10%' }}>
                                     m³
@@ -125,7 +126,7 @@ const RohTable: React.FC<rohDataProps> = ({rohData}) => {
                                     m³/s
                                 </td>
                                 <td className="border border-black p-2 text-center" style={{ width: '10%' }}>
-                                    {(data.content.estimasiIrigasi * 24 * 3600).toFixed(2)}
+                                    {formatNumber(data.content.estimasiIrigasi * 24 * 3600)}
                                 </td>
                                 <td className="border border-black p-2" style={{ width: '10%' }}>
                                     m³
@@ -150,7 +151,7 @@ const RohTable: React.FC<rohDataProps> = ({rohData}) => {
                                     m³/s
                                 </td>
                                 <td className="border border-black p-2 text-center" style={{ width: '10%' }}>
-                                    {data.content.estimasiDdcXTotalJamPembukaan * 3600 * data.content.ddcJam}
+                                    {formatNumber(data.content.estimasiDdcXTotalJamPembukaan * 3600 * data.content.ddcJam)}
                                 </td>
                                 <td className="border border-black p-2" style={{ width: '10%' }}>
                                     m³
@@ -175,7 +176,7 @@ const RohTable: React.FC<rohDataProps> = ({rohData}) => {
                                     m³/s
                                 </td>
                                 <td className="border border-black p-2 text-center" style={{ width: '10%' }}>
-                                    {data.content.estimasiSpillwayTotalJamPembukaan * 3600 * data.content.spillwayJam}
+                                    {formatNumber(data.content.estimasiSpillwayTotalJamPembukaan * 3600 * data.content.spillwayJam)}
                                 </td>
                                 <td className="border border-black p-2" style={{ width: '10%' }}>
                                     m³
@@ -195,7 +196,7 @@ const RohTable: React.FC<rohDataProps> = ({rohData}) => {
                                     ESTIMASI VOLUME WADUK
                                 </td>
                                 <td colSpan={2} className="border border-black p-2 text-center" style={{ width: '20%' }}>
-                                    {data.content.estimasiVolumeWaduk.toFixed(2)}
+                                    {formatNumber(data.content.estimasiVolumeWaduk)}
                                 </td>
                                 <td colSpan={2} className="border border-black p-2" style={{ width: '20%' }}>
                                     m³
@@ -208,8 +209,8 @@ const RohTable: React.FC<rohDataProps> = ({rohData}) => {
                                     ESTIMASI TOTAL DAYA YANG DIHASILKAN
                                 </td>
                                 <td colSpan={2} className="border border-black p-2 text-center" style={{ width: '20%' }}>
-                                {((data.content.estimasiVolumeWaduk -
-                                (data.content.estimasiIrigasi * 24 * 3600))/4080).toFixed(2)}
+                                {formatNumber((data.content.estimasiVolumeWaduk -
+                                (data.content.estimasiIrigasi * 24 * 3600))/4080)}
                                 </td>
                                 <td colSpan={2} className="border border-black p-2" style={{ width: '20%' }}>
                                     MW
@@ -236,7 +237,7 @@ const RohTable: React.FC<rohDataProps> = ({rohData}) => {
                                     ESTIMASI OUTFLOW
                                 </td>
                                 <td colSpan={2} className="border border-black p-2 text-center" style={{ width: '20%' }}>
-                                    {data.content.estimasiOutflow.toFixed(2)}
+                                    {formatNumber(data.content.estimasiOutflow)}
                                 </td>
                                 <td colSpan={2} className="border border-black p-2" style={{ width: '20%' }}>
                                 m³
@@ -247,7 +248,7 @@ const RohTable: React.FC<rohDataProps> = ({rohData}) => {
                                     WATER CONSUMPTION 1 MW
                                 </td>
                                 <td colSpan={2} className="border border-black p-2 text-center" style={{ width: '20%' }}>
-                                    1,13
+                                    1.13
                                 </td>
                                 <td colSpan={2} className="border border-black p-2" style={{ width: '20%' }}>
                                 </td>
@@ -257,7 +258,7 @@ const RohTable: React.FC<rohDataProps> = ({rohData}) => {
                                     WATER CONSUMPTION 1 MW TO 1 HOUR
                                 </td>
                                 <td colSpan={2} className="border border-black p-2 text-center" style={{ width: '20%' }}>
-                                    4080
+                                    4,080
                                 </td>
                                 <td colSpan={2} className="border border-black p-2">
                                 </td>
@@ -267,8 +268,7 @@ const RohTable: React.FC<rohDataProps> = ({rohData}) => {
                                     ESTIMASI VOLUME WADUK SETELAH UNIT BEROPERASI
                                 </td>
                                 <td colSpan={2} className="border border-black p-2 text-center" style={{ width: '20%' }}>
-                                    {data.content.estimasiVolumeWadukSetelahOperasi.toFixed(2)
-                                    }
+                                    {formatNumber(data.content.estimasiVolumeWadukSetelahOperasi)}
                                 </td>
                                 
                                 <td colSpan={2} className="border border-black p-2">
@@ -340,7 +340,7 @@ const RohTable: React.FC<rohDataProps> = ({rohData}) => {
                                     Total
                                 </td>
                                 <td colSpan={9} className="border border-black p-2 text-center font-semibold" style={{ width: '85%' }}>
-                                    {data.content.totalDaya.toFixed(2)} 
+                                    {formatNumber(data.content.totalDaya)} 
                                 </td>
                             </tr>
                         </tbody>

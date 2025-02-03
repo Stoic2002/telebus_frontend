@@ -85,7 +85,7 @@ const TmaTable: React.FC<TmaTableProps> = ({ tmaData }) => {
                                     <td className="border border-black p-1 pb-2 text-center text-[11px]">{jam}</td>
                                     {tanggalKeys.map((tanggal) => (
                                         <td key={tanggal} className="border border-black p-1 pb-2 text-center text-[11px]">
-                                            {tmaMap[jam][tanggal] !== undefined ? tmaMap[jam][tanggal] : '-'}
+                                            {tmaMap[jam][tanggal] !== undefined ? tmaMap[jam][tanggal] : '0'}
                                         </td>
                                     ))}
                                 </tr>
@@ -104,7 +104,7 @@ const TmaTable: React.FC<TmaTableProps> = ({ tmaData }) => {
                                 <td className="border border-black p-1 pb-2 text-center font-bold text-[11px]">MAX</td>
                                 {tanggalKeys.map((tanggal) => (
                                     <td key={tanggal} className="border border-black p-1 pb-2 text-center text-[11px]">
-                                        {max[tanggal] !== Number.NEGATIVE_INFINITY ? max[tanggal] : '-'}
+                                        {max[tanggal] !== Number.NEGATIVE_INFINITY ? max[tanggal] : '0'}
                                     </td>
                                 ))}
                             </tr>
@@ -112,7 +112,7 @@ const TmaTable: React.FC<TmaTableProps> = ({ tmaData }) => {
                                 <td className="border border-black p-1 pb-2 text-center font-bold text-[11px]">MIN</td>
                                 {tanggalKeys.map((tanggal) => (
                                     <td key={tanggal} className="border border-black p-1 pb-2 text-center text-[11px]">
-                                        {min[tanggal] !== Number.POSITIVE_INFINITY ? min[tanggal] : '-'}
+                                        {min[tanggal] !== Number.POSITIVE_INFINITY ? min[tanggal] : '0'}
                                     </td>
                                 ))}
                             </tr>

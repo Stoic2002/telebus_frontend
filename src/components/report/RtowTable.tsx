@@ -31,7 +31,7 @@ const RtowTable: React.FC<{ rtowData: RtowData }> = ({ rtowData }) => {
                         <h1 className="text-xl font-bold">PT. PLN INDONESIA POWER</h1>
                         <p>RENCANA TAHUNAN OPERASI WADUK</p>
                         <p>WADUK PLTA PB SOEDIRMAN</p>
-                        <p>2024</p>
+                        <p>{rtowData.tahun}</p>
                         
                     </div>
                 </div>

@@ -2,30 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import axios from 'axios';
+import { RainfallData, TelemeterData } from '@/types/telemeteringPjtTypes';
 
-interface WaterLevelData {
-  datetime: string;
-  wl: string;
-}
 
-interface RainfallData {
-  datetime: string;
-  rf: string;
-}
-
-interface StationData {
-  header: {
-    name: string;
-    x: string;
-    y: string;
-  };
-  data: WaterLevelData[] | RainfallData[];
-}
-
-interface TelemeterData {
-  Waterlevel?: StationData[];
-  Rainfall?: StationData[];
-}
 
 const TelemeteringPJTContent: React.FC = () => {
   const [telemeterData, setTelemeterData] = useState<TelemeterData>({});

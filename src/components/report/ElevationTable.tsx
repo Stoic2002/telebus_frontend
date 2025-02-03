@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { ElevationTableProps } from '@/types/reportTypes';
+import { formatNumber } from '@/lib/formatNumber';
 
 const ElevationTable: React.FC<ElevationTableProps> = ({ report }) => {
     const itemsPerTable = 30; // Number of items per table
@@ -102,8 +103,8 @@ const ElevationTable: React.FC<ElevationTableProps> = ({ report }) => {
                                                     {tableData.map((data) => (
                                                         <tr key={data.id}>
                                                             <td>{data.elevation}</td>
-                                                            <td>{data.volume}</td>
-                                                            <td>{data.area}</td>
+                                                            <td>{formatNumber(Number(data.volume))}</td>
+                                                            <td>{formatNumber(Number(data.area))}</td>
                                                         </tr>
                                                     ))}
                                                 </tbody>

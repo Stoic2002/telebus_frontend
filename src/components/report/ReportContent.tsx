@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { jsPDF } from 'jspdf';
+import * as XLSX from 'xlsx';
 
 // Shadcn UI Components
 import { 
@@ -17,7 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { AlertCircle, Download, Loader2 } from 'lucide-react';
+import { AlertCircle, Download, FileText, Loader2, Table } from 'lucide-react';
 
 // Components and Data
 
@@ -33,6 +34,7 @@ import { error } from 'console';
 import { fetchWithRetry } from '@/hooks/fetchWithRetry';
 import { ApiElevationData, ApiReportData, RohData } from '@/types/reportTypes';
 import RohTable from './RohTable';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@radix-ui/react-dropdown-menu';
 
 
 // Types
@@ -47,6 +49,11 @@ interface ApiData {
   value: string;
   timestamp: string;
 }
+
+type FormattedHourlyData = {
+  headers: string[];
+  data: (string | number)[][];
+};
 
 const NoDataAlert = () => (
   <Alert variant="destructive" className="my-4">
@@ -219,8 +226,8 @@ const ReportContent: React.FC = () => {
         3, // max attempts
         1000 // delay in ms
       );
-      console.log(start)
-      console.log(end)
+      // console.log(start)
+      // console.log(end)
       
 
       if (!response.data || response.data.length === 0) {
@@ -550,6 +557,263 @@ const handleDownloadPDF = async () => {
   }
 };
 
+const handleDownloadExcel2 = () => {
+  let data: any[] = [];
+  
+  // Sesuaikan data berdasarkan report yang dipilih
+  switch (selectedReport) {
+    case 'ROH':
+      data = rohData.map((item: any) => ({
+        Tanggal: item.content.hariOrTanggal,
+        'Estimasi Inflow': item.content.estimasiInflow,
+        'Target Elevasi Hari Ini': item.content.targetELevasiHariIni,
+        'Volume Target Elevasi Hari Ini': item.content.volumeTargetELevasiHariIni,
+        'Realisasi Elevasi': item.content.realisasiElevasi,
+        'Volume Realisasi Elevasi': item.content.volumeRealisasiElevasi,
+        'Estimasi Irigasi': item.content.estimasiIrigasi,
+        'Estimasi DDC': item.content.estimasiDdcXTotalJamPembukaan,
+        'DDC Jam': item.content.ddcJam,
+        'Estimasi Spillway': item.content.estimasiSpillwayTotalJamPembukaan,
+        'Spillway Jam': item.content.spillwayJam,
+        'Total Outflow': item.content.totalOutflow,
+        'Estimasi Volume Waduk': item.content.estimasiVolumeWaduk,
+        'Estimasi Outflow': item.content.estimasiOutflow,
+        'Water Consumption 1 MW' : 1.13,
+        'Water Consumption 1 MW To 1 Hour' : 4080,
+        'Estimasi Elevasi Waduk Setelah Operasi': item.content.estimasiElevasiWadukSetelahOperasi,
+        'Estimasi Volume Waduk Setelah Operasi': item.content.estimasiVolumeWadukSetelahOperasi,
+        'Total Daya': item.content.totalDaya,
+      }));
+      break;
+     
+    case 'TMA':
+        if (tmaData?.content?.[0]?.content) {
+          data = tmaData.content[0].content.flatMap((dayData: any) => 
+            dayData.item.map((hourData: any) => ({
+              Tanggal: dayData.tanggal,
+              Jam: hourData.jam,
+              'TMA (mdpl)': hourData.tma
+            }))
+          );
+        }
+      break;
+  
+    case 'inflow':
+        if (inflowData?.content?.[0]?.content) {
+          data = inflowData.content[0].content.flatMap((dayData: any) =>
+            dayData.item.map((hourData: any) => ({
+              Tanggal: dayData.tanggal,
+              Jam: hourData.jam,
+              'Inflow (m3/s)': hourData.inflow
+            }))
+          );
+        }
+      break;
+  
+    case 'outflow':
+        if (outflowData?.content?.[0]?.content) {
+          data = outflowData.content[0].content.flatMap((dayData: any) =>
+            dayData.item.map((hourData: any) => ({
+              Tanggal: dayData.tanggal,
+              Jam: hourData.jam,
+              'Outflow (m3/s)': hourData.outflow
+            }))
+          );
+        }
+      break;
+  
+
+    case 'rtow':
+      data = rtowData.data.map((item: any) => ({
+        Bulan: item.bulan,
+        Hari: item.hari,
+        'Target Elevasi': item.targetElevasi,
+      }));
+      break;
+
+    default:
+      break;
+  }
+
+  // Buat worksheet dan workbook
+  const worksheet = XLSX.utils.json_to_sheet(data);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Report');
+
+  // Generate file Excel
+  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+
+  // Download file
+  const formattedStartDate = new Date(startDate).toLocaleDateString('id-ID');
+  const filename = selectedReport === 'ROH' 
+    ? `${selectedReport}_${formattedStartDate}.xlsx`
+    : `${selectedReport}_${formattedStartDate}_${new Date(endDate).toLocaleDateString('id-ID')}.xlsx`;
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+};
+
+const handleDownloadExcel = () => {
+  const formatHourlyData = (data: any, valueKey: string): FormattedHourlyData => {
+    if (!data?.content?.[0]?.content) {
+      return {
+        headers: ['Jam'], // Default header
+        data: Array.from({ length: 24 }, (_, i) => [i]) // Default data with only the "Jam" column (24 hours)
+      };
+    }
+
+    // Get all unique dates
+    const dates = data.content[0].content.map((day: any) => day.tanggal);
+
+    // Create array for Excel with initial jam column (24 hours)
+    const excelData = Array.from({ length: 24 }, (_, i) => {
+      const row = Array(dates.length + 1).fill(''); // +1 for Jam column
+      row[0] = i; // Set jam
+      return row;
+    });
+
+    // Fill in the values
+    data.content[0].content.forEach((day: any, dateIndex: number) => {
+      day.item.forEach((hourData: any) => {
+        const hourIndex = parseInt(hourData.jam);
+        if (hourIndex <= 23) { // Process up to jam 23
+          excelData[hourIndex][dateIndex + 1] = hourData[valueKey];
+        }
+      });
+    });
+
+    // Calculate min, max, and average for each date
+    const minValues = Array(dates.length).fill(Number.MAX_VALUE);
+    const maxValues = Array(dates.length).fill(Number.MIN_VALUE);
+    const sumValues = Array(dates.length).fill(0);
+    const countValues = Array(dates.length).fill(0);
+
+    excelData.forEach((row) => {
+      row.slice(1).forEach((value, index) => {
+        if (typeof value === 'number') {
+          if (value < minValues[index]) minValues[index] = value;
+          if (value > maxValues[index]) maxValues[index] = value;
+          sumValues[index] += value;
+          countValues[index]++;
+        }
+      });
+    });
+
+    const averageValues = sumValues.map((sum, index) =>
+      countValues[index] > 0 ? sum / countValues[index] : 0
+    );
+
+    // Add min, max, and average rows
+    excelData.push(['Min', ...minValues]);
+    excelData.push(['Max', ...maxValues]);
+    excelData.push(['Average', ...averageValues]);
+
+    return {
+      headers: ['Jam', ...dates],
+      data: excelData
+    };
+  };
+
+  let worksheet;
+  let filename;
+  const formattedStartDate = new Date(startDate).toLocaleDateString('id-ID');
+  const formattedEndDate = new Date(endDate).toLocaleDateString('id-ID');
+
+  switch (selectedReport) {
+    case 'TMA':
+    case 'inflow':
+    case 'outflow': {
+      const valueKey = {
+        'TMA': 'tma',
+        'inflow': 'inflow',
+        'outflow': 'outflow'
+      }[selectedReport];
+      
+      const data = {
+        'TMA': tmaData,
+        'inflow': inflowData,
+        'outflow': outflowData
+      }[selectedReport];
+
+      const formattedData = formatHourlyData(data, valueKey);
+      
+      // Create worksheet from the formatted data
+      worksheet = XLSX.utils.aoa_to_sheet([
+        formattedData.headers,
+        ...formattedData.data
+      ]);
+
+      // Set column widths
+      const colWidth = Array(formattedData.headers.length).fill({ wch: 12 });
+      colWidth[0] = { wch: 8 }; // Width for Jam column
+      worksheet['!cols'] = colWidth;
+
+      filename = `${selectedReport}_${formattedStartDate}_${formattedEndDate}.xlsx`;
+      break;
+    }
+    
+    case 'ROH': {
+      const data = rohData.map((item: any) => ({
+        Tanggal: item.content.hariOrTanggal,
+        'Estimasi Inflow': item.content.estimasiInflow,
+        'Target Elevasi Hari Ini': item.content.targetELevasiHariIni,
+        'Volume Target Elevasi Hari Ini': item.content.volumeTargetELevasiHariIni,
+        'Realisasi Elevasi': item.content.realisasiElevasi,
+        'Volume Realisasi Elevasi': item.content.volumeRealisasiElevasi,
+        'Estimasi Irigasi': item.content.estimasiIrigasi,
+        'Estimasi DDC': item.content.estimasiDdcXTotalJamPembukaan,
+        'DDC Jam': item.content.ddcJam,
+        'Estimasi Spillway': item.content.estimasiSpillwayTotalJamPembukaan,
+        'Spillway Jam': item.content.spillwayJam,
+        'Total Outflow': item.content.totalOutflow,
+        'Estimasi Volume Waduk': item.content.estimasiVolumeWaduk,
+        'Estimasi Outflow': item.content.estimasiOutflow,
+        'Water Consumption 1 MW': 1.13,
+        'Water Consumption 1 MW To 1 Hour': 4080,
+        'Estimasi Elevasi Waduk Setelah Operasi': item.content.estimasiElevasiWadukSetelahOperasi,
+        'Estimasi Volume Waduk Setelah Operasi': item.content.estimasiVolumeWadukSetelahOperasi,
+        'Total Daya': item.content.totalDaya,
+      }));
+      worksheet = XLSX.utils.json_to_sheet(data);
+      filename = `${selectedReport}_${formattedStartDate}.xlsx`;
+      break;
+    }
+    
+    case 'rtow': {
+      const data = rtowData.data.map((item: any) => ({
+        Bulan: item.bulan,
+        Hari: item.hari,
+        'Target Elevasi': item.targetElevasi,
+      }));
+      worksheet = XLSX.utils.json_to_sheet(data);
+      filename = `${selectedReport}_${formattedStartDate}_${formattedEndDate}.xlsx`;
+      break;
+    }
+    
+    default:
+      return;
+  }
+
+  // Create and download workbook
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Report');
+  
+  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+  
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+};
+
   
 
   // Validate submit button state
@@ -635,14 +899,34 @@ const handleDownloadPDF = async () => {
               >
                 Submit
               </Button>
-              <Button 
-                variant="outline" 
-                onClick={handleDownloadPDF}
-                disabled={isDownloadDisabled}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Download PDF
-              </Button>
+              <DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <Button variant="outline" disabled={isDownloadDisabled}>
+      <Download className="mr-2 h-4 w-4" />
+      <span>Download</span>
+    </Button>
+  </DropdownMenuTrigger>
+  <DropdownMenuContent 
+    align="start" 
+    className="w-48 bg-white border border-gray-200 rounded-md shadow-lg"
+    sideOffset={4}
+  >
+    <DropdownMenuItem 
+      onClick={handleDownloadPDF}
+      className="flex items-center cursor-pointer hover:bg-gray-100 px-4 py-2"
+    >
+      <FileText className="mr-2 h-4 w-4" />
+      <span>Export PDF</span>
+    </DropdownMenuItem>
+    <DropdownMenuItem 
+      onClick={handleDownloadExcel}
+      className="flex items-center cursor-pointer hover:bg-gray-100 px-4 py-2"
+    >
+      <Table className="mr-2 h-4 w-4" />
+      <span>Export Excel</span>
+    </DropdownMenuItem>
+  </DropdownMenuContent>
+</DropdownMenu>
             </div>
           </div>
         </CardContent>

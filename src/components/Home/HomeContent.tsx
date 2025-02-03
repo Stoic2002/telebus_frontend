@@ -7,6 +7,7 @@ import RainfallComponent from './TelemeteringArr';
 import { fetchWithRetry } from '@/hooks/fetchWithRetry';
 import axios from 'axios';
 import { ApiElevationData, ApiReportData, RohData } from '@/types/reportTypes';
+import { formatNumber } from '../../lib/formatNumber';
 
 
 const HomeContent: React.FC = () => {
@@ -208,7 +209,7 @@ const HomeContent: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {tmaData.volume.toFixed(2)} m³
+              {formatNumber(tmaData.volume)} m³
             </div>
             <p className="text-gray-500">per hour</p>
           </CardContent>
@@ -233,7 +234,7 @@ const HomeContent: React.FC = () => {
             <CardTitle>Prediksi ROH</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{rohData[0].content.totalDaya.toFixed(2)} MW</div>
+            <div className="text-2xl font-bold text-green-600">{formatNumber(rohData[0].content.totalDaya)} MW</div>
             <p className="text-gray-500">today</p>
           </CardContent>
         </Card>

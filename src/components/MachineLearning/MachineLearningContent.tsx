@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Loader2, BarChart2 } from 'lucide-react';
+import { Loader2, BarChart2, Download } from 'lucide-react';
 import { inputData } from '@/data/predictionData/predictionData';
 import { PARAMETER_COLORS, Prediction, PredictionParameter, Y_AXIS_DOMAIN } from '@/types/machineLearningTypes';
 import { useLast24HData } from '@/hooks/useMachineLearningData';
@@ -15,6 +15,19 @@ const MachineLearningContent: React.FC = () => {
     TMA: [],
     BEBAN: []
   });
+
+  const formatDateTimeForCSV = (datetime: string) => {
+    const date = new Date(datetime);
+    return date.toLocaleString('id-ID', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'Asia/Jakarta'
+    }).replace(',', ''); // Remove comma between date and time
+  };
 
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,9 +48,11 @@ const MachineLearningContent: React.FC = () => {
         BEBAN: []
       };
 
+    
+
       // Fetch predictions for each parameter
       for (const param of parameters) {
-        const response = await fetch('http://localhost:8989/predict', {
+        const response = await fetch('http://192.168.105.90:8989/predict', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -55,8 +70,7 @@ const MachineLearningContent: React.FC = () => {
         }
   
         const data = await response.json();
-        // console.log(data)
-        
+        console.log(data)
 
         // Map API response to Prediction type
         predictionResults[param] = data.predictions.map((pred: any) => ({
@@ -115,6 +129,48 @@ const MachineLearningContent: React.FC = () => {
     };
   };
 
+
+    // Modified download function with proper CSV handling
+  const handleDownload = () => {
+    const currentPredictions = predictions[selectedParameter];
+    
+    // Properly escape and format CSV content
+    const escapeCsvValue = (value: string) => {
+      // If value contains commas, quotes, or newlines, wrap in quotes
+      if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+        return `"${value.replace(/"/g, '""')}"`;
+      }
+      return value;
+    };
+
+    // Create CSV content with proper formatting
+    const csvRows = [
+      // Header row
+      [`DateTime,${selectedParameter}_Predicted_Value`],
+      // Data rows
+      ...currentPredictions.map(prediction => 
+        `${escapeCsvValue(formatDateTimeForCSV(prediction.datetime))},${prediction.value.toFixed(2)}`
+      ),
+      // Summary rows
+      `Total,${calculateStats(currentPredictions).total.toFixed(2)}`,
+      `Average,${calculateStats(currentPredictions).average.toFixed(2)}`
+    ];
+
+    const csvContent = csvRows.join('\n');
+
+    // Create and trigger download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${selectedParameter}_predictions_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url); // Clean up the URL object
+  };
+
   // Render loading state
   if (loading || isLoading) {
     return (
@@ -160,7 +216,15 @@ const MachineLearningContent: React.FC = () => {
             <BarChart2 className="w-10 h-10" />
             <span className="text-2xl font-bold">Machine Learning Predictions</span>
           </div>
-          <div className="space-x-2">
+          <div className="flex items-center space-x-4">
+            {/* Add Download Button */}
+            <button
+              onClick={handleDownload}
+              className="px-4 py-2 bg-white text-blue-600 rounded-full flex items-center space-x-2 hover:bg-blue-50 transition-all duration-300"
+            >
+              <Download className="w-4 h-4" />
+              <span>Download CSV</span>
+            </button>
             {/* Parameter selection buttons */}
             {(['INFLOW','TMA','BEBAN'] as PredictionParameter[]).map((param) => (
               <button

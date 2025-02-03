@@ -190,7 +190,7 @@ const getStatusColor = (status: string) => {
             { id: 'PBS 2', value: soedirman2.flows.turbine.pb02?.toFixed(2) ?? 0},
             { id: 'PBS 3', value: soedirman2.flows.turbine.pb03?.toFixed(2) ?? 0}
           ],
-          total :  soedirman.flows.turbine.total.toFixed(2) ?? 0
+          total :  soedirman.flows.turbine.total ?? 0
         },
         {
           name: "Inflow",
