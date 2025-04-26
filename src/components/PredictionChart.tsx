@@ -1,12 +1,13 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Label, Text } from 'recharts';
 import { Prediction, PredictionParameter, PARAMETER_COLORS, Y_AXIS_DOMAIN } from '@/types/machineLearningTypes';
-import { usePredictionData } from '@/hooks/useMachineLearningData';
+import { usePredictionData, PredictionMode } from '@/hooks/useMachineLearningData';
 import ContentLoader from 'react-content-loader';
 
 interface PredictionChartProps {
   parameter: PredictionParameter;
   title?: string;
+  mode?: PredictionMode;
 }
 
 interface CombinedDataPoint {
@@ -16,8 +17,8 @@ interface CombinedDataPoint {
   prediction?: number;
 }
 
-const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title }) => {
-  const { actualData, predictionData, accuracy, isLoading, error } = usePredictionData(parameter);
+const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title, mode = '7day' }) => {
+  const { actualData, predictionData, accuracy, isLoading, error } = usePredictionData(parameter, mode);
   
   // Combine actual and prediction data for the chart
   const combinedData: CombinedDataPoint[] = React.useMemo(() => {
@@ -43,7 +44,9 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title }) =
     actualData.forEach(item => {
       // Use the raw datetime as key
       const key = item.datetime;
-      const formattedDate = formatDateString(item.datetime);
+      // Get date and hour for display
+      const dateParts = item.datetime.split(' ');
+      const formattedDate = dateParts.length >= 2 ? `${dateParts[0]} ${dateParts[1]}` : item.datetime;
       
       dataMap.set(key, {
         datetime: key,
@@ -56,7 +59,9 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title }) =
     predictionData.forEach(item => {
       // Use the raw datetime as key
       const key = item.datetime;
-      const formattedDate = formatDateString(item.datetime);
+      // Get date and hour for display
+      const dateParts = item.datetime.split(' ');
+      const formattedDate = dateParts.length >= 2 ? `${dateParts[0]} ${dateParts[1]}` : item.datetime;
       
       if (dataMap.has(key)) {
         // Merge with existing data point
@@ -130,7 +135,7 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title }) =
   return (
     <div className="w-full p-4 bg-white rounded-lg shadow-lg">
       <h2 className="text-xl font-bold mb-4 text-center">
-        {title || `Prediksi ${parameter} (7 Hari)`}
+        {title || `Prediksi ${parameter} (${mode === '7day' ? '7 Hari' : 'Kemarin'})`}
       </h2>
       
       <div className="flex justify-center gap-8 mb-4">
@@ -183,7 +188,7 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title }) =
             />
             <Tooltip content={<CustomTooltip />} />
             
-            {/* Line for actual data (1 day) */}
+            {/* Line for actual data */}
             <Line
               type="monotone"
               dataKey="actual"
@@ -194,7 +199,7 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title }) =
               activeDot={{ r: 6 }}
             />
             
-            {/* Line for prediction data (7 days) */}
+            {/* Line for prediction data */}
             <Line
               type="monotone"
               dataKey="prediction"

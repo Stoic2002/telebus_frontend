@@ -33,7 +33,9 @@ export const useLast24HData = () => {
   };
 };
 
-export const usePredictionData = (parameter: PredictionParameter) => {
+export type PredictionMode = '7day' | 'day-before';
+
+export const usePredictionData = (parameter: PredictionParameter, mode: PredictionMode = '7day') => {
   const [actualData, setActualData] = useState<Prediction[]>([]);
   const [predictionData, setPredictionData] = useState<Prediction[]>([]);
   const [accuracy, setAccuracy] = useState<number>(0);
@@ -43,7 +45,16 @@ export const usePredictionData = (parameter: PredictionParameter) => {
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const { actualData, predictionData, accuracy } = await predictionService.fetchPredictionData(parameter);
+      
+      // Choose which data to fetch based on mode
+      let result;
+      if (mode === 'day-before') {
+        result = await predictionService.fetchDayBeforePrediction(parameter);
+      } else {
+        result = await predictionService.fetchPredictionData(parameter);
+      }
+      
+      const { actualData, predictionData, accuracy } = result;
       setActualData(actualData);
       setPredictionData(predictionData);
       setAccuracy(accuracy);
@@ -60,7 +71,7 @@ export const usePredictionData = (parameter: PredictionParameter) => {
 
   useEffect(() => {
     fetchData();
-  }, [parameter]);
+  }, [parameter, mode]);
 
   return {
     actualData,
