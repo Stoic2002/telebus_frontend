@@ -2,10 +2,7 @@
 import { RawLast24HDataItem, TransformedLast24HData, Prediction, PredictionParameter } from '@/types/machineLearningTypes';
 import axios from 'axios';
 
-// Constants for localStorage keys
-const LS_PREDICTION_DATA_KEY = 'telebus_prediction_data';
-const LS_PREDICTION_DATE_KEY = 'telebus_prediction_date';
-const LS_DAY_BEFORE_DATA_KEY = 'telebus_day_before_data';
+const LS_KEY_PREV_DAY_PREDICTION = 'telebus_prev_day_prediction';
 
 export const last24HDataService = {
   async fetchLast24HData(): Promise<TransformedLast24HData[]> {
@@ -98,179 +95,145 @@ export const predictionService = {
       {"INFLOW":128.91,"OUTFLOW":102.08,"TMA":229.99,"BEBAN":90.03,"datetime":"2025-04-19 23"}
     ]
   },
-  
-  // Check if we need to fetch new data (different day)
-  needsNewData(): boolean {
-    if (typeof window === 'undefined') return true;
-    
-    const savedDate = localStorage.getItem(LS_PREDICTION_DATE_KEY);
-    if (!savedDate) return true;
-    
-    const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    return savedDate !== currentDate;
-  },
-  
-  // Save prediction data to localStorage
-  savePredictionData(data: any, parameter: PredictionParameter): void {
-    if (typeof window === 'undefined') return;
-    
-    try {
-      // Store the current date
-      const currentDate = new Date().toISOString().split('T')[0];
-      localStorage.setItem(LS_PREDICTION_DATE_KEY, currentDate);
-      
-      // Get existing data object or create new one
-      const existingDataStr = localStorage.getItem(LS_PREDICTION_DATA_KEY);
-      const existingData = existingDataStr ? JSON.parse(existingDataStr) : {};
-      
-      // Update parameter data and save
-      existingData[parameter] = data;
-      localStorage.setItem(LS_PREDICTION_DATA_KEY, JSON.stringify(existingData));
-      
-      // Save a copy as day-before data when day changes
-      this.saveDayBeforeData(data, parameter);
-    } catch (err) {
-      console.error('Error saving prediction data to localStorage:', err);
-    }
-  },
-  
-  // Save day-before prediction data
-  saveDayBeforeData(data: any, parameter: PredictionParameter): void {
-    if (typeof window === 'undefined') return;
-    
-    try {
-      // Get existing day-before data or create new object
-      const existingDataStr = localStorage.getItem(LS_DAY_BEFORE_DATA_KEY);
-      const existingData = existingDataStr ? JSON.parse(existingDataStr) : {};
-      
-      // Update parameter data and save
-      existingData[parameter] = data;
-      localStorage.setItem(LS_DAY_BEFORE_DATA_KEY, JSON.stringify(existingData));
-    } catch (err) {
-      console.error('Error saving day-before data to localStorage:', err);
-    }
-  },
-  
-  // Get saved prediction data
-  getSavedPredictionData(parameter: PredictionParameter): any | null {
-    if (typeof window === 'undefined') return null;
-    
-    try {
-      const dataStr = localStorage.getItem(LS_PREDICTION_DATA_KEY);
-      if (!dataStr) return null;
-      
-      const data = JSON.parse(dataStr);
-      return data[parameter] || null;
-    } catch (err) {
-      console.error('Error retrieving prediction data from localStorage:', err);
-      return null;
-    }
-  },
-  
-  // Get saved day-before data
-  getDayBeforeData(parameter: PredictionParameter): any | null {
-    if (typeof window === 'undefined') return null;
-    
-    try {
-      const dataStr = localStorage.getItem(LS_DAY_BEFORE_DATA_KEY);
-      if (!dataStr) return null;
-      
-      const data = JSON.parse(dataStr);
-      return data[parameter] || null;
-    } catch (err) {
-      console.error('Error retrieving day-before data from localStorage:', err);
-      return null;
-    }
-  },
 
-  // Fetch prediction data and actual data (7-day forecast)
+  // Fetch prediction data (from API) and actual data (from mock)
   async fetchPredictionData(parameter: PredictionParameter): Promise<{
     actualData: Prediction[],
     predictionData: Prediction[],
     accuracy: number
   }> {
     try {
-      // Check if we have saved data for today
-      if (!this.needsNewData()) {
-        const savedData = this.getSavedPredictionData(parameter);
-        if (savedData) {
-          console.log('Using cached prediction data');
-          return savedData;
-        }
-      }
-      
       // Fetch prediction data from API (7 days)
       const predictionResponse = await axios.get(`http://192.168.105.90/prediction/${parameter.toLowerCase()}`);
       const predictionData = this.transformPredictionData(predictionResponse.data, parameter);
       
-      // Generate mock actual data for comparison (1 day)
-      const actualData = this.generateMockActualData(parameter);
+      // Use mock data for actual data (1 day) since we don't have real data
+      const actualData = this.getMockActualData(parameter);
       
       // Calculate accuracy between actual and prediction data
       const accuracy = this.calculateAccuracy(actualData, predictionData);
       
-      // Save to localStorage
-      const result = { actualData, predictionData, accuracy };
-      this.savePredictionData(result, parameter);
+      // Save today's prediction data to local storage for "day before" feature
+      this.saveTodayPrediction(parameter, {
+        actualData,
+        predictionData: predictionData.slice(0, 24), // Just store first 24 hours
+        accuracy,
+        timestamp: new Date().toISOString()
+      });
       
-      return result;
+      return {
+        actualData,
+        predictionData,
+        accuracy
+      };
     } catch (error) {
       console.error(`Error fetching ${parameter} prediction data:`, error);
       
-      // Return mock data for development
+      // Return mock data for development purposes
       return this.getMockData(parameter);
     }
   },
-  
-  // Fetch day-before prediction data
-  async fetchDayBeforePrediction(parameter: PredictionParameter): Promise<{
+
+  // Fetch previous day prediction data from local storage
+  async fetchPrevDayPrediction(parameter: PredictionParameter): Promise<{
     actualData: Prediction[],
     predictionData: Prediction[],
     accuracy: number
-  }> {
+  } | null> {
     try {
-      // Try to get saved day-before data
-      const savedData = this.getDayBeforeData(parameter);
-      if (savedData) {
-        console.log('Using saved day-before data');
-        return savedData;
+      const storedData = this.getPrevDayPrediction(parameter);
+      
+      if (storedData) {
+        return storedData;
       }
       
-      // If no saved data, generate mock data for day-before
-      console.log('No saved day-before data, generating mock');
-      const mockDayBefore = this.getMockDayBeforeData(parameter);
-      
-      // Save for future use
-      this.saveDayBeforeData(mockDayBefore, parameter);
-      
-      return mockDayBefore;
+      // If no stored data, just return current mock data
+      return this.getMockData(parameter);
     } catch (error) {
-      console.error(`Error fetching day-before ${parameter} data:`, error);
-      return this.getMockDayBeforeData(parameter);
+      console.error(`Error fetching previous day ${parameter} prediction data:`, error);
+      return null;
     }
   },
   
-  // Generate mock actual data based on sample data
-  generateMockActualData(parameter: PredictionParameter): Prediction[] {
+  // Save today's prediction to local storage
+  saveTodayPrediction(parameter: PredictionParameter, data: any) {
+    try {
+      // Get existing stored predictions
+      const storageJson = localStorage.getItem(LS_KEY_PREV_DAY_PREDICTION);
+      const storageData = storageJson ? JSON.parse(storageJson) : {};
+      
+      // Update with today's data
+      storageData[parameter] = {
+        ...data,
+        savedAt: new Date().toISOString()
+      };
+      
+      // Save back to localStorage
+      localStorage.setItem(LS_KEY_PREV_DAY_PREDICTION, JSON.stringify(storageData));
+    } catch (error) {
+      console.error('Error saving prediction to localStorage:', error);
+    }
+  },
+  
+  // Get previous day prediction from local storage
+  getPrevDayPrediction(parameter: PredictionParameter) {
+    try {
+      const storageJson = localStorage.getItem(LS_KEY_PREV_DAY_PREDICTION);
+      if (!storageJson) return null;
+      
+      const storageData = JSON.parse(storageJson);
+      const parameterData = storageData[parameter];
+      
+      if (!parameterData) return null;
+      
+      // Check if data is from a different day
+      const savedDate = new Date(parameterData.savedAt);
+      const today = new Date();
+      
+      if (savedDate.getDate() !== today.getDate() || 
+          savedDate.getMonth() !== today.getMonth() || 
+          savedDate.getFullYear() !== today.getFullYear()) {
+        return parameterData;
+      }
+      
+      // Data is from today, so it's not "previous day" yet
+      return null;
+    } catch (error) {
+      console.error('Error retrieving prediction from localStorage:', error);
+      return null;
+    }
+  },
+  
+  // Transform prediction data from API
+  transformPredictionData(rawData: any[], parameter: PredictionParameter): Prediction[] {
+    // Implementation would depend on the actual API response format
+    // This is a placeholder implementation
+    return rawData.map(item => ({
+      datetime: item.timestamp || item.datetime,
+      value: parseFloat(item.predicted_value || item.value || item[parameter])
+    }));
+  },
+  
+  // Generate mock actual data
+  getMockActualData(parameter: PredictionParameter): Prediction[] {
+    // Get sample data points for the specified parameter
     const sampleData = this.samplePredictionData.data;
+    
+    // Create actual data for one day (24 hours)
     const actualData: Prediction[] = [];
     
-    // Base date for actual data (today)
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth() + 1; // 1-12
-    const day = today.getDate();
+    // Base date for our prediction - we'll use the year/month from the sample data
+    const year = 2025;
+    const month = 4;
+    const startDay = 19;
     
-    // Generate 24 hours of actual data
     for (let hour = 0; hour < 24; hour++) {
       const sampleIndex = hour % sampleData.length;
       const samplePoint = sampleData[sampleIndex];
       
-      // Format date as "YYYY-MM-DD HH"
+      // Format date exactly as in the sample
       const formattedHour = hour.toString().padStart(2, '0');
-      const formattedDay = day.toString().padStart(2, '0');
-      const formattedMonth = month.toString().padStart(2, '0');
-      const datetime = `${year}-${formattedMonth}-${formattedDay} ${formattedHour}`;
+      const datetime = `${year}-${month.toString().padStart(2, '0')}-${startDay.toString().padStart(2, '0')} ${formattedHour}`;
       
       // Add random variation to actual data (±15%)
       const variation = (Math.random() * 0.3) - 0.15;
@@ -283,16 +246,6 @@ export const predictionService = {
     }
     
     return actualData;
-  },
-  
-  // Transform prediction data from API
-  transformPredictionData(rawData: any[], parameter: PredictionParameter): Prediction[] {
-    // Implementation would depend on the actual API response format
-    // This is a placeholder implementation
-    return rawData.map(item => ({
-      datetime: item.timestamp,
-      value: parseFloat(item.predicted_value)
-    }));
   },
   
   // Calculate accuracy between actual and prediction for the same time periods
@@ -327,23 +280,25 @@ export const predictionService = {
     return Math.max(0, Math.min(100, 100 - avgError));
   },
   
-  // Generate mock data for 7-day forecast
+  // Generate mock data based on sample data
   getMockData(parameter: PredictionParameter): {
     actualData: Prediction[],
     predictionData: Prediction[],
     accuracy: number
   } {
+    const actualData = this.getMockActualData(parameter);
+    
     // Get first day of sample data points for the specified parameter
     const sampleData = this.samplePredictionData.data;
     
-    // Generate prediction data for 7 days
+    // Extract prediction data for 7 days (if we had 7 days of data, we would use it all)
+    // Here we just repeat the 1-day sample data 7 times for prediction
     const predictionData: Prediction[] = [];
     
-    // Base date for our prediction - we'll use today
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth() + 1; // 1-12
-    const startDay = today.getDate(); // Today
+    // Base date for our prediction - we'll use the year/month from the sample data
+    const year = 2025;
+    const month = 4; // April is 4 (not 3, not zero-indexed here)
+    const startDay = 19; // The day from the sample data
     
     // Generate prediction data for 7 days (reusing the 1-day sample)
     for (let day = 0; day < 7; day++) {
@@ -355,8 +310,7 @@ export const predictionService = {
         const currentDay = startDay + day;
         const formattedDay = currentDay.toString().padStart(2, '0');
         const formattedHour = hour.toString().padStart(2, '0');
-        const formattedMonth = month.toString().padStart(2, '0');
-        const datetime = `${year}-${formattedMonth}-${formattedDay} ${formattedHour}`;
+        const datetime = `${year}-${month.toString().padStart(2, '0')}-${formattedDay} ${formattedHour}`;
         
         // Add to prediction data
         predictionData.push({
@@ -366,77 +320,8 @@ export const predictionService = {
       }
     }
     
-    // Create actual data for just the first day (today)
-    const actualData = this.generateMockActualData(parameter);
-    
     // Calculate accuracy
     const accuracy = this.calculateAccuracy(actualData, predictionData.slice(0, 24));
-    
-    return { actualData, predictionData, accuracy };
-  },
-  
-  // Generate mock data for day-before prediction
-  getMockDayBeforeData(parameter: PredictionParameter): {
-    actualData: Prediction[],
-    predictionData: Prediction[],
-    accuracy: number
-  } {
-    // Get sample data points
-    const sampleData = this.samplePredictionData.data;
-    
-    // Base date for yesterday
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const year = yesterday.getFullYear();
-    const month = yesterday.getMonth() + 1; // 1-12
-    const day = yesterday.getDate();
-    
-    // Generate 24 hours of prediction data for yesterday
-    const predictionData: Prediction[] = [];
-    for (let hour = 0; hour < 24; hour++) {
-      const sampleIndex = hour % sampleData.length;
-      const samplePoint = sampleData[sampleIndex];
-      
-      // Format date as "YYYY-MM-DD HH"
-      const formattedHour = hour.toString().padStart(2, '0');
-      const formattedDay = day.toString().padStart(2, '0');
-      const formattedMonth = month.toString().padStart(2, '0');
-      const datetime = `${year}-${formattedMonth}-${formattedDay} ${formattedHour}`;
-      
-      // Add small bias to prediction 
-      const predBias = (Math.random() * 0.2 - 0.1); // -10% to +10%
-      const predValue = parseFloat((samplePoint[parameter] * (1 + predBias)).toFixed(2));
-      
-      predictionData.push({
-        datetime: datetime,
-        value: predValue
-      });
-    }
-    
-    // Generate actual data for yesterday (with more variation to show difference)
-    const actualData: Prediction[] = [];
-    for (let hour = 0; hour < 24; hour++) {
-      const sampleIndex = hour % sampleData.length;
-      const samplePoint = sampleData[sampleIndex];
-      
-      // Format date as "YYYY-MM-DD HH"
-      const formattedHour = hour.toString().padStart(2, '0');
-      const formattedDay = day.toString().padStart(2, '0');
-      const formattedMonth = month.toString().padStart(2, '0');
-      const datetime = `${year}-${formattedMonth}-${formattedDay} ${formattedHour}`;
-      
-      // Add more random variation to actual data (±20%)
-      const variation = (Math.random() * 0.4) - 0.2;
-      const actualValue = samplePoint[parameter] * (1 + variation);
-      
-      actualData.push({
-        datetime: datetime,
-        value: parseFloat(actualValue.toFixed(2))
-      });
-    }
-    
-    // Calculate accuracy (generally lower for day-before to show difference)
-    const accuracy = this.calculateAccuracy(actualData, predictionData);
     
     return { actualData, predictionData, accuracy };
   }

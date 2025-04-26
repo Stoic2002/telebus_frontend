@@ -1,13 +1,13 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Label, Text } from 'recharts';
 import { Prediction, PredictionParameter, PARAMETER_COLORS, Y_AXIS_DOMAIN } from '@/types/machineLearningTypes';
-import { usePredictionData, PredictionMode } from '@/hooks/useMachineLearningData';
+import { usePredictionData } from '@/hooks/useMachineLearningData';
 import ContentLoader from 'react-content-loader';
 
 interface PredictionChartProps {
   parameter: PredictionParameter;
   title?: string;
-  mode?: PredictionMode;
+  usePrevDay?: boolean;
 }
 
 interface CombinedDataPoint {
@@ -17,8 +17,8 @@ interface CombinedDataPoint {
   prediction?: number;
 }
 
-const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title, mode = '7day' }) => {
-  const { actualData, predictionData, accuracy, isLoading, error } = usePredictionData(parameter, mode);
+const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title, usePrevDay = false }) => {
+  const { actualData, predictionData, accuracy, isLoading, error } = usePredictionData(parameter, usePrevDay);
   
   // Combine actual and prediction data for the chart
   const combinedData: CombinedDataPoint[] = React.useMemo(() => {
@@ -44,9 +44,7 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title, mod
     actualData.forEach(item => {
       // Use the raw datetime as key
       const key = item.datetime;
-      // Get date and hour for display
-      const dateParts = item.datetime.split(' ');
-      const formattedDate = dateParts.length >= 2 ? `${dateParts[0]} ${dateParts[1]}` : item.datetime;
+      const formattedDate = formatDateString(item.datetime);
       
       dataMap.set(key, {
         datetime: key,
@@ -59,9 +57,7 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title, mod
     predictionData.forEach(item => {
       // Use the raw datetime as key
       const key = item.datetime;
-      // Get date and hour for display
-      const dateParts = item.datetime.split(' ');
-      const formattedDate = dateParts.length >= 2 ? `${dateParts[0]} ${dateParts[1]}` : item.datetime;
+      const formattedDate = formatDateString(item.datetime);
       
       if (dataMap.has(key)) {
         // Merge with existing data point
@@ -132,19 +128,24 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title, mod
 
   const yDomain = Y_AXIS_DOMAIN[parameter];
 
+  // Check if using previous day data to adjust chart title and appearance
+  const chartTitle = title || `Prediksi ${parameter} (${usePrevDay ? 'Hari Sebelumnya' : '7 Hari'})`;
+  const actualColor = usePrevDay ? '#F97316' : '#F59E0B'; // Darker orange for previous day
+  const predictionColor = usePrevDay ? '#4F46E5' : '#1E40AF'; // Darker blue for previous day
+
   return (
     <div className="w-full p-4 bg-white rounded-lg shadow-lg">
       <h2 className="text-xl font-bold mb-4 text-center">
-        {title || `Prediksi ${parameter} (${mode === '7day' ? '7 Hari' : 'Kemarin'})`}
+        {chartTitle}
       </h2>
       
       <div className="flex justify-center gap-8 mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-full" style={{ backgroundColor: '#1E40AF' }} />
+          <div className="w-4 h-4 rounded-full" style={{ backgroundColor: predictionColor }} />
           <span className="text-sm font-medium">Prediksi</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-full" style={{ backgroundColor: '#F59E0B' }} />
+          <div className="w-4 h-4 rounded-full" style={{ backgroundColor: actualColor }} />
           <span className="text-sm font-medium">Aktual</span>
         </div>
         <div className="flex items-center gap-2">
@@ -188,23 +189,23 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title, mod
             />
             <Tooltip content={<CustomTooltip />} />
             
-            {/* Line for actual data */}
+            {/* Line for actual data (1 day) */}
             <Line
               type="monotone"
               dataKey="actual"
               name="Aktual"
-              stroke="#F59E0B"  // Yellow color for actual data
+              stroke={actualColor}  // Yellow/orange color for actual data
               strokeWidth={2}
               dot={false}
               activeDot={{ r: 6 }}
             />
             
-            {/* Line for prediction data */}
+            {/* Line for prediction data (7 days or 1 day for prevDay) */}
             <Line
               type="monotone"
               dataKey="prediction"
               name="Prediksi"
-              stroke="#1E40AF"  // Blue color for prediction
+              stroke={predictionColor}  // Blue color for prediction
               strokeWidth={2}
               dot={false}
               activeDot={{ r: 6 }}
@@ -214,7 +215,7 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title, mod
         
         {/* Add accuracy text overlay */}
         <div className="absolute top-5 right-5 bg-white bg-opacity-70 px-3 py-1 rounded-lg shadow">
-          <span className="text-lg font-bold text-indigo-600">
+          <span className="text-lg font-bold" style={{ color: predictionColor }}>
             Akurasi: {accuracy.toFixed(1)}%
           </span>
         </div>

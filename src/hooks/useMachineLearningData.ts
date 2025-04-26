@@ -33,9 +33,7 @@ export const useLast24HData = () => {
   };
 };
 
-export type PredictionMode = '7day' | 'day-before';
-
-export const usePredictionData = (parameter: PredictionParameter, mode: PredictionMode = '7day') => {
+export const usePredictionData = (parameter: PredictionParameter, usePrevDay: boolean = false) => {
   const [actualData, setActualData] = useState<Prediction[]>([]);
   const [predictionData, setPredictionData] = useState<Prediction[]>([]);
   const [accuracy, setAccuracy] = useState<number>(0);
@@ -46,18 +44,30 @@ export const usePredictionData = (parameter: PredictionParameter, mode: Predicti
     try {
       setIsLoading(true);
       
-      // Choose which data to fetch based on mode
-      let result;
-      if (mode === 'day-before') {
-        result = await predictionService.fetchDayBeforePrediction(parameter);
+      if (usePrevDay) {
+        // Fetch previous day prediction
+        const prevDayData = await predictionService.fetchPrevDayPrediction(parameter);
+        
+        if (prevDayData) {
+          // Use previous day data
+          setActualData(prevDayData.actualData);
+          setPredictionData(prevDayData.predictionData);
+          setAccuracy(prevDayData.accuracy);
+        } else {
+          // Fallback to current data if previous day data is not available
+          const { actualData, predictionData, accuracy } = await predictionService.fetchPredictionData(parameter);
+          setActualData(actualData);
+          setPredictionData(predictionData);
+          setAccuracy(accuracy);
+        }
       } else {
-        result = await predictionService.fetchPredictionData(parameter);
+        // Fetch current prediction
+        const { actualData, predictionData, accuracy } = await predictionService.fetchPredictionData(parameter);
+        setActualData(actualData);
+        setPredictionData(predictionData);
+        setAccuracy(accuracy);
       }
       
-      const { actualData, predictionData, accuracy } = result;
-      setActualData(actualData);
-      setPredictionData(predictionData);
-      setAccuracy(accuracy);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('An unknown error occurred'));
@@ -71,7 +81,7 @@ export const usePredictionData = (parameter: PredictionParameter, mode: Predicti
 
   useEffect(() => {
     fetchData();
-  }, [parameter, mode]);
+  }, [parameter, usePrevDay]);
 
   return {
     actualData,
