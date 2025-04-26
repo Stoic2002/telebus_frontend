@@ -3,7 +3,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Prediction, PredictionParameter, PARAMETER_COLORS, Y_AXIS_DOMAIN } from '@/types/machineLearningTypes';
 import { usePredictionData } from '@/hooks/useMachineLearningData';
 import ContentLoader from 'react-content-loader';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 
 interface PredictionChartProps {
@@ -61,8 +61,30 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title }) =
       .sort((a, b) => a.datetime.localeCompare(b.datetime));
   }, [actualData, predictionData]);
 
+  // Determine if date is actual (for domain calculation)
+  const isActualDate = (dateStr: string) => {
+    if (!actualData.length) return false;
+    
+    const checkDate = new Date(dateStr);
+    checkDate.setHours(0, 0, 0, 0);
+    
+    const firstActualDate = new Date(actualData[0].datetime);
+    firstActualDate.setHours(0, 0, 0, 0);
+    
+    return checkDate.getTime() === firstActualDate.getTime();
+  };
+
   const formatYAxis = (value: number) => {
     return value.toFixed(1);
+  };
+
+  const formatXAxis = (value: string) => {
+    try {
+      const date = parseISO(value);
+      return format(date, 'dd/MM HH:mm');
+    } catch {
+      return value;
+    }
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -79,23 +101,6 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title }) =
       );
     }
     return null;
-  };
-
-  // Custom content for accuracy label inside the area chart
-  const renderAccuracyLabel = () => {
-    return (
-      <text 
-        x="50%" 
-        y="50%" 
-        dy={-20} 
-        textAnchor="middle" 
-        fill="#000000" 
-        fontSize={16} 
-        fontWeight="bold"
-      >
-        {`Akurasi: ${accuracy.toFixed(1)}%`}
-      </text>
-    );
   };
 
   if (isLoading) {
@@ -127,6 +132,11 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title }) =
   }
 
   const yDomain = Y_AXIS_DOMAIN[parameter];
+
+  // Calculate minimum domain value for the 80% height effect
+  const minDomain = yDomain 
+    ? yDomain[0] + (yDomain[1] - yDomain[0]) * 0.2 
+    : Math.min(...combinedData.filter(d => d.actual).map(d => d.actual || 0)) * 0.8;
 
   return (
     <div className="w-full p-4 bg-white rounded-lg shadow-lg">
@@ -197,13 +207,13 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title }) =
               dataKey="actual"
               name="Aktual"
               stroke="#F59E0B"  // Yellow color
-              fill="url(#actualGradient)"  // Gradient fill
+              fill="url(#actualGradient)"  // Gradient fill with yellow
+              fillOpacity={0.5}
               strokeWidth={2}
               activeDot={{ r: 6 }}
               dot={false}
               // Set the base value to create the 80% height effect
-              // We calculate this based on the y-axis domain
-              baseValue={yDomain ? yDomain[0] + (yDomain[1] - yDomain[0]) * 0.2 : "dataMin"}
+              baseValue={minDomain}
             />
             
             {/* Line for prediction data */}
@@ -219,8 +229,8 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title }) =
           </LineChart>
         </ResponsiveContainer>
         
-        {/* Add accuracy text overlay in the center of the chart */}
-        <div className="absolute top-1/2 left-1/4 transform -translate-y-1/2 bg-white bg-opacity-70 px-3 py-1 rounded-lg shadow">
+        {/* Add accuracy text overlay in the area fill */}
+        <div className="absolute top-1/3 left-1/4 transform -translate-y-1/2 bg-white bg-opacity-70 px-3 py-1 rounded-lg shadow">
           <span className="text-lg font-bold text-yellow-600">
             Akurasi: {accuracy.toFixed(1)}%
           </span>
