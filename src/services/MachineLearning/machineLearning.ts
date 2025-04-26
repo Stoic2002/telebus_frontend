@@ -6,7 +6,7 @@ import axios from 'axios';
 export const last24HDataService = {
   async fetchLast24HData(): Promise<TransformedLast24HData[]> {
     try {
-      const response = await axios.get('http://192.168.105.90/data-combined-1-day-before');
+      const response = await axios.get('http://192.168.105.90/data-combined-7-days-before');
       console.log('Data fetched:', response.data);
       return this.transformData(response.data);
     } catch (error) {
