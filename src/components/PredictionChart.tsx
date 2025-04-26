@@ -1,5 +1,5 @@
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, Label, Text } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Label, Text } from 'recharts';
 import { Prediction, PredictionParameter, PARAMETER_COLORS, Y_AXIS_DOMAIN } from '@/types/machineLearningTypes';
 import { usePredictionData } from '@/hooks/useMachineLearningData';
 import ContentLoader from 'react-content-loader';
@@ -127,11 +127,6 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title }) =
 
   const yDomain = Y_AXIS_DOMAIN[parameter];
 
-  // Calculate minimum domain value for the 80% height effect
-  const minDomain = yDomain 
-    ? yDomain[0] + (yDomain[1] - yDomain[0]) * 0.2 
-    : Math.min(...combinedData.filter(d => d.actual).map(d => d.actual || 0)) * 0.8;
-
   return (
     <div className="w-full p-4 bg-white rounded-lg shadow-lg">
       <h2 className="text-xl font-bold mb-4 text-center">
@@ -165,13 +160,6 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title }) =
               bottom: 60
             }}
           >
-            <defs>
-              <linearGradient id="actualGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#F59E0B" stopOpacity={0.8} />
-                <stop offset="80%" stopColor="#F59E0B" stopOpacity={0.4} />
-                <stop offset="100%" stopColor="#F59E0B" stopOpacity={0} />
-              </linearGradient>
-            </defs>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
               dataKey="formattedDate"
@@ -195,27 +183,23 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title }) =
             />
             <Tooltip content={<CustomTooltip />} />
             
-            {/* Area for actual data with 80% height and 0.5 opacity */}
-            <Area
+            {/* Line for actual data (1 day) */}
+            <Line
               type="monotone"
               dataKey="actual"
               name="Aktual"
-              stroke="#F59E0B"  // Yellow color
-              fill="url(#actualGradient)"  // Gradient fill with yellow
-              fillOpacity={0.5}
+              stroke="#F59E0B"  // Yellow color for actual data
               strokeWidth={2}
-              activeDot={{ r: 6 }}
               dot={false}
-              // Set the base value to create the 80% height effect
-              baseValue={minDomain}
+              activeDot={{ r: 6 }}
             />
             
-            {/* Line for prediction data */}
+            {/* Line for prediction data (7 days) */}
             <Line
               type="monotone"
               dataKey="prediction"
               name="Prediksi"
-              stroke="#1E40AF"  // Blue color
+              stroke="#1E40AF"  // Blue color for prediction
               strokeWidth={2}
               dot={false}
               activeDot={{ r: 6 }}
@@ -223,9 +207,9 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title }) =
           </LineChart>
         </ResponsiveContainer>
         
-        {/* Add accuracy text overlay in the area fill */}
-        <div className="absolute top-1/3 left-1/4 transform -translate-y-1/2 bg-white bg-opacity-70 px-3 py-1 rounded-lg shadow">
-          <span className="text-lg font-bold text-yellow-600">
+        {/* Add accuracy text overlay */}
+        <div className="absolute top-5 right-5 bg-white bg-opacity-70 px-3 py-1 rounded-lg shadow">
+          <span className="text-lg font-bold text-indigo-600">
             Akurasi: {accuracy.toFixed(1)}%
           </span>
         </div>
