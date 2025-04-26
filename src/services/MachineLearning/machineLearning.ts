@@ -63,6 +63,38 @@ export const last24HDataService = {
 };
 
 export const predictionService = {
+  // Sample prediction data for development
+  samplePredictionData: {
+    "target_column": "BEBAN",
+    "look_back": 168,
+    "data": [
+      {"INFLOW":160.56,"OUTFLOW":84.74,"TMA":230.04,"BEBAN":74.77000000000001,"datetime":"2025-04-19 00"},
+      {"INFLOW":140.05,"OUTFLOW":79.92,"TMA":230.07,"BEBAN":70.52,"datetime":"2025-04-19 01"},
+      {"INFLOW":168.26,"OUTFLOW":124.25,"TMA":230.09,"BEBAN":109.63,"datetime":"2025-04-19 02"},
+      {"INFLOW":124.19,"OUTFLOW":113.09,"TMA":230.09,"BEBAN":99.78999999999999,"datetime":"2025-04-19 03"},
+      {"INFLOW":91.32,"OUTFLOW":96.69,"TMA":230.08,"BEBAN":85.32,"datetime":"2025-04-19 04"},
+      {"INFLOW":137.8,"OUTFLOW":143.13,"TMA":230.07,"BEBAN":126.29,"datetime":"2025-04-19 05"},
+      {"INFLOW":146.22,"OUTFLOW":151.53,"TMA":230.05,"BEBAN":133.74,"datetime":"2025-04-19 06"},
+      {"INFLOW":125.32,"OUTFLOW":130.02,"TMA":230.03,"BEBAN":114.73,"datetime":"2025-04-19 07"},
+      {"INFLOW":99.75,"OUTFLOW":109.35,"TMA":230.01,"BEBAN":96.47,"datetime":"2025-04-19 08"},
+      {"INFLOW":114.92,"OUTFLOW":102.09,"TMA":229.99,"BEBAN":90.04,"datetime":"2025-04-19 09"},
+      {"INFLOW":117.68,"OUTFLOW":96.88,"TMA":229.98,"BEBAN":85.46,"datetime":"2025-04-19 10"},
+      {"INFLOW":148.81,"OUTFLOW":134.11,"TMA":229.98,"BEBAN":118.33,"datetime":"2025-04-19 11"},
+      {"INFLOW":144.75,"OUTFLOW":140.08,"TMA":229.97,"BEBAN":123.57,"datetime":"2025-04-19 12"},
+      {"INFLOW":121.1,"OUTFLOW":119.32,"TMA":229.96,"BEBAN":105.28,"datetime":"2025-04-19 13"},
+      {"INFLOW":166.66,"OUTFLOW":155.56,"TMA":229.96,"BEBAN":137.27,"datetime":"2025-04-19 14"},
+      {"INFLOW":131.15,"OUTFLOW":147.71,"TMA":229.95,"BEBAN":130.33,"datetime":"2025-04-19 15"},
+      {"INFLOW":107.19,"OUTFLOW":106.75,"TMA":229.93,"BEBAN":94.15,"datetime":"2025-04-19 16"},
+      {"INFLOW":140.46,"OUTFLOW":109.36,"TMA":229.93,"BEBAN":96.48,"datetime":"2025-04-19 17"},
+      {"INFLOW":166.5,"OUTFLOW":146.51,"TMA":229.94,"BEBAN":129.29,"datetime":"2025-04-19 18"},
+      {"INFLOW":162.44,"OUTFLOW":136.07,"TMA":229.95,"BEBAN":120.03,"datetime":"2025-04-19 19"},
+      {"INFLOW":127.72,"OUTFLOW":123.73,"TMA":229.96,"BEBAN":109.17,"datetime":"2025-04-19 20"},
+      {"INFLOW":155.85,"OUTFLOW":145.35,"TMA":229.96,"BEBAN":128.26,"datetime":"2025-04-19 21"},
+      {"INFLOW":132.85,"OUTFLOW":106.75,"TMA":229.97,"BEBAN":94.15,"datetime":"2025-04-19 22"},
+      {"INFLOW":128.91,"OUTFLOW":102.08,"TMA":229.99,"BEBAN":90.03,"datetime":"2025-04-19 23"}
+    ]
+  },
+
   // Fetch prediction data and actual data
   async fetchPredictionData(parameter: PredictionParameter): Promise<{
     actualData: Prediction[],
@@ -152,66 +184,63 @@ export const predictionService = {
     return Math.max(0, Math.min(100, 100 - avgError));
   },
   
-  // Generate mock data for development
+  // Generate mock data based on sample data
   getMockData(parameter: PredictionParameter): {
     actualData: Prediction[],
     predictionData: Prediction[],
     accuracy: number
   } {
-    const now = new Date();
-    const actualData: Prediction[] = [];
-    const predictionData: Prediction[] = [];
+    // Get first day of sample data points for the specified parameter
+    const sampleData = this.samplePredictionData.data;
     
-    // Generate 24 hours of actual data (1 day) - hourly data
-    for (let i = 0; i < 24; i++) {
-      const date = new Date(now);
-      date.setHours(date.getHours() - 24 + i);
-      date.setMinutes(0, 0, 0); // Set to exact hour
-      
-      const actualValue = this.generateValueForParameter(parameter, i);
-      actualData.push({
-        datetime: date.toISOString(),
-        value: actualValue
-      });
+    // Extract prediction data for 7 days (if we had 7 days of data, we would use it all)
+    // Here we just repeat the 1-day sample data 7 times for prediction
+    const predictionData: Prediction[] = [];
+    const baseDate = new Date(); // Use current date as base
+    baseDate.setHours(0, 0, 0, 0); // Start from midnight
+    
+    // Generate prediction data for 7 days (reusing the 1-day sample)
+    for (let day = 0; day < 7; day++) {
+      for (let hour = 0; hour < 24; hour++) {
+        const sampleIndex = hour % sampleData.length;
+        const samplePoint = sampleData[sampleIndex];
+        
+        const date = new Date(baseDate);
+        date.setDate(date.getDate() + day);
+        date.setHours(hour);
+        
+        // Add to prediction data
+        predictionData.push({
+          datetime: date.toISOString(),
+          value: samplePoint[parameter]
+        });
+      }
     }
     
-    // Generate 7 days of prediction data (starting from today) - hourly data
-    for (let i = 0; i < 24 * 7; i++) {
-      const date = new Date(now);
-      date.setHours(date.getHours() - 24 + i); // Start from yesterday (to overlap with actual)
-      date.setMinutes(0, 0, 0); // Set to exact hour
+    // Create actual data for just the first day
+    // Add small random variations to make it different from prediction
+    const actualData: Prediction[] = [];
+    for (let hour = 0; hour < 24; hour++) {
+      const sampleIndex = hour % sampleData.length;
+      const samplePoint = sampleData[sampleIndex];
       
-      // Add some bias to prediction data to simulate prediction errors
-      const basePredValue = this.generateValueForParameter(parameter, i);
-      const predBias = (Math.random() * 0.2 - 0.1); // -10% to +10% prediction error
-      const predValue = parseFloat((basePredValue * (1 + predBias)).toFixed(2));
+      const date = new Date(baseDate);
+      date.setHours(hour);
       
-      predictionData.push({
+      // Add random variation to actual data (±15%)
+      const variation = (Math.random() * 0.3) - 0.15;
+      const actualValue = samplePoint[parameter] * (1 + variation);
+      
+      actualData.push({
         datetime: date.toISOString(),
-        value: predValue
+        value: parseFloat(actualValue.toFixed(2))
       });
     }
     
     // Calculate accuracy
-    const accuracy = this.calculateAccuracy(actualData, predictionData);
+    const accuracy = this.calculateAccuracy(actualData, predictionData.slice(0, 24));
     
     return { actualData, predictionData, accuracy };
-  },
-  
-  // Generate mock values based on parameter
-  generateValueForParameter(parameter: PredictionParameter, hourOffset: number): number {
-    const baseValue = {
-      'INFLOW': 150,
-      'OUTFLOW': 120,
-      'TMA': 228.5,
-      'BEBAN': 40
-    }[parameter];
-    
-    // Add some randomness and a sine wave pattern
-    const randomFactor = Math.random() * 0.4 - 0.2; // -0.2 to 0.2
-    const sineWave = Math.sin(hourOffset / 12 * Math.PI) * 0.15; // Sine wave with period of 24h
-    
-    return parseFloat((baseValue * (1 + randomFactor + sineWave)).toFixed(2));
   }
 };
 
