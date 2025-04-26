@@ -3,8 +3,6 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Prediction, PredictionParameter, PARAMETER_COLORS, Y_AXIS_DOMAIN } from '@/types/machineLearningTypes';
 import { usePredictionData } from '@/hooks/useMachineLearningData';
 import ContentLoader from 'react-content-loader';
-import { format, parseISO } from 'date-fns';
-import { id } from 'date-fns/locale';
 
 interface PredictionChartProps {
   parameter: PredictionParameter;
@@ -25,22 +23,40 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title }) =
   const combinedData: CombinedDataPoint[] = React.useMemo(() => {
     const dataMap = new Map<string, CombinedDataPoint>();
     
+    // Extract just the date and hour from ISO string for display
+    const formatDateString = (isoString: string) => {
+      try {
+        // Extract just the date and hour part, e.g. "2025-04-19 00"
+        const dateTimeParts = isoString.split('T');
+        if (dateTimeParts.length > 0) {
+          const datePart = dateTimeParts[0]; // 2025-04-19
+          const timePart = dateTimeParts[1] ? dateTimeParts[1].substr(0, 2) : "00"; // Get just the hour
+          return `${datePart} ${timePart}`;
+        }
+        return isoString;
+      } catch {
+        return isoString;
+      }
+    };
+    
     // Add actual data to the map
     actualData.forEach(item => {
-      const date = new Date(item.datetime);
-      const key = date.toISOString();
+      // Use the raw datetime as key
+      const key = item.datetime;
+      const formattedDate = formatDateString(item.datetime);
       
       dataMap.set(key, {
         datetime: key,
-        formattedDate: format(date, 'dd/MM HH:mm', { locale: id }),
+        formattedDate,
         actual: item.value
       });
     });
     
     // Add prediction data to the map (merge with actual if same timestamp)
     predictionData.forEach(item => {
-      const date = new Date(item.datetime);
-      const key = date.toISOString();
+      // Use the raw datetime as key
+      const key = item.datetime;
+      const formattedDate = formatDateString(item.datetime);
       
       if (dataMap.has(key)) {
         // Merge with existing data point
@@ -50,7 +66,7 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title }) =
         // Create new data point
         dataMap.set(key, {
           datetime: key,
-          formattedDate: format(date, 'dd/MM HH:mm', { locale: id }),
+          formattedDate,
           prediction: item.value
         });
       }
@@ -61,30 +77,8 @@ const PredictionChart: React.FC<PredictionChartProps> = ({ parameter, title }) =
       .sort((a, b) => a.datetime.localeCompare(b.datetime));
   }, [actualData, predictionData]);
 
-  // Determine if date is actual (for domain calculation)
-  const isActualDate = (dateStr: string) => {
-    if (!actualData.length) return false;
-    
-    const checkDate = new Date(dateStr);
-    checkDate.setHours(0, 0, 0, 0);
-    
-    const firstActualDate = new Date(actualData[0].datetime);
-    firstActualDate.setHours(0, 0, 0, 0);
-    
-    return checkDate.getTime() === firstActualDate.getTime();
-  };
-
   const formatYAxis = (value: number) => {
     return value.toFixed(1);
-  };
-
-  const formatXAxis = (value: string) => {
-    try {
-      const date = parseISO(value);
-      return format(date, 'dd/MM HH:mm');
-    } catch {
-      return value;
-    }
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {

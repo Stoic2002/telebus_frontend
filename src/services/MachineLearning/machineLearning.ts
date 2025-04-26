@@ -156,7 +156,7 @@ export const predictionService = {
     // Create a map of actual data with datetime as key
     const actualMap = new Map<string, number>();
     actualData.forEach(item => {
-      actualMap.set(new Date(item.datetime).toISOString(), item.value);
+      actualMap.set(item.datetime, item.value);
     });
     
     // Find matching prediction points
@@ -164,9 +164,8 @@ export const predictionService = {
     let count = 0;
     
     predictionData.forEach(item => {
-      const key = new Date(item.datetime).toISOString();
-      if (actualMap.has(key)) {
-        const actualValue = actualMap.get(key) || 0;
+      if (actualMap.has(item.datetime)) {
+        const actualValue = actualMap.get(item.datetime) || 0;
         const predValue = item.value;
         
         // Calculate percentage error for this point
@@ -196,8 +195,12 @@ export const predictionService = {
     // Extract prediction data for 7 days (if we had 7 days of data, we would use it all)
     // Here we just repeat the 1-day sample data 7 times for prediction
     const predictionData: Prediction[] = [];
-    const baseDate = new Date(); // Use current date as base
-    baseDate.setHours(0, 0, 0, 0); // Start from midnight
+    
+    // Base date for our prediction - we'll use the year/month from the sample data
+    // and only adjust the day to represent predictions for 7 consecutive days
+    const year = 2025;
+    const month = 4; // April is 4 (not 3, not zero-indexed here)
+    const startDay = 19; // The day from the sample data
     
     // Generate prediction data for 7 days (reusing the 1-day sample)
     for (let day = 0; day < 7; day++) {
@@ -205,13 +208,15 @@ export const predictionService = {
         const sampleIndex = hour % sampleData.length;
         const samplePoint = sampleData[sampleIndex];
         
-        const date = new Date(baseDate);
-        date.setDate(date.getDate() + day);
-        date.setHours(hour);
+        // Format date as "YYYY-MM-DD HH"
+        const currentDay = startDay + day;
+        const formattedDay = currentDay.toString().padStart(2, '0');
+        const formattedHour = hour.toString().padStart(2, '0');
+        const datetime = `${year}-${month.toString().padStart(2, '0')}-${formattedDay} ${formattedHour}`;
         
         // Add to prediction data
         predictionData.push({
-          datetime: date.toISOString(),
+          datetime: datetime,
           value: samplePoint[parameter]
         });
       }
@@ -220,19 +225,21 @@ export const predictionService = {
     // Create actual data for just the first day
     // Add small random variations to make it different from prediction
     const actualData: Prediction[] = [];
+    
     for (let hour = 0; hour < 24; hour++) {
       const sampleIndex = hour % sampleData.length;
       const samplePoint = sampleData[sampleIndex];
       
-      const date = new Date(baseDate);
-      date.setHours(hour);
+      // Format date exactly as in the sample
+      const formattedHour = hour.toString().padStart(2, '0');
+      const datetime = `${year}-${month.toString().padStart(2, '0')}-${startDay.toString().padStart(2, '0')} ${formattedHour}`;
       
       // Add random variation to actual data (±15%)
       const variation = (Math.random() * 0.3) - 0.15;
       const actualValue = samplePoint[parameter] * (1 + variation);
       
       actualData.push({
-        datetime: date.toISOString(),
+        datetime: datetime,
         value: parseFloat(actualValue.toFixed(2))
       });
     }
