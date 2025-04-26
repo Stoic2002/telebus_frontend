@@ -10,6 +10,7 @@ import { ApiElevationData, ApiReportData, RohData } from '@/types/reportTypes';
 import { formatNumber } from '../../lib/formatNumber';
 
 
+
 const HomeContent: React.FC = () => {
   const [tmaData, setTmaData] = useState({ tmaValue: 0, volume: 0 });
   const [targetElevasi, setTargetElevasi] = useState<number | null>(null); // State untuk target elevasi
@@ -277,6 +278,8 @@ const HomeContent: React.FC = () => {
       <MonitoringPbsComponent />
 
       <RainfallComponent />
+
+    
     </div>
   );
 };

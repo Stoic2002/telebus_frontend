@@ -118,3 +118,51 @@ export interface NodeValue {
     }
     lastUpdate: string | null;
   }
+
+  export interface WeatherData {
+    humidity: {
+      min: number | null;
+      max: number | null;
+      avg: number | null;
+      act: number | null;
+      absAct: number | null;
+    };
+    windSpeed: {
+      min: number | null;
+      max: number | null;
+      kmh: number | null;
+      avg: number | null;
+      act: number | null;
+    };
+    evaporation: {
+      temp: number | null;
+      kPan: number | null;
+      eTo: number | null;
+      waterLevelEvap: number | null;
+    };
+    airTemperature: {
+      min: number | null;
+      max: number | null;
+      avg: number | null;
+      act: number | null;
+    };
+    radiation: {
+      min: number | null;
+      max: number | null;
+      avg: number | null;
+      act: number | null;
+    };
+    airPressure: {
+      min: number | null;
+      max: number | null;
+      avg: number | null;
+      act: number | null;
+    };
+  }
+  
+  export interface UseAwsNodeDataReturn {
+    data: NodeResponse | null;
+    error: string | null;
+    weather: WeatherData;
+    lastUpdate: string | null;
+  }

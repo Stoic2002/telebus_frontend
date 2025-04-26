@@ -56,12 +56,14 @@ const Header = () => {
       'machine-learning',
       'data-input-ghw', 
       'trends',
+      'telemetering-pjt',
       'report'
     ],
     client: [
       'home', 
       'machine-learning', 
       'trends', 
+      'telemetering-pjt',
       'report'
     ],
     opr: [
@@ -69,6 +71,7 @@ const Header = () => {
       'machine-learning',
       'data-input-operator',
       'trends',
+      'telemetering-pjt',
       'report'
     ]
   };

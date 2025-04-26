@@ -3,13 +3,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import axios from 'axios';
 import { RainfallData, TelemeterData } from '@/types/telemeteringPjtTypes';
+// import MapPJTContent from './MapPJTContent';
 
+  
+import dynamic from 'next/dynamic';
 
+const MapPJTContent = dynamic(() => import('@/components/telemetering-pjt/MapPJTContent'), {
+  ssr: false, // Menonaktifkan server-side rendering untuk komponen ini
+});
 
 const TelemeteringPJTContent: React.FC = () => {
   const [telemeterData, setTelemeterData] = useState<TelemeterData>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -101,6 +109,8 @@ const TelemeteringPJTContent: React.FC = () => {
           <CardTitle>Telemetering Perum Jasa Tirta</CardTitle>
         </CardHeader>
       </Card>
+
+      <MapPJTContent />
 
       <Tabs defaultValue="waterlevel" className="space-y-4">
         <TabsList>
