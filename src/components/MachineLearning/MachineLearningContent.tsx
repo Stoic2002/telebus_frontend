@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceArea, Label } from 'recharts';
-import { Loader2, BarChart2, Download, Clock } from 'lucide-react';
+import { Loader2, BarChart2, Download, Clock, AlertCircle } from 'lucide-react';
 import { PARAMETER_COLORS, Prediction, PredictionParameter, Y_AXIS_DOMAIN } from '@/types/machineLearningTypes';
 import { useLast24HData } from '@/hooks/useMachineLearningData';
 import { fetchPredictionsWithHistory, combinePredictionData } from '@/services/MachineLearning/machineLearningService';
@@ -40,6 +40,17 @@ const MachineLearningContent: React.FC = () => {
   // Set default to 7-day only
   const [predictionDuration] = useState<PredictionDuration>('7-day');
   
+  // Add state for actual yesterday data
+  const [actualYesterdayData, setActualYesterdayData] = useState<Prediction[]>([]);
+  const [isLoadingYesterdayData, setIsLoadingYesterdayData] = useState<boolean>(false);
+  const [yesterdayDataError, setYesterdayDataError] = useState<string | null>(null);
+  
+  // Update state for yesterday's predictions
+  const [yesterdayPredictions, setYesterdayPredictions] = useState<Prediction[]>([]);
+  const [isLoadingYesterdayPredictions, setIsLoadingYesterdayPredictions] = useState<boolean>(false);
+  const [yesterdayPredictionsError, setYesterdayPredictionsError] = useState<string | null>(null);
+  const [hasYesterdayPredictions, setHasYesterdayPredictions] = useState<boolean>(false);
+  
   const { data: dataLast24H, isLoading, error: err1 } = useLast24HData();
 
   const formatDateTimeForCSV = (datetime: string) => {
@@ -60,6 +71,95 @@ const MachineLearningContent: React.FC = () => {
 
   // Get appropriate X-axis interval for 7-day
   const getXAxisInterval = (): number => 23; // Show every 24th hour (once a day)
+
+  // Fetch actual yesterday data from API
+  const fetchYesterdayData = async () => {
+    try {
+      setIsLoadingYesterdayData(true);
+      const response = await fetch('http://192.168.105.90/pbs-inflow-h-yesterday');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Transform API response to Prediction format
+      // Convert all values to absolute values (ensuring no negative values)
+      const transformedData: Prediction[] = data.map((item: any) => {
+        // Parse the value and convert to absolute value
+        const parsedValue = parseFloat(item.value);
+        const absoluteValue = Math.abs(parsedValue);
+        
+        return {
+          datetime: item.timestamp,
+          value: absoluteValue,
+          actualValue: absoluteValue,
+          predictedValue: undefined
+        };
+      });
+      
+      setActualYesterdayData(transformedData);
+      setYesterdayDataError(null);
+    } catch (err) {
+      console.error('Error fetching yesterday data:', err);
+      setYesterdayDataError('Failed to fetch yesterday data');
+    } finally {
+      setIsLoadingYesterdayData(false);
+    }
+  };
+
+  // Use effect to fetch yesterday's actual data
+  useEffect(() => {
+    fetchYesterdayData();
+  }, []);
+
+  // Fetch yesterday's predictions from API
+  const fetchYesterdayPredictions = async () => {
+    try {
+      setIsLoadingYesterdayPredictions(true);
+      const response = await fetch('http://192.168.105.90/prediction-inflow-today');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.length >= 48) {
+        // Take yesterday's predictions (data points 24-48 from the end)
+        const yesterdayData = data.slice(data.length - 48, data.length - 24);
+        
+        // Transform data
+        const transformedData: Prediction[] = yesterdayData.map((item: any) => ({
+          datetime: item.date,
+          value: Math.abs(parseFloat(item.inflow_prediction_value)),
+          predictedValue: Math.abs(parseFloat(item.inflow_prediction_value)),
+          actualValue: undefined
+        }));
+        
+        setYesterdayPredictions(transformedData);
+        setHasYesterdayPredictions(true);
+        setYesterdayPredictionsError(null);
+      } else {
+        // Not enough historical data
+        setYesterdayPredictions([]);
+        setHasYesterdayPredictions(false);
+        setYesterdayPredictionsError('Not enough historical prediction data');
+      }
+    } catch (err) {
+      console.error('Error fetching yesterday predictions:', err);
+      setYesterdayPredictionsError('Error loading prediction data');
+      setHasYesterdayPredictions(false);
+    } finally {
+      setIsLoadingYesterdayPredictions(false);
+    }
+  };
+
+  // Use effect to fetch yesterday's predictions on component mount
+  useEffect(() => {
+    fetchYesterdayPredictions();
+  }, []);
 
   // Fetch predictions from API
   const fetchPredictions = async () => {
@@ -84,9 +184,58 @@ const MachineLearningContent: React.FC = () => {
 
       // Fetch predictions for each parameter
       for (const param of parameters) {
+        // Only use the service for predictions and predicted historical data
         const result = await fetchPredictionsWithHistory(param, 168, dataLast24H);
-        predictionResults[param] = result.predictions;
-        historicalResults[param] = result.historicalData;
+        
+        // Process future predictions to ensure absolute values
+        predictionResults[param] = result.predictions.map(pred => ({
+          ...pred,
+          value: Math.abs(pred.value), // Ensure value is absolute (positive)
+          predictedValue: pred.predictedValue !== undefined ? Math.abs(pred.predictedValue) : undefined,
+          actualValue: pred.actualValue !== undefined ? Math.abs(pred.actualValue) : undefined
+        }));
+        
+        if (param === 'INFLOW') {
+          // For INFLOW, use the actual API data for actual values
+          if (actualYesterdayData.length > 0) {
+            // Create a map of yesterday's historical data with both actual and predicted values
+            historicalResults[param] = actualYesterdayData.map((actualItem, index) => {
+              // Get corresponding prediction from API data if available
+              const predictionItem = hasYesterdayPredictions && yesterdayPredictions.length > index 
+                ? yesterdayPredictions[index] 
+                : null;
+              
+              return {
+                datetime: actualItem.datetime,
+                value: 0, // Set to 0 to hide future prediction line
+                actualValue: actualItem.actualValue, // Actual value from API
+                predictedValue: predictionItem ? predictionItem.predictedValue : undefined // From API
+              };
+            });
+          } else {
+            // If no actual data, use service mock data
+            historicalResults[param] = result.historicalData.map((histItem, index) => {
+              // Get corresponding prediction from API data if available
+              const predictionItem = hasYesterdayPredictions && yesterdayPredictions.length > index 
+                ? yesterdayPredictions[index] 
+                : null;
+              
+              return {
+                ...histItem,
+                value: 0, // Set to 0 to hide future prediction line
+                predictedValue: predictionItem ? predictionItem.predictedValue : histItem.predictedValue
+              };
+            });
+          }
+        } else {
+          // For other parameters, use the service mock data
+          historicalResults[param] = result.historicalData.map(histItem => ({
+            ...histItem,
+            value: 0, // Set to 0 to hide future prediction line
+            predictedValue: histItem.predictedValue !== undefined ? Math.abs(histItem.predictedValue) : undefined,
+            actualValue: histItem.actualValue !== undefined ? Math.abs(histItem.actualValue) : undefined
+          }));
+        }
       }
 
       setPredictions(predictionResults);
@@ -100,12 +249,12 @@ const MachineLearningContent: React.FC = () => {
     }
   };
 
-  // Use effect to fetch predictions when data changes
+  // Use effect to fetch predictions when data changes or when actualYesterdayData changes
   useEffect(() => {
     if (dataLast24H && dataLast24H.length > 0) {
       fetchPredictions();
     }
-  }, [dataLast24H]);
+  }, [dataLast24H, actualYesterdayData]);
 
   // Format datetime for better readability
   const formatDateTime = (datetime: string) => {
@@ -268,7 +417,7 @@ const MachineLearningContent: React.FC = () => {
   const { accuracy: accuracyYesterday, mape: mapeYesterday, meanError: meanErrorYesterday } = calculateAccuracy(currentHistorical);
   const { total, average } = calculateStats([...currentHistorical, ...currentPredictions]);
 
-  // Find first and last datetime of yesterday's data
+  // Find first and last datetime of yesterday's data to position the "Not enough data" message
   const getYesterdayBounds = () => {
     if (currentHistorical.length === 0) return { start: "", end: "" };
     
@@ -284,34 +433,196 @@ const MachineLearningContent: React.FC = () => {
 
   const { start: yesterdayStart, end: yesterdayEnd } = getYesterdayBounds();
 
-  // Render loading state
-  if (loading || isLoading) {
-    return (
-      <Card className="w-full max-w-6xl mx-auto flex justify-center items-center h-96 bg-gradient-to-br from-blue-50 to-blue-100 shadow-lg mt-6">
-        <div className="w-full flex flex-col items-center space-y-4">
-          {/* Shimmer Block */}
-          <div className="w-3/4 h-8 bg-gray-200 rounded animate-pulse"></div>
-          <div className="w-1/2 h-8 bg-gray-200 rounded animate-pulse"></div>
-          <div className="w-full h-56 bg-gray-200 rounded-xl animate-pulse"></div>
+  // Render info for missing predictions
+  const renderNotEnoughDataLabel = () => {
+    if (!hasYesterdayPredictions && !isLoadingYesterdayPredictions && yesterdayStart && yesterdayEnd) {
+      return (
+        <ReferenceArea
+          x1={yesterdayStart}
+          x2={yesterdayEnd}
+          fill="#FEF9C3"
+          fillOpacity={0.2}
+          strokeOpacity={0}
+        >
+          <Label
+            value="Not enough data"
+            position="center"
+            fill="#B45309"
+            fontSize={14}
+            fontWeight="bold"
+          />
+        </ReferenceArea>
+      );
+    }
+    return null;
+  };
+
+  // Add warning for yesterday predictions
+  const renderYesterdayPredictionsWarning = () => {
+    if (isLoadingYesterdayPredictions) {
+      return (
+        <div className="mb-2 bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
+          <div className="flex items-center">
+            <Loader2 className="w-5 h-5 text-blue-500 mr-2 animate-spin" />
+            <span>Loading yesterday's prediction data...</span>
+          </div>
         </div>
+      );
+    }
+    
+    if (yesterdayPredictionsError) {
+      return (
+        <div className="mb-2 bg-amber-50 p-3 rounded-md border-l-4 border-amber-400">
+          <div className="flex items-center justify-between">
+            <span className="text-amber-700">
+              {hasYesterdayPredictions 
+                ? 'Using incomplete prediction data from yesterday' 
+                : 'No prediction data available for yesterday'}
+            </span>
+            <button 
+              onClick={fetchYesterdayPredictions}
+              className="px-3 py-1 bg-amber-500 text-white rounded-md hover:bg-amber-600 text-xs"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      );
+    }
+    
+    if (hasYesterdayPredictions) {
+      return (
+        <div className="mb-2 bg-green-50 p-3 rounded-md border-l-4 border-green-400">
+          <span className="text-green-700">Using prediction data from yesterday</span>
+        </div>
+      );
+    }
+    
+    return null;
+  };
+
+  // Add warning for yesterday data
+  const renderYesterdayDataWarning = () => {
+    if (isLoadingYesterdayData) {
+      return (
+        <div className="mb-2 bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
+          <div className="flex items-center">
+            <Loader2 className="w-5 h-5 text-blue-500 mr-2 animate-spin" />
+            <span>Loading yesterday's actual data...</span>
+          </div>
+        </div>
+      );
+    }
+    
+    if (yesterdayDataError) {
+      return (
+        <div className="mb-2 bg-amber-50 p-3 rounded-md border-l-4 border-amber-400">
+          <div className="flex items-center justify-between">
+            <span className="text-amber-700">Using mock data for yesterday (API connection failed)</span>
+            <button 
+              onClick={fetchYesterdayData}
+              className="px-3 py-1 bg-amber-500 text-white rounded-md hover:bg-amber-600 text-xs"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      );
+    }
+    
+    if (actualYesterdayData.length > 0) {
+      return (
+        <div className="mb-2 bg-green-50 p-3 rounded-md border-l-4 border-green-400">
+          <span className="text-green-700">Using actual data for yesterday from API</span>
+        </div>
+      );
+    }
+    
+    return null;
+  };
+
+  // Render an improved shimmer skeleton loading state
+  const renderShimmerSkeleton = () => {
+    return (
+      <Card className="w-full max-w-6xl mx-auto bg-white shadow-2xl rounded-2xl overflow-hidden mt-6">
+        <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              <div className="w-10 h-10 bg-white/20 rounded-md animate-pulse"></div>
+              <div className="w-64 h-8 bg-white/20 rounded-md animate-pulse"></div>
+            </div>
+            <div className="w-36 h-10 bg-white/20 rounded-full animate-pulse"></div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6 bg-gray-50">
+          <div className="bg-white rounded-xl shadow-md p-4 mb-4">
+            <div className="mb-4 flex justify-between items-center">
+              <div className="w-60 h-8 bg-gray-200 rounded animate-pulse"></div>
+              <div className="w-40 h-6 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+            
+            {/* Chart skeleton */}
+            <div className="w-full h-[400px] bg-gray-100 rounded-xl animate-pulse flex flex-col justify-center items-center">
+              <div className="w-16 h-16 rounded-full bg-gray-200 animate-pulse mb-4"></div>
+              <div className="w-48 h-6 bg-gray-200 rounded animate-pulse"></div>
+              <div className="w-36 h-4 bg-gray-200 rounded animate-pulse mt-2"></div>
+            </div>
+          </div>
+          
+          {/* Table skeleton */}
+          <div className="bg-white rounded-xl shadow-md p-4">
+            <div className="w-48 h-6 bg-gray-200 rounded animate-pulse mb-6"></div>
+            <div className="space-y-3">
+              <div className="w-full h-10 bg-gray-200 rounded animate-pulse"></div>
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="w-full h-12 bg-gray-100 rounded animate-pulse"></div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
       </Card>
     );
+  };
+
+  // Render loading state
+  if (loading || isLoading || isLoadingYesterdayData) {
+    return renderShimmerSkeleton();
   }
 
   // Render error state
-  if (error || err1) {
+  if (error || err1 || yesterdayDataError) {
+    // Convert errors to string to avoid React Node issues
+    const errorMessage = error || err1 || yesterdayDataError;
+    const errorText = errorMessage ? 
+      (typeof errorMessage === 'object' ? 
+        (errorMessage.message || 'An unknown error occurred') : 
+        String(errorMessage))
+      : 'An unknown error occurred';
+
     return (
       <Card className="w-full max-w-6xl mx-auto bg-gradient-to-br from-red-50 to-red-100 shadow-lg">
         <CardContent className="flex flex-col items-center justify-center p-8 space-y-4">
           <div className="text-red-600 text-lg font-semibold text-center">
-            {error}
+            {errorText}
           </div>
-          <button 
-            onClick={fetchPredictions} 
-            className="px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md"
-          >
-            Retry Connection
-          </button>
+          <div className="flex space-x-4">
+            {(error || err1) && (
+              <button 
+                onClick={fetchPredictions} 
+                className="px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md"
+              >
+                Retry Prediction API
+              </button>
+            )}
+            {yesterdayDataError && (
+              <button 
+                onClick={fetchYesterdayData} 
+                className="px-6 py-3 bg-amber-600 text-white rounded-full hover:bg-amber-700 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md"
+              >
+                Retry Yesterday Data
+              </button>
+            )}
+          </div>
         </CardContent>
       </Card>
     );
@@ -348,95 +659,101 @@ const MachineLearningContent: React.FC = () => {
             </div>
           </div>
           
-          <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={processedData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-              {/* Reference area for yesterday's data with yellow background */}
-              {yesterdayStart && yesterdayEnd && (
-                <ReferenceArea
-                  x1={yesterdayStart}
-                  x2={yesterdayEnd}
-                  fill="#FEF9C3"
-                  fillOpacity={0.4}
-                  strokeOpacity={0}
-                >
-                  <Label
-                    value={`Accuracy: ${accuracyYesterday}%`}
-                    position="insideTop"
-                    fill="#B45309"
-                    fontSize={12}
-                    offset={10}
-                  />
-                </ReferenceArea>
-              )}
-              <XAxis 
-                dataKey="datetime" 
-                tickFormatter={formatXAxisTick}
-                interval={getXAxisInterval()}
-                stroke="#6b7280"
-                angle={-45}
-                textAnchor="end"
-                height={60}
-                padding={{ left: 10, right: 10 }}
-              />
-              <YAxis 
-                domain={Y_AXIS_DOMAIN[selectedParameter]}
-                label={{ 
-                  value: `${selectedParameter} Value`, 
-                  angle: -90, 
-                  position: 'insideLeft',
-                  fill: '#6b7280'
-                }} 
-                stroke="#6b7280"
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'rgba(255,255,255,0.9)', 
-                  border: '1px solid #e0e0e0',
-                  borderRadius: '8px'
-                }}
-                labelFormatter={(value) => formatDateTime(value)} 
-                formatter={(value, name) => {
-                  if (value === null || value === undefined || value === 0) return ['-', name];
-                  return [parseFloat(value.toString()).toFixed(2), name];
-                }}
-              />
-              <Legend />
-              {/* Yesterday's Actual Data Line */}
-              <Line 
-                type="monotone" 
-                dataKey="actualValue" 
-                stroke={CHART_COLORS.actual}
-                strokeWidth={3}
-                dot={false}
-                activeDot={{ r: 8, strokeWidth: 2, fill: CHART_COLORS.actual }}
-                name="Yesterday's Actual"
-                connectNulls
-              />
-              {/* Yesterday's Prediction Line */}
-              <Line 
-                type="monotone" 
-                dataKey="predictedValue" 
-                stroke={CHART_COLORS.yesterdayPrediction}
-                strokeWidth={3}
-                dot={false}
-                activeDot={{ r: 8, strokeWidth: 2, fill: CHART_COLORS.yesterdayPrediction }}
-                name="Yesterday's Prediction"
-                connectNulls
-              />
-              {/* Future Prediction Line (starting from today) */}
-              <Line 
-                type="monotone" 
-                dataKey="value" 
-                stroke={CHART_COLORS.futurePrediction}
-                strokeWidth={3}
-                dot={false}
-                activeDot={{ r: 8, strokeWidth: 2, fill: CHART_COLORS.futurePrediction }}
-                name="Future Prediction"
-                connectNulls
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          {renderYesterdayDataWarning()}
+          {renderYesterdayPredictionsWarning()}
+          
+          <div className="relative">
+            <ResponsiveContainer width="100%" height={400}>
+              <LineChart data={processedData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                {/* Reference area for yesterday's data with yellow background */}
+                {yesterdayStart && yesterdayEnd && (
+                  <ReferenceArea
+                    x1={yesterdayStart}
+                    x2={yesterdayEnd}
+                    fill="#FEF9C3"
+                    fillOpacity={0.4}
+                    strokeOpacity={0}
+                  >
+                    <Label
+                      value={`Accuracy: ${accuracyYesterday}%`}
+                      position="insideTop"
+                      fill="#B45309"
+                      fontSize={12}
+                      offset={10}
+                    />
+                  </ReferenceArea>
+                )}
+                {renderNotEnoughDataLabel()}
+                <XAxis 
+                  dataKey="datetime" 
+                  tickFormatter={formatXAxisTick}
+                  interval={getXAxisInterval()}
+                  stroke="#6b7280"
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                  padding={{ left: 10, right: 10 }}
+                />
+                <YAxis 
+                  domain={Y_AXIS_DOMAIN[selectedParameter]}
+                  label={{ 
+                    value: `${selectedParameter} Value`, 
+                    angle: -90, 
+                    position: 'insideLeft',
+                    fill: '#6b7280'
+                  }} 
+                  stroke="#6b7280"
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'rgba(255,255,255,0.9)', 
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '8px'
+                  }}
+                  labelFormatter={(value) => formatDateTime(value)} 
+                  formatter={(value, name) => {
+                    if (value === null || value === undefined || value === 0) return ['-', name];
+                    return [parseFloat(value.toString()).toFixed(2), name];
+                  }}
+                />
+                <Legend />
+                {/* Yesterday's Actual Data Line */}
+                <Line 
+                  type="monotone" 
+                  dataKey="actualValue" 
+                  stroke={CHART_COLORS.actual}
+                  strokeWidth={3}
+                  dot={false}
+                  activeDot={{ r: 8, strokeWidth: 2, fill: CHART_COLORS.actual }}
+                  name="Yesterday's Actual"
+                  connectNulls
+                />
+                {/* Yesterday's Prediction Line */}
+                <Line 
+                  type="monotone" 
+                  dataKey="predictedValue" 
+                  stroke={CHART_COLORS.yesterdayPrediction}
+                  strokeWidth={3}
+                  dot={false}
+                  activeDot={{ r: 8, strokeWidth: 2, fill: CHART_COLORS.yesterdayPrediction }}
+                  name="Yesterday's Prediction"
+                  connectNulls
+                />
+                {/* Future Prediction Line (starting from today) */}
+                <Line 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke={CHART_COLORS.futurePrediction}
+                  strokeWidth={3}
+                  dot={false}
+                  activeDot={{ r: 8, strokeWidth: 2, fill: CHART_COLORS.futurePrediction }}
+                  name="Future Prediction"
+                  connectNulls
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
         
         {/* Prediction Table */}
