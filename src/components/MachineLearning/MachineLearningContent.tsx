@@ -84,20 +84,57 @@ const MachineLearningContent: React.FC = () => {
       
       const data = await response.json();
       
-      // Transform API response to Prediction format
-      // Convert all values to absolute values (ensuring no negative values)
-      const transformedData: Prediction[] = data.map((item: any) => {
-        // Parse the value and convert to absolute value
+      // Create a map to check for and fill missing hours
+      const hourData = new Map<number, number>();
+      
+      // Parse the timestamp and populate the map with available data
+      data.forEach((item: any) => {
+        const timestamp = new Date(item.timestamp);
+        const hour = timestamp.getHours();
         const parsedValue = parseFloat(item.value);
         const absoluteValue = Math.abs(parsedValue);
         
-        return {
-          datetime: item.timestamp,
-          value: absoluteValue,
-          actualValue: absoluteValue,
-          predictedValue: undefined
-        };
+        hourData.set(hour, absoluteValue);
       });
+      
+      // Create complete 24-hour dataset, filling in missing hours
+      const transformedData: Prediction[] = [];
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      // Get reference date for yesterday (keep year, month, day consistent)
+      const refDate = new Date(data[0]?.timestamp || yesterday);
+      refDate.setDate(refDate.getDate());
+      
+      for (let hour = 0; hour < 24; hour++) {
+        const date = new Date(refDate);
+        date.setHours(hour, 0, 0, 0);
+        
+        // Check if we have data for this hour
+        const value = hourData.get(hour);
+        
+        if (value !== undefined) {
+          // Use actual value if available
+          transformedData.push({
+            datetime: date.toISOString(),
+            value: value,
+            actualValue: value,
+            predictedValue: undefined
+          });
+        } else {
+          // If hour is missing, add a placeholder with null value
+          // This will create a gap in the line chart rather than connecting through incorrect values
+          transformedData.push({
+            datetime: date.toISOString(),
+            value: null as any, // Use null to create a gap
+            actualValue: null as any,
+            predictedValue: undefined
+          });
+        }
+      }
+      
+      // Sort by datetime to ensure correct order
+      transformedData.sort((a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime());
       
       setActualYesterdayData(transformedData);
       setYesterdayDataError(null);
@@ -125,18 +162,54 @@ const MachineLearningContent: React.FC = () => {
       }
       
       const data = await response.json();
+      console.log(data);
       
-      if (data.length >= 48) {
-        // Take yesterday's predictions (data points 24-48 from the end)
-        const yesterdayData = data.slice(data.length - 48, data.length - 24);
+      if (data.length > 24) {
+        const yesterdayData = data.slice(24, 48);
         
-        // Transform data
-        const transformedData: Prediction[] = yesterdayData.map((item: any) => ({
-          datetime: item.date,
-          value: Math.abs(parseFloat(item.inflow_prediction_value)),
-          predictedValue: Math.abs(parseFloat(item.inflow_prediction_value)),
-          actualValue: undefined
-        }));
+        // Create a map to track which hours we have data for
+        const hourData = new Map<number, number>();
+        
+        // Process the existing data to find available hours
+        yesterdayData.forEach((item: any) => {
+          const timestamp = new Date(item.date);
+          const hour = timestamp.getHours();
+          const value = Math.abs(parseFloat(item.inflow_prediction_value));
+          hourData.set(hour, value);
+        });
+        
+        // Create a complete 24-hour dataset
+        const transformedData: Prediction[] = [];
+        const refDate = new Date(yesterdayData[0]?.date || new Date());
+        
+        for (let hour = 0; hour < 24; hour++) {
+          const date = new Date(refDate);
+          date.setHours(hour, 0, 0, 0);
+          
+          // Check if we have data for this hour
+          const value = hourData.get(hour);
+          
+          if (value !== undefined) {
+            // Use actual prediction if available
+            transformedData.push({
+              datetime: date.toISOString(),
+              value: value,
+              predictedValue: value,
+              actualValue: undefined
+            });
+          } else {
+            // For missing hours, add a placeholder with null value
+            transformedData.push({
+              datetime: date.toISOString(),
+              value: null as any, // Use null to create a gap in the chart
+              predictedValue: null as any,
+              actualValue: undefined
+            });
+          }
+        }
+        
+        // Sort by datetime to ensure correct order
+        transformedData.sort((a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime());
         
         setYesterdayPredictions(transformedData);
         setHasYesterdayPredictions(true);
@@ -383,13 +456,16 @@ const MachineLearningContent: React.FC = () => {
 
   // Calculate prediction accuracy for yesterday
   const calculateAccuracy = (historical: Prediction[]) => {
-    if (!historical || historical.length === 0) return { accuracy: 0, mape: 0 };
+    if (!historical || historical.length === 0) return { accuracy: 0, mape: 0, meanError: 0 };
     
     let totalError = 0;
     let totalPercentageError = 0;
+    let count = 0;
     
     historical.forEach(item => {
-      if (item.actualValue !== undefined && item.predictedValue !== undefined) {
+      // Only include points that have both actual and predicted values (not null)
+      if (item.actualValue !== undefined && item.predictedValue !== undefined && 
+          item.actualValue !== null && item.predictedValue !== null) {
         const error = Math.abs(item.actualValue - item.predictedValue);
         totalError += error;
         
@@ -398,11 +474,16 @@ const MachineLearningContent: React.FC = () => {
           const percentageError = (error / Math.abs(item.actualValue)) * 100;
           totalPercentageError += percentageError;
         }
+        
+        count++;
       }
     });
     
-    const meanError = totalError / historical.length;
-    const mape = totalPercentageError / historical.length; // Mean Absolute Percentage Error
+    // If no valid matching points, return 0
+    if (count === 0) return { accuracy: 0, mape: 0, meanError: 0 };
+    
+    const meanError = totalError / count;
+    const mape = totalPercentageError / count; // Mean Absolute Percentage Error
     
     // Convert MAPE to accuracy (100% - MAPE)
     const accuracy = Math.max(0, Math.min(100, 100 - mape));
@@ -432,6 +513,79 @@ const MachineLearningContent: React.FC = () => {
   };
 
   const { start: yesterdayStart, end: yesterdayEnd } = getYesterdayBounds();
+
+  // Render info for missing predictions or data points
+  const renderChartLabels = () => {
+    // For missing yesterday predictions
+    if (!hasYesterdayPredictions && !isLoadingYesterdayPredictions && yesterdayStart && yesterdayEnd) {
+      return (
+        <ReferenceArea
+          x1={yesterdayStart}
+          x2={yesterdayEnd}
+          fill="#FEF9C3"
+          fillOpacity={0.2}
+          strokeOpacity={0}
+        >
+          
+        </ReferenceArea>
+      );
+    }
+    
+    // Check for missing data points
+    const missingDataPoints = currentHistorical.filter(
+      item => item.actualValue === null || item.predictedValue === null
+    ).length;
+    
+    if (missingDataPoints > 0 && yesterdayStart && yesterdayEnd) {
+      return (
+        <ReferenceArea
+          x1={yesterdayStart}
+          x2={yesterdayEnd}
+          fill="#FEF9C3"
+          fillOpacity={0.2}
+          strokeOpacity={0}
+        >
+          <Label
+            value={`Accuracy: ${accuracyYesterday}%`}
+            position="insideTop"
+            fill="#B45309"
+            fontSize={12}
+            offset={10}
+          />
+          <Label
+            value={`(${missingDataPoints} missing data)`}
+            position="insideTop"
+            fill="#B45309"
+            fontSize={12}
+            offset={20}
+          />
+        </ReferenceArea>
+      );
+    }
+    
+    // Default label with accuracy
+    if (yesterdayStart && yesterdayEnd) {
+      return (
+        <ReferenceArea
+          x1={yesterdayStart}
+          x2={yesterdayEnd}
+          fill="#FEF9C3"
+          fillOpacity={0.4}
+          strokeOpacity={0}
+        >
+          <Label
+            value={`Accuracy: ${accuracyYesterday}%`}
+            position="insideTop"
+            fill="#B45309"
+            fontSize={12}
+            offset={10}
+          />
+        </ReferenceArea>
+      );
+    }
+    
+    return null;
+  };
 
   // Render info for missing predictions
   const renderNotEnoughDataLabel = () => {
@@ -490,14 +644,6 @@ const MachineLearningContent: React.FC = () => {
       );
     }
     
-    if (hasYesterdayPredictions) {
-      return (
-        <div className="mb-2 bg-green-50 p-3 rounded-md border-l-4 border-green-400">
-          <span className="text-green-700">Using prediction data from yesterday</span>
-        </div>
-      );
-    }
-    
     return null;
   };
 
@@ -530,10 +676,26 @@ const MachineLearningContent: React.FC = () => {
       );
     }
     
-    if (actualYesterdayData.length > 0) {
+    return null;
+  };
+
+  // Add warning for missing data points
+  const renderMissingDataWarning = () => {
+    // Count missing data points
+    const missingActualDataPoints = currentHistorical.filter(item => item.actualValue === null).length;
+    const missingPredictionDataPoints = currentHistorical.filter(item => item.predictedValue === null).length;
+    
+    if (missingActualDataPoints > 0 || missingPredictionDataPoints > 0) {
       return (
-        <div className="mb-2 bg-green-50 p-3 rounded-md border-l-4 border-green-400">
-          <span className="text-green-700">Using actual data for yesterday from API</span>
+        <div className="mb-2 bg-amber-50 p-3 rounded-md border-l-4 border-amber-400">
+          <div className="flex items-center">
+            <AlertCircle className="w-5 h-5 text-amber-500 mr-2" />
+            <span className="text-amber-700">
+              Data gaps detected: {missingActualDataPoints > 0 ? `${missingActualDataPoints} missing actual values` : ''}
+              {missingActualDataPoints > 0 && missingPredictionDataPoints > 0 ? ' and ' : ''}
+              {missingPredictionDataPoints > 0 ? `${missingPredictionDataPoints} missing prediction values` : ''}
+            </span>
+          </div>
         </div>
       );
     }
@@ -661,29 +823,14 @@ const MachineLearningContent: React.FC = () => {
           
           {renderYesterdayDataWarning()}
           {renderYesterdayPredictionsWarning()}
+          {renderMissingDataWarning()}
           
           <div className="relative">
             <ResponsiveContainer width="100%" height={400}>
               <LineChart data={processedData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                {/* Reference area for yesterday's data with yellow background */}
-                {yesterdayStart && yesterdayEnd && (
-                  <ReferenceArea
-                    x1={yesterdayStart}
-                    x2={yesterdayEnd}
-                    fill="#FEF9C3"
-                    fillOpacity={0.4}
-                    strokeOpacity={0}
-                  >
-                    <Label
-                      value={`Accuracy: ${accuracyYesterday}%`}
-                      position="insideTop"
-                      fill="#B45309"
-                      fontSize={12}
-                      offset={10}
-                    />
-                  </ReferenceArea>
-                )}
+                {/* Reference area with appropriate labels */}
+                {renderChartLabels()}
                 {renderNotEnoughDataLabel()}
                 <XAxis 
                   dataKey="datetime" 
@@ -727,7 +874,7 @@ const MachineLearningContent: React.FC = () => {
                   dot={false}
                   activeDot={{ r: 8, strokeWidth: 2, fill: CHART_COLORS.actual }}
                   name="Yesterday's Actual"
-                  connectNulls
+                  connectNulls={false}
                 />
                 {/* Yesterday's Prediction Line */}
                 <Line 
@@ -738,7 +885,7 @@ const MachineLearningContent: React.FC = () => {
                   dot={false}
                   activeDot={{ r: 8, strokeWidth: 2, fill: CHART_COLORS.yesterdayPrediction }}
                   name="Yesterday's Prediction"
-                  connectNulls
+                  connectNulls={false}
                 />
                 {/* Future Prediction Line (starting from today) */}
                 <Line 
@@ -749,7 +896,7 @@ const MachineLearningContent: React.FC = () => {
                   dot={false}
                   activeDot={{ r: 8, strokeWidth: 2, fill: CHART_COLORS.futurePrediction }}
                   name="Future Prediction"
-                  connectNulls
+                  connectNulls={false}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -774,12 +921,21 @@ const MachineLearningContent: React.FC = () => {
               <tbody>
                 {processedData.map((data, index) => {
                   const isYesterday = data.actualValue !== undefined;
+                  const isMissingData = data.actualValue === null || data.predictedValue === null;
                   return (
-                    <tr key={index} className={`border-b hover:bg-gray-50 ${isYesterday ? 'bg-yellow-50' : ''}`}>
+                    <tr key={index} className={`border-b hover:bg-gray-50 ${isYesterday ? 'bg-yellow-50' : ''} ${isMissingData ? 'bg-red-50' : ''}`}>
                       <td className="px-4 py-3">{formatDateTime(data.datetime)}</td>
-                      <td className="px-4 py-3">{data.actualValue?.toFixed(2) || '-'}</td>
                       <td className="px-4 py-3">
-                        {isYesterday ? data.predictedValue?.toFixed(2) : data.value?.toFixed(2)}
+                        {data.actualValue === null 
+                          ? <span className="text-red-500">Missing Data</span> 
+                          : data.actualValue?.toFixed(2) || '-'}
+                      </td>
+                      <td className="px-4 py-3">
+                        {isYesterday 
+                          ? (data.predictedValue === null 
+                              ? <span className="text-red-500">Missing Data</span> 
+                              : data.predictedValue?.toFixed(2)) 
+                          : data.value?.toFixed(2)}
                       </td>
                       <td className="px-4 py-3">
                         <span 
