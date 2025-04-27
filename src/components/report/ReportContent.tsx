@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { jsPDF } from 'jspdf';
 import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 // Shadcn UI Components
 import { 
@@ -460,7 +461,11 @@ const ReportContent: React.FC = () => {
       if (!groupedByDate[tanggal]) {
         groupedByDate[tanggal] = { tanggal, item: [] };
       }
-      const filteredValue = parseFloat(item.value).toFixed(2);
+      // Convert to absolute value to ensure there are no negative values
+      const parsedValue = parseFloat(item.value);
+      const absoluteValue = Math.abs(parsedValue);
+      const filteredValue = absoluteValue.toFixed(2);
+      
       groupedByDate[tanggal].item.push({
         jam,
         inflow: parseFloat(filteredValue)
@@ -557,165 +562,84 @@ const handleDownloadPDF = async () => {
   }
 };
 
-const handleDownloadExcel2 = () => {
-  let data: any[] = [];
-  
-  // Sesuaikan data berdasarkan report yang dipilih
-  switch (selectedReport) {
-    case 'ROH':
-      data = rohData.map((item: any) => ({
-        Tanggal: item.content.hariOrTanggal,
-        'Estimasi Inflow': item.content.estimasiInflow,
-        'Target Elevasi Hari Ini': item.content.targetELevasiHariIni,
-        'Volume Target Elevasi Hari Ini': item.content.volumeTargetELevasiHariIni,
-        'Realisasi Elevasi': item.content.realisasiElevasi,
-        'Volume Realisasi Elevasi': item.content.volumeRealisasiElevasi,
-        'Estimasi Irigasi': item.content.estimasiIrigasi,
-        'Estimasi DDC': item.content.estimasiDdcXTotalJamPembukaan,
-        'DDC Jam': item.content.ddcJam,
-        'Estimasi Spillway': item.content.estimasiSpillwayTotalJamPembukaan,
-        'Spillway Jam': item.content.spillwayJam,
-        'Total Outflow': item.content.totalOutflow,
-        'Estimasi Volume Waduk': item.content.estimasiVolumeWaduk,
-        'Estimasi Outflow': item.content.estimasiOutflow,
-        'Water Consumption 1 MW' : 1.13,
-        'Water Consumption 1 MW To 1 Hour' : 4080,
-        'Estimasi Elevasi Waduk Setelah Operasi': item.content.estimasiElevasiWadukSetelahOperasi,
-        'Estimasi Volume Waduk Setelah Operasi': item.content.estimasiVolumeWadukSetelahOperasi,
-        'Total Daya': item.content.totalDaya,
-      }));
-      break;
-     
-    case 'TMA':
-        if (tmaData?.content?.[0]?.content) {
-          data = tmaData.content[0].content.flatMap((dayData: any) => 
-            dayData.item.map((hourData: any) => ({
-              Tanggal: dayData.tanggal,
-              Jam: hourData.jam,
-              'TMA (mdpl)': hourData.tma
-            }))
-          );
-        }
-      break;
-  
-    case 'inflow':
-        if (inflowData?.content?.[0]?.content) {
-          data = inflowData.content[0].content.flatMap((dayData: any) =>
-            dayData.item.map((hourData: any) => ({
-              Tanggal: dayData.tanggal,
-              Jam: hourData.jam,
-              'Inflow (m3/s)': hourData.inflow
-            }))
-          );
-        }
-      break;
-  
-    case 'outflow':
-        if (outflowData?.content?.[0]?.content) {
-          data = outflowData.content[0].content.flatMap((dayData: any) =>
-            dayData.item.map((hourData: any) => ({
-              Tanggal: dayData.tanggal,
-              Jam: hourData.jam,
-              'Outflow (m3/s)': hourData.outflow
-            }))
-          );
-        }
-      break;
-  
-
-    case 'rtow':
-      data = rtowData.data.map((item: any) => ({
-        Bulan: item.bulan,
-        Hari: item.hari,
-        'Target Elevasi': item.targetElevasi,
-      }));
-      break;
-
-    default:
-      break;
-  }
-
-  // Buat worksheet dan workbook
-  const worksheet = XLSX.utils.json_to_sheet(data);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Report');
-
-  // Generate file Excel
-  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-  const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
-
-  // Download file
-  const formattedStartDate = new Date(startDate).toLocaleDateString('id-ID');
-  const filename = selectedReport === 'ROH' 
-    ? `${selectedReport}_${formattedStartDate}.xlsx`
-    : `${selectedReport}_${formattedStartDate}_${new Date(endDate).toLocaleDateString('id-ID')}.xlsx`;
-
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
-};
-
 const handleDownloadExcel = () => {
   const formatHourlyData = (data: any, valueKey: string): FormattedHourlyData => {
-    if (!data?.content?.[0]?.content) {
-      return {
-        headers: ['Jam'], // Default header
-        data: Array.from({ length: 24 }, (_, i) => [i]) // Default data with only the "Jam" column (24 hours)
-      };
+    if (!data?.content?.[0]?.content || data.content[0].content.length === 0) {
+      return { headers: [], data: [] };
     }
 
-    // Get all unique dates
-    const dates = data.content[0].content.map((day: any) => day.tanggal);
+    interface DayItem {
+      tanggal: number;
+      item: {
+        jam: number;
+        [key: string]: any;
+      }[];
+    }
 
-    // Create array for Excel with initial jam column (24 hours)
-    const excelData = Array.from({ length: 24 }, (_, i) => {
-      const row = Array(dates.length + 1).fill(''); // +1 for Jam column
-      row[0] = i; // Set jam
-      return row;
-    });
+    const content = data.content[0].content as DayItem[];
+    const tanggalKeys: number[] = content.map(day => day.tanggal);
+    
+    // Always use hours 0-23 for consistent ordering
+    const jamKeys: number[] = Array.from({ length: 24 }, (_, i) => i);
 
-    // Fill in the values
-    data.content[0].content.forEach((day: any, dateIndex: number) => {
-      day.item.forEach((hourData: any) => {
-        const hourIndex = parseInt(hourData.jam);
-        if (hourIndex <= 23) { // Process up to jam 23
-          excelData[hourIndex][dateIndex + 1] = hourData[valueKey];
+    // Create a mapping for quick lookups
+    const valueMap: { [key: number]: { [key: number]: number } } = {};
+    content.forEach(day => {
+      day.item.forEach(item => {
+        const jamValue = parseInt(String(item.jam), 10);
+        if (!valueMap[jamValue]) valueMap[jamValue] = {};
+        
+        // Apply Math.abs for inflow values only
+        if (valueKey === 'inflow') {
+          valueMap[jamValue][day.tanggal] = Math.abs(item[valueKey]);
+        } else {
+          valueMap[jamValue][day.tanggal] = item[valueKey];
         }
       });
     });
 
-    // Calculate min, max, and average for each date
-    const minValues = Array(dates.length).fill(Number.MAX_VALUE);
-    const maxValues = Array(dates.length).fill(Number.MIN_VALUE);
-    const sumValues = Array(dates.length).fill(0);
-    const countValues = Array(dates.length).fill(0);
+    // Create headers: Jam + Tanggal values
+    const headers = ['Jam', ...tanggalKeys.map(String)];
 
-    excelData.forEach((row) => {
-      row.slice(1).forEach((value, index) => {
-        if (typeof value === 'number') {
-          if (value < minValues[index]) minValues[index] = value;
-          if (value > maxValues[index]) maxValues[index] = value;
-          sumValues[index] += value;
-          countValues[index]++;
-        }
+    // Create rows: for each jam, ensure proper ordering from 0-23
+    const rows: (string | number)[][] = jamKeys.map(jam => {
+      const rowData: (string | number)[] = [jam];
+      tanggalKeys.forEach((tanggal: number) => {
+        rowData.push(valueMap[jam]?.[tanggal] !== undefined ? valueMap[jam][tanggal] : 0);
       });
+      return rowData;
     });
 
-    const averageValues = sumValues.map((sum, index) =>
-      countValues[index] > 0 ? sum / countValues[index] : 0
-    );
+    // Add stats rows (AVG, MAX, MIN)
+    const statRows: (string | number)[][] = [
+      ['AVG'],
+      ['MAX'],
+      ['MIN']
+    ];
 
-    // Add min, max, and average rows
-    excelData.push(['Min', ...minValues]);
-    excelData.push(['Max', ...maxValues]);
-    excelData.push(['Average', ...averageValues]);
+    // Calculate stats for each column
+    tanggalKeys.forEach((tanggal: number) => {
+      // Get values for this tanggal column (excluding jam column)
+      const columnValues = jamKeys
+        .map(jam => valueMap[jam]?.[tanggal])
+        .filter(value => value !== undefined) as number[];
+
+      // Average
+      const avg = columnValues.length ? columnValues.reduce((sum, val) => sum + val, 0) / columnValues.length : 0;
+      statRows[0].push(avg);
+
+      // Max
+      const max = columnValues.length ? Math.max(...columnValues) : 0;
+      statRows[1].push(max);
+
+      // Min
+      const min = columnValues.length ? Math.min(...columnValues) : 0;
+      statRows[2].push(min);
+    });
 
     return {
-      headers: ['Jam', ...dates],
-      data: excelData
+      headers,
+      data: [...rows, ...statRows]
     };
   };
 
@@ -760,7 +684,7 @@ const handleDownloadExcel = () => {
     case 'ROH': {
       const data = rohData.map((item: any) => ({
         Tanggal: item.content.hariOrTanggal,
-        'Estimasi Inflow': item.content.estimasiInflow,
+        'Estimasi Inflow': Math.abs(item.content.estimasiInflow), // Use absolute value for inflow
         'Target Elevasi Hari Ini': item.content.targetELevasiHariIni,
         'Volume Target Elevasi Hari Ini': item.content.volumeTargetELevasiHariIni,
         'Realisasi Elevasi': item.content.realisasiElevasi,
