@@ -1,12 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceArea, Label } from 'recharts';
 import { Loader2, BarChart2, Download, Clock } from 'lucide-react';
 import { PARAMETER_COLORS, Prediction, PredictionParameter, Y_AXIS_DOMAIN } from '@/types/machineLearningTypes';
 import { useLast24HData } from '@/hooks/useMachineLearningData';
+import { fetchPredictionsWithHistory, combinePredictionData } from '@/services/MachineLearning/machineLearningService';
 
 // Define prediction duration type
 type PredictionDuration = '7-day';
+
+// Modified chart colors
+const CHART_COLORS = {
+  actual: '#FFB800',    // Yellow for actual data
+  yesterdayPrediction: '#93C5FD', // Light blue for yesterday's predictions
+  futurePrediction: '#2563EB' // Dark blue for future predictions
+};
 
 const MachineLearningContent: React.FC = () => {
   // State for predictions, loading, error, and parameter selection
@@ -17,9 +25,17 @@ const MachineLearningContent: React.FC = () => {
     BEBAN: []
   });
   
+  const [historicalData, setHistoricalData] = useState<Record<PredictionParameter, Prediction[]>>({
+    INFLOW: [],
+    OUTFLOW: [],
+    TMA: [],
+    BEBAN: []
+  });
+  
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedParameter, setSelectedParameter] = useState<PredictionParameter>('INFLOW');
+  // Set default parameter to INFLOW only
+  const [selectedParameter] = useState<PredictionParameter>('INFLOW');
   
   // Set default to 7-day only
   const [predictionDuration] = useState<PredictionDuration>('7-day');
@@ -58,36 +74,23 @@ const MachineLearningContent: React.FC = () => {
         TMA: [],
         BEBAN: []
       };
+      
+      const historicalResults: Record<PredictionParameter, Prediction[]> = {
+        INFLOW: [],
+        OUTFLOW: [],
+        TMA: [],
+        BEBAN: []
+      };
 
       // Fetch predictions for each parameter
       for (const param of parameters) {
-        const response = await fetch('http://192.168.105.90:8989/prediction', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            target_column: param,
-            look_back: 168,
-            data: dataLast24H
-          }),
-        });
-  
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-  
-        const data = await response.json();
-
-        // Map API response to Prediction type
-        predictionResults[param] = data.predictions.map((pred: any) => ({
-          datetime: pred.datetime,
-          value: param === 'TMA' 
-            ? Math.max(224.50, Math.min(231.50, pred.value)) // Clamp TMA values
-            : pred.value
-        }));
+        const result = await fetchPredictionsWithHistory(param, 168, dataLast24H);
+        predictionResults[param] = result.predictions;
+        historicalResults[param] = result.historicalData;
       }
+
       setPredictions(predictionResults);
+      setHistoricalData(historicalResults);
       setError(null);
     } catch (err) {
       setError('Failed to fetch predictions. Please check your API connection.');
@@ -196,6 +199,91 @@ const MachineLearningContent: React.FC = () => {
     URL.revokeObjectURL(url); // Clean up the URL object
   };
 
+  // Prepare data for the chart with separate actual and predicted values
+  const prepareChartData = (historical: Prediction[], predictions: Prediction[]) => {
+    const historicalData = historical.map(item => ({
+      ...item,
+      actualValue: item.value,
+      predictedValue: null
+    }));
+
+    const predictionData = predictions.map(item => ({
+      ...item,
+      actualValue: null,
+      predictedValue: item.value
+    }));
+
+    return [...historicalData, ...predictionData];
+  };
+
+  // Get current predictions and stats
+  const currentPredictions = predictions[selectedParameter];
+  const currentHistorical = historicalData[selectedParameter];
+
+  // Process data to ensure future prediction line doesn't appear for yesterday
+  const processedData = [...currentHistorical, ...currentPredictions].map(item => {
+    // For historical data (yesterday), explicitly set value to null to hide the future prediction line
+    if (item.actualValue !== undefined || item.predictedValue !== undefined) {
+      return {
+        ...item,
+        value: null // This will hide the future prediction line for yesterday's data
+      };
+    }
+    return item;
+  });
+
+  // Calculate prediction accuracy for yesterday
+  const calculateAccuracy = (historical: Prediction[]) => {
+    if (!historical || historical.length === 0) return { accuracy: 0, mape: 0 };
+    
+    let totalError = 0;
+    let totalPercentageError = 0;
+    
+    historical.forEach(item => {
+      if (item.actualValue !== undefined && item.predictedValue !== undefined) {
+        const error = Math.abs(item.actualValue - item.predictedValue);
+        totalError += error;
+        
+        // Prevent division by zero
+        if (item.actualValue !== 0) {
+          const percentageError = (error / Math.abs(item.actualValue)) * 100;
+          totalPercentageError += percentageError;
+        }
+      }
+    });
+    
+    const meanError = totalError / historical.length;
+    const mape = totalPercentageError / historical.length; // Mean Absolute Percentage Error
+    
+    // Convert MAPE to accuracy (100% - MAPE)
+    const accuracy = Math.max(0, Math.min(100, 100 - mape));
+    
+    return { 
+      accuracy: parseFloat(accuracy.toFixed(2)),
+      mape: parseFloat(mape.toFixed(2)),
+      meanError: parseFloat(meanError.toFixed(2))
+    };
+  };
+
+  const { accuracy: accuracyYesterday, mape: mapeYesterday, meanError: meanErrorYesterday } = calculateAccuracy(currentHistorical);
+  const { total, average } = calculateStats([...currentHistorical, ...currentPredictions]);
+
+  // Find first and last datetime of yesterday's data
+  const getYesterdayBounds = () => {
+    if (currentHistorical.length === 0) return { start: "", end: "" };
+    
+    const sorted = [...currentHistorical].sort((a, b) => 
+      new Date(a.datetime).getTime() - new Date(b.datetime).getTime()
+    );
+    
+    return {
+      start: sorted[0]?.datetime || "",
+      end: sorted[sorted.length - 1]?.datetime || ""
+    };
+  };
+
+  const { start: yesterdayStart, end: yesterdayEnd } = getYesterdayBounds();
+
   // Render loading state
   if (loading || isLoading) {
     return (
@@ -229,21 +317,15 @@ const MachineLearningContent: React.FC = () => {
     );
   }
 
-  // Get current predictions and stats
-  const currentPredictions = predictions[selectedParameter];
-  const { total, average } = calculateStats(currentPredictions);
-
   return (
     <Card className="w-full max-w-6xl mx-auto bg-white shadow-2xl rounded-2xl overflow-hidden mt-6">
       <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6">
         <CardTitle className="flex justify-between items-center">
           <div className="flex items-center space-x-4">
             <BarChart2 className="w-10 h-10" />
-            <span className="text-2xl font-bold">Machine Learning Predictions</span>
+            <span className="text-2xl font-bold">Inflow Predictions</span>
           </div>
           <div className="flex items-center space-x-4">
-           
-            
             {/* Download button */}
             <button
               onClick={handleDownload}
@@ -252,21 +334,6 @@ const MachineLearningContent: React.FC = () => {
               <Download className="w-4 h-4" />
               <span>Download CSV</span>
             </button>
-            
-            {/* Parameter selection buttons */}
-            {(['INFLOW', 'TMA', 'BEBAN'] as PredictionParameter[]).map((param) => (
-              <button
-                key={param}
-                onClick={() => setSelectedParameter(param)}
-                className={`px-4 py-2 rounded-full transition-all duration-300 ease-in-out transform hover:scale-105 text-sm ${
-                  selectedParameter === param 
-                    ? 'bg-white text-blue-600 shadow-md' 
-                    : 'bg-blue-700 text-white hover:bg-blue-600'
-                }`}
-              >
-                {param}
-              </button>
-            ))}
           </div>
         </CardTitle>
       </CardHeader>
@@ -274,15 +341,34 @@ const MachineLearningContent: React.FC = () => {
         <div className="bg-white rounded-xl shadow-md p-4 mb-4">
           <div className="mb-4 flex justify-between items-center">
             <h3 className="text-xl font-semibold text-gray-700">
-              {selectedParameter} 7-Day Forecast
+              Inflow Historical and Prediction Data
             </h3>
             <div className="text-sm text-gray-500">
-              Showing {currentPredictions.length} hourly predictions
+              Showing {currentHistorical.length} historical + {currentPredictions.length} predicted hours
             </div>
           </div>
+          
           <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={currentPredictions}>
+            <LineChart data={processedData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+              {/* Reference area for yesterday's data with yellow background */}
+              {yesterdayStart && yesterdayEnd && (
+                <ReferenceArea
+                  x1={yesterdayStart}
+                  x2={yesterdayEnd}
+                  fill="#FEF9C3"
+                  fillOpacity={0.4}
+                  strokeOpacity={0}
+                >
+                  <Label
+                    value={`Accuracy: ${accuracyYesterday}%`}
+                    position="insideTop"
+                    fill="#B45309"
+                    fontSize={12}
+                    offset={10}
+                  />
+                </ReferenceArea>
+              )}
               <XAxis 
                 dataKey="datetime" 
                 tickFormatter={formatXAxisTick}
@@ -296,7 +382,7 @@ const MachineLearningContent: React.FC = () => {
               <YAxis 
                 domain={Y_AXIS_DOMAIN[selectedParameter]}
                 label={{ 
-                  value: `Predicted ${selectedParameter}`, 
+                  value: `${selectedParameter} Value`, 
                   angle: -90, 
                   position: 'insideLeft',
                   fill: '#6b7280'
@@ -310,17 +396,44 @@ const MachineLearningContent: React.FC = () => {
                   borderRadius: '8px'
                 }}
                 labelFormatter={(value) => formatDateTime(value)} 
-                formatter={(value) => [parseFloat(value.toString()).toFixed(2), 'Predicted Value']}
+                formatter={(value, name) => {
+                  if (value === null || value === undefined || value === 0) return ['-', name];
+                  return [parseFloat(value.toString()).toFixed(2), name];
+                }}
               />
               <Legend />
+              {/* Yesterday's Actual Data Line */}
+              <Line 
+                type="monotone" 
+                dataKey="actualValue" 
+                stroke={CHART_COLORS.actual}
+                strokeWidth={3}
+                dot={false}
+                activeDot={{ r: 8, strokeWidth: 2, fill: CHART_COLORS.actual }}
+                name="Yesterday's Actual"
+                connectNulls
+              />
+              {/* Yesterday's Prediction Line */}
+              <Line 
+                type="monotone" 
+                dataKey="predictedValue" 
+                stroke={CHART_COLORS.yesterdayPrediction}
+                strokeWidth={3}
+                dot={false}
+                activeDot={{ r: 8, strokeWidth: 2, fill: CHART_COLORS.yesterdayPrediction }}
+                name="Yesterday's Prediction"
+                connectNulls
+              />
+              {/* Future Prediction Line (starting from today) */}
               <Line 
                 type="monotone" 
                 dataKey="value" 
-                stroke={PARAMETER_COLORS[selectedParameter]} 
+                stroke={CHART_COLORS.futurePrediction}
                 strokeWidth={3}
-                dot={false} // Disable dots for cleaner look with many data points
-                activeDot={{ r: 8, strokeWidth: 2, fill: PARAMETER_COLORS[selectedParameter] }}
-                name={`${selectedParameter} Prediction`} 
+                dot={false}
+                activeDot={{ r: 8, strokeWidth: 2, fill: CHART_COLORS.futurePrediction }}
+                name="Future Prediction"
+                connectNulls
               />
             </LineChart>
           </ResponsiveContainer>
@@ -329,26 +442,45 @@ const MachineLearningContent: React.FC = () => {
         {/* Prediction Table */}
         <div className="bg-white rounded-xl shadow-md p-4">
           <h3 className="text-xl font-semibold mb-4 text-gray-700">
-            {selectedParameter} 7-Day Prediction Details
+            Inflow Data Details
           </h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left text-gray-600">
               <thead className="bg-gray-100 text-gray-600 uppercase">
                 <tr>
                   <th className="px-4 py-3">Date & Time</th>
+                  <th className="px-4 py-3">Actual Value</th>
                   <th className="px-4 py-3">Predicted Value</th>
+                  <th className="px-4 py-3">Type</th>
                 </tr>
               </thead>
               <tbody>
-                {currentPredictions.map((prediction, index) => (
-                  <tr key={index} className="border-b hover:bg-gray-50">
-                    <td className="px-4 py-3">{formatDateTime(prediction.datetime)}</td>
-                    <td className="px-4 py-3">{prediction.value.toFixed(2)}</td>
-                  </tr>
-                ))}
-                <tr className="bg-blue-50 font-semibold">
+                {processedData.map((data, index) => {
+                  const isYesterday = data.actualValue !== undefined;
+                  return (
+                    <tr key={index} className={`border-b hover:bg-gray-50 ${isYesterday ? 'bg-yellow-50' : ''}`}>
+                      <td className="px-4 py-3">{formatDateTime(data.datetime)}</td>
+                      <td className="px-4 py-3">{data.actualValue?.toFixed(2) || '-'}</td>
+                      <td className="px-4 py-3">
+                        {isYesterday ? data.predictedValue?.toFixed(2) : data.value?.toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span 
+                          className={`px-2 py-1 rounded-full text-xs ${
+                            isYesterday 
+                              ? 'bg-yellow-100 text-yellow-800' 
+                              : 'bg-blue-100 text-blue-800'
+                          }`}
+                        >
+                          {isYesterday ? 'Yesterday' : 'Future Prediction'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+                <tr className="bg-gray-100 font-semibold">
                   <td className="px-4 py-3 text-gray-700">Total / Average</td>
-                  <td className="px-4 py-3 text-blue-700">
+                  <td className="px-4 py-3 text-blue-700" colSpan={3}>
                     {total.toFixed(2)} / {average.toFixed(2)}
                   </td>
                 </tr>

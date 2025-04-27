@@ -2,6 +2,8 @@
 export interface Prediction {
     datetime: string;
     value: number;
+    actualValue?: number;
+    predictedValue?: number;
   }
   
   // Input data type
@@ -19,18 +21,18 @@ export type PredictionParameter = 'INFLOW' |'OUTFLOW' |'TMA' | 'BEBAN';
 
 // Color mapping for different parameters
 export const PARAMETER_COLORS: Record<PredictionParameter, string> = {
-  INFLOW: '#6366f1', // Indigo
-  OUTFLOW: '#10b981', // Emerald
-  TMA: '#f43f5e', // Rose
-  BEBAN: '#f97316' // Orange
+  INFLOW: '#3B82F6',
+  OUTFLOW: '#10B981',
+  TMA: '#F59E0B',
+  BEBAN: '#EC4899'
 };
 
 // Y-axis domain configuration
-export const Y_AXIS_DOMAIN: Record<PredictionParameter, [number, number] | undefined> = {
-  INFLOW: undefined,
-  OUTFLOW: undefined,
-  TMA: [224.50, 231.50], // Specific range for TMA
-  BEBAN: undefined
+export const Y_AXIS_DOMAIN: Record<PredictionParameter, [number, number]> = {
+  INFLOW: [0, 200],
+  OUTFLOW: [0, 150],
+  TMA: [224.50, 231.50],
+  BEBAN: [0, 1000]
 };
 
 
