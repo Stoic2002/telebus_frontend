@@ -1,4 +1,4 @@
-import { RawLast24HDataItem, TransformedLast24HData } from '@/types/machineLearningTypes';
+import { RawLast24HDataItem, TransformedLast24HData, Prediction, PredictionParameter } from '@/types/machineLearningTypes';
 import axios from 'axios';
 
 export const last24HDataService = {
@@ -250,5 +250,104 @@ export const last24HDataService = {
     } else {
       return parseFloat(sortedValues[mid].toFixed(2));
     }
+  }
+};
+
+// Add the missing predictionService export
+export const predictionService = {
+  async fetchPredictions(parameter: PredictionParameter, steps: number): Promise<Prediction[]> {
+    try {
+      // For now, return mock predictions until the actual API endpoint is available
+      return this.generateMockPredictions(parameter, steps);
+    } catch (error) {
+      console.error(`Error fetching ${parameter} predictions:`, error);
+      throw error;
+    }
+  },
+
+  async fetchPrevDayPrediction(parameter: PredictionParameter): Promise<{
+    actualData: Prediction[];
+    predictionData: Prediction[];
+    accuracy: number;
+  } | null> {
+    try {
+      // Mock previous day data
+      const actualData = this.generateMockPredictions(parameter, 24);
+      const predictionData = this.generateMockPredictions(parameter, 24);
+      
+      // Calculate a mock accuracy (between 70-95%)
+      const accuracy = 70 + Math.random() * 25;
+      
+      return {
+        actualData,
+        predictionData,
+        accuracy: parseFloat(accuracy.toFixed(2))
+      };
+    } catch (error) {
+      console.error(`Error fetching ${parameter} previous day prediction:`, error);
+      return null;
+    }
+  },
+
+  async fetchPredictionData(parameter: PredictionParameter): Promise<{
+    actualData: Prediction[];
+    predictionData: Prediction[];
+    accuracy: number;
+  }> {
+    try {
+      // Mock actual data (last 24 hours)
+      const actualData = this.generateMockPredictions(parameter, 24);
+      
+      // Mock prediction data (next 24 hours)
+      const predictionData = this.generateMockPredictions(parameter, 24);
+      
+      // Calculate a mock accuracy (between 70-95%)
+      const accuracy = 70 + Math.random() * 25;
+      
+      return {
+        actualData,
+        predictionData,
+        accuracy: parseFloat(accuracy.toFixed(2))
+      };
+    } catch (error) {
+      console.error(`Error fetching ${parameter} prediction data:`, error);
+      throw error;
+    }
+  },
+
+  generateMockPredictions(parameter: PredictionParameter, steps: number): Prediction[] {
+    const predictions: Prediction[] = [];
+    const now = new Date();
+    
+    // Generate predictions for the requested number of steps
+    for (let i = 0; i < steps; i++) {
+      const futureTime = new Date(now.getTime() + i * 60 * 60 * 1000); // Add hours
+      
+      // Generate a prediction value based on parameter
+      let value = 0;
+      switch (parameter) {
+        case 'INFLOW':
+          value = 100 + Math.random() * 50; // Random value between 100-150
+          break;
+        case 'OUTFLOW':
+          value = 80 + Math.random() * 40; // Random value between 80-120
+          break;
+        case 'TMA':
+          value = 200 + Math.random() * 20; // Random value between 200-220
+          break;
+        case 'BEBAN':
+          value = 300 + Math.random() * 100; // Random value between 300-400
+          break;
+      }
+      
+      predictions.push({
+        datetime: futureTime.toISOString(),
+        value: parseFloat(value.toFixed(2)),
+        predictedValue: parseFloat(value.toFixed(2)),
+        actualValue: undefined
+      });
+    }
+    
+    return predictions;
   }
 };
