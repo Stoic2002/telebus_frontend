@@ -164,8 +164,8 @@ const MachineLearningContent: React.FC = () => {
       const data = await response.json();
       console.log(data);
       
-      if (data.length > 24) {
-        const yesterdayData = data.slice(24, 48);
+      if (data.length) {
+        const yesterdayData = data;
         
         // Create a map to track which hours we have data for
         const hourData = new Map<number, number>();

@@ -5,7 +5,7 @@ export const last24HDataService = {
   async fetchLast24HData(): Promise<TransformedLast24HData[]> {
     try {
       const response = await axios.get('http://192.168.105.90/data-combined-7-days-before');
-      console.log('Data fetched:', response.data);
+      console.log('Data fetched:', this.transformData(response.data));
       return this.transformData(response.data);
     } catch (error) {
       console.error('Error fetching PBS data:', error);
@@ -58,10 +58,113 @@ export const last24HDataService = {
     let dataArray = Array.from(hourlyDataMap.values())
       .sort((a, b) => a.datetime.localeCompare(b.datetime));
     
+    // Replace negative values with median of adjacent values
+    dataArray = this.replaceNegativeValues(dataArray);
+    
     // Detect and fill missing datetime gaps with median values
     dataArray = this.fillMissingHours(dataArray);
     
     return dataArray;
+  },
+  
+  replaceNegativeValues(sortedData: TransformedLast24HData[]): TransformedLast24HData[] {
+    if (sortedData.length <= 1) return sortedData;
+    
+    // Create a copy of the array to avoid modifying the original
+    const result = [...sortedData];
+    
+    // Get all valid (non-negative) values for each parameter to use as fallback
+    const validValues = {
+      INFLOW: sortedData.map(item => item.INFLOW).filter(val => val >= 0),
+      OUTFLOW: sortedData.map(item => item.OUTFLOW).filter(val => val >= 0),
+      TMA: sortedData.map(item => item.TMA).filter(val => val >= 0),
+      BEBAN: sortedData.map(item => item.BEBAN).filter(val => val >= 0)
+    };
+    
+    // Calculate fallback medians
+    const fallbackMedians = {
+      INFLOW: this.getMedian(validValues.INFLOW.sort((a, b) => a - b)),
+      OUTFLOW: this.getMedian(validValues.OUTFLOW.sort((a, b) => a - b)),
+      TMA: this.getMedian(validValues.TMA.sort((a, b) => a - b)),
+      BEBAN: this.getMedian(validValues.BEBAN.sort((a, b) => a - b))
+    };
+    
+    // Check each data point for negative values
+    for (let i = 0; i < result.length; i++) {
+      // Check and replace negative INFLOW
+      if (result[i].INFLOW < 0) {
+        const prevValue = i > 0 ? result[i-1].INFLOW : null;
+        const nextValue = i < result.length - 1 ? result[i+1].INFLOW : null;
+        
+        const neighbors = [];
+        if (prevValue !== null && prevValue >= 0) neighbors.push(prevValue);
+        if (nextValue !== null && nextValue >= 0) neighbors.push(nextValue);
+        
+        if (neighbors.length > 0) {
+          // Calculate median of neighbors
+          result[i].INFLOW = this.getMedian(neighbors.sort((a, b) => a - b));
+        } else {
+          // Use fallback median if no valid neighbors
+          result[i].INFLOW = fallbackMedians.INFLOW;
+        }
+      }
+      
+      // Check and replace negative OUTFLOW
+      if (result[i].OUTFLOW < 0) {
+        const prevValue = i > 0 ? result[i-1].OUTFLOW : null;
+        const nextValue = i < result.length - 1 ? result[i+1].OUTFLOW : null;
+        
+        const neighbors = [];
+        if (prevValue !== null && prevValue >= 0) neighbors.push(prevValue);
+        if (nextValue !== null && nextValue >= 0) neighbors.push(nextValue);
+        
+        if (neighbors.length > 0) {
+          // Calculate median of neighbors
+          result[i].OUTFLOW = this.getMedian(neighbors.sort((a, b) => a - b));
+        } else {
+          // Use fallback median if no valid neighbors
+          result[i].OUTFLOW = fallbackMedians.OUTFLOW;
+        }
+      }
+      
+      // Check and replace negative TMA
+      if (result[i].TMA < 0) {
+        const prevValue = i > 0 ? result[i-1].TMA : null;
+        const nextValue = i < result.length - 1 ? result[i+1].TMA : null;
+        
+        const neighbors = [];
+        if (prevValue !== null && prevValue >= 0) neighbors.push(prevValue);
+        if (nextValue !== null && nextValue >= 0) neighbors.push(nextValue);
+        
+        if (neighbors.length > 0) {
+          // Calculate median of neighbors
+          result[i].TMA = this.getMedian(neighbors.sort((a, b) => a - b));
+        } else {
+          // Use fallback median if no valid neighbors
+          result[i].TMA = fallbackMedians.TMA;
+        }
+      }
+      
+      // Check and replace negative BEBAN
+      if (result[i].BEBAN < 0) {
+        const prevValue = i > 0 ? result[i-1].BEBAN : null;
+        const nextValue = i < result.length - 1 ? result[i+1].BEBAN : null;
+        
+        const neighbors = [];
+        if (prevValue !== null && prevValue >= 0) neighbors.push(prevValue);
+        if (nextValue !== null && nextValue >= 0) neighbors.push(nextValue);
+        
+        if (neighbors.length > 0) {
+          // Calculate median of neighbors
+          result[i].BEBAN = this.getMedian(neighbors.sort((a, b) => a - b));
+        } else {
+          // Use fallback median if no valid neighbors
+          result[i].BEBAN = fallbackMedians.BEBAN;
+        }
+      }
+    }
+    
+    return result;
   },
   
   fillMissingHours(sortedData: TransformedLast24HData[]): TransformedLast24HData[] {
