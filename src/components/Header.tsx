@@ -9,7 +9,8 @@ import {
   AiOutlineFileText,
   AiOutlineClose,
   AiOutlineLogout,
-  AiOutlineForm
+  AiOutlineForm,
+  AiOutlineRobot
 } from 'react-icons/ai';
 import { Button } from "@/components/ui/button";
 import { logout } from '@/services/auth/logout';
@@ -141,7 +142,7 @@ const Header = () => {
       {
         label: 'Machine Learning',
         route: 'machine-learning',
-        icon: AiOutlineOpenAI,
+        icon: AiOutlineRobot ,
         show: rolePermissions.includes('machine-learning')
       },
       {

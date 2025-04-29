@@ -50,7 +50,7 @@ const RohTable: React.FC<rohDataProps> = ({rohData}) => {
                         <tbody>
                             <tr>
                                 <td colSpan={6} className="border border-black p-2" style={{ width: '30%' }}>
-                                    HARI/TANGGAL
+                                    TANGGAL
                                 </td>
                                 <td colSpan={4} className="border border-black p-2 text-center" style={{ width: '20%' }}>
                                     {data.content.hariOrTanggal}
@@ -104,7 +104,7 @@ const RohTable: React.FC<rohDataProps> = ({rohData}) => {
                                     {data.content.realisasiElevasi.toFixed(2)}
                                 </td>
                                 <td className="border border-black p-2" style={{ width: '10%' }}>
-                                    Mpdl
+                                    Mdpl
                                 </td>
                                 <td className="border border-black p-2 text-center" style={{ width: '10%' }}>
                                     {formatNumber(data.content.volumeRealisasiElevasi)}
@@ -206,7 +206,7 @@ const RohTable: React.FC<rohDataProps> = ({rohData}) => {
                         <tbody>
                             <tr>
                                 <td colSpan={6} className="border border-black p-2" style={{ width: '30%' }}>
-                                    ESTIMASI TOTAL DAYA YANG DIHASILKAN
+                                    ESTIMASI TOTAL DAYA YANG DIHASILKAN (GROSS)
                                 </td>
                                 <td colSpan={2} className="border border-black p-2 text-center" style={{ width: '20%' }}>
                                 {formatNumber((data.content.estimasiVolumeWaduk -
@@ -290,7 +290,7 @@ const RohTable: React.FC<rohDataProps> = ({rohData}) => {
                         <tbody>
                             <tr>
                                 <td colSpan={10} className="border border-black p-2 text-center font-semibold">
-                                    ESTIMASI PEMBEBANAN PLTA PBS
+                                    ESTIMASI PEMBEBANAN PLTA PBS (NETT)
                                 </td>
                             </tr>
                             {/* <tr>
@@ -337,10 +337,10 @@ const RohTable: React.FC<rohDataProps> = ({rohData}) => {
                         <tbody>
                             <tr>
                                 <td className="border border-black p-2 text-center font-semibold" style={{ width: '15%' }}>
-                                    Total
+                                    Total Beban
                                 </td>
                                 <td colSpan={9} className="border border-black p-2 text-center font-semibold" style={{ width: '85%' }}>
-                                    {formatNumber(data.content.totalDaya)} 
+                                    {formatNumber(data.content.totalDaya) } MW
                                 </td>
                             </tr>
                         </tbody>

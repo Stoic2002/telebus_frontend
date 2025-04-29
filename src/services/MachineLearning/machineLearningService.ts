@@ -85,7 +85,7 @@ export const fetchPredictionsWithHistory = async (
     const historicalData = generatePreviousDayData(parameter);
 
     // Fetch future predictions from API
-    const response = await fetch('http://127.0.0.1:8989/predict', {
+    const response = await fetch('http://192.168.105.90:8989/prediction', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
