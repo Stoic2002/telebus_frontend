@@ -76,7 +76,7 @@ const MachineLearningContent: React.FC = () => {
   const fetchYesterdayData = async () => {
     try {
       setIsLoadingYesterdayData(true);
-      const response = await fetch('http://192.168.105.90/pbs-inflow-h-yesterday');
+      const response = await fetch('http://192.168.105.90/pbs-inflow-calc-h-yesterday');
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -155,7 +155,7 @@ const MachineLearningContent: React.FC = () => {
   const fetchYesterdayPredictions = async () => {
     try {
       setIsLoadingYesterdayPredictions(true);
-      const response = await fetch('http://192.168.105.90/prediction-inflow-today');
+      const response = await fetch('http://192.168.105.90/prediction-inflow-yesterday');
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
