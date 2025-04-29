@@ -8,6 +8,7 @@ import { fetchWithRetry } from '@/hooks/fetchWithRetry';
 import axios from 'axios';
 import { ApiElevationData, ApiReportData, RohData } from '@/types/reportTypes';
 import { formatNumber } from '../../lib/formatNumber';
+import AwsComponent from './AwsComponent';
 
 
 
@@ -278,6 +279,8 @@ const HomeContent: React.FC = () => {
       <MonitoringPbsComponent />
 
       <RainfallComponent />
+
+      <AwsComponent />
 
     
     </div>
