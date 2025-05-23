@@ -9,7 +9,8 @@ import {
   AiOutlineFileText,
   AiOutlineClose,
   AiOutlineLogout,
-  AiOutlineForm
+  AiOutlineForm,
+  AiOutlineRobot
 } from 'react-icons/ai';
 import { Button } from "@/components/ui/button";
 import { logout } from '@/services/auth/logout';
@@ -56,12 +57,14 @@ const Header = () => {
       'machine-learning',
       'data-input-ghw', 
       'trends',
+      'telemetering-pjt',
       'report'
     ],
     client: [
       'home', 
       'machine-learning', 
       'trends', 
+      'telemetering-pjt',
       'report'
     ],
     opr: [
@@ -69,6 +72,7 @@ const Header = () => {
       'machine-learning',
       'data-input-operator',
       'trends',
+      'telemetering-pjt',
       'report'
     ]
   };
@@ -138,7 +142,7 @@ const Header = () => {
       {
         label: 'Machine Learning',
         route: 'machine-learning',
-        icon: AiOutlineOpenAI,
+        icon: AiOutlineRobot ,
         show: rolePermissions.includes('machine-learning')
       },
       {
