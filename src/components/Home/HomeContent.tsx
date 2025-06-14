@@ -9,6 +9,14 @@ import axios from 'axios';
 import { ApiElevationData, ApiReportData, RohData } from '@/types/reportTypes';
 import { formatNumber } from '../../lib/formatNumber';
 import AwsComponent from './AwsComponent';
+import { 
+  IoWaterOutline, 
+  IoFlashOutline, 
+  IoBulbOutline, 
+  IoTrendingUpOutline, 
+  IoFlagOutline, 
+  IoLayersOutline 
+} from 'react-icons/io5';
 
 
 
@@ -188,101 +196,122 @@ const HomeContent: React.FC = () => {
 
   const { soedirman } = usePbsNodeData({ interval: 30000 });
 
+  const metricCards = [
+    {
+      title: "Water Level",
+      value: `${tmaData.tmaValue.toFixed(2)} mdpl`,
+      subtitle: "per hour",
+      color: "from-blue-500 to-blue-600",
+      icon: IoWaterOutline,
+      bgColor: "bg-blue-50",
+      textColor: "text-blue-700"
+    },
+    {
+      title: "Volume Effective",
+      value: `${formatNumber(tmaData.volume)} m³`,
+      subtitle: "per hour",
+      color: "from-cyan-500 to-cyan-600",
+      icon: IoFlashOutline,
+      bgColor: "bg-cyan-50",
+      textColor: "text-cyan-700"
+    },
+    {
+      title: "Total Load",
+      value: `${soedirman.activeLoads.total.toFixed(2) ?? 0} MW`,
+      subtitle: "current condition",
+      color: "from-emerald-500 to-emerald-600",
+      icon: IoFlashOutline,
+      bgColor: "bg-emerald-50",
+      textColor: "text-emerald-700"
+    },
+    {
+      title: "Prediksi ROH",
+      value: `${formatNumber(rohData[0].content.totalDaya)} MW`,
+      subtitle: "today",
+      color: "from-green-500 to-green-600",
+      icon: IoBulbOutline,
+      bgColor: "bg-green-50",
+      textColor: "text-green-700"
+    },
+    {
+      title: "Target Water Level",
+      value: targetElevasi !== null ? `${targetElevasi.toFixed(2)} mdpl` : 'Loading...',
+      subtitle: "per day",
+      color: "from-orange-500 to-orange-600",
+      icon: IoFlagOutline,
+      bgColor: "bg-orange-50",
+      textColor: "text-orange-700"
+    },
+    {
+      title: "Level Sedimen",
+      value: `${soedirman.levels.sediment?.toFixed(2) ?? 0} mdpl`,
+      subtitle: "current condition",
+      color: "from-pink-500 to-pink-600",
+      icon: IoLayersOutline,
+      bgColor: "bg-pink-50",
+      textColor: "text-pink-700"
+    }
+  ];
+
   return (
-    <div className="p-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-        {/* Water Level Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Water Level</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {tmaData.tmaValue.toFixed(2)} mdpl
-            </div>
-            <p className="text-gray-500">per hour</p>
-          </CardContent>
-        </Card>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+      <div className="p-6 space-y-8">
+        {/* Metrics Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+          {metricCards.map((card, index) => (
+            <Card key={index} className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden">
+              <CardHeader className={`bg-gradient-to-r ${card.color} text-white p-4`}>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold">{card.title}</CardTitle>
+                  <card.icon className="text-2xl opacity-80" />
+                </div>
+              </CardHeader>
+              <CardContent className={`${card.bgColor} p-4`}>
+                <div className={`text-2xl font-bold ${card.textColor} mb-1`}>
+                  {card.value}
+                </div>
+                <p className="text-gray-500 text-sm">{card.subtitle}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-        {/* Volume Efektif Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Volume Effective</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {formatNumber(tmaData.volume)} m³
-            </div>
-            <p className="text-gray-500">per hour</p>
-          </CardContent>
-        </Card>
+        {/* Charts Section */}
+        <div className="space-y-8">
+          <InflowChartComponent />
 
-        {/* Total Load Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Total Load</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {soedirman.activeLoads.total.toFixed(2) ?? 0} MW
-            </div>
-            <p className="text-gray-500">current condition</p>
-          </CardContent>
-        </Card>
+          {/* Monitoring Section */}
+          <Card className="border-0 shadow-xl overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-700 text-white p-6">
+              <div className="flex items-center space-x-3">
+                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                <CardTitle className="text-xl font-semibold">Telemetering PB Soedirman</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6 bg-white">
+              <MonitoringPbsComponent />
+            </CardContent>
+          </Card>
 
-        {/* Prediksi ROH Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Prediksi ROH</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatNumber(rohData[0].content.totalDaya)} MW</div>
-            <p className="text-gray-500">today</p>
-          </CardContent>
-        </Card>
-
-        {/* Target Water Level Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Target Water Level</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              {targetElevasi !== null ? `${targetElevasi.toFixed(2)} mdpl` : 'Loading...'}
+          {/* Rainfall Section */}
+          <div className="space-y-6">
+            <div className="flex items-center space-x-3">
+              <div className="w-1 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full"></div>
+              <h2 className="text-2xl font-bold text-gray-800">Rainfall Monitoring</h2>
             </div>
-            <p className="text-gray-500">per day</p>
-          </CardContent>
-        </Card>
+            <RainfallComponent />
+          </div>
 
-        {/* Level Sedimen Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Level Sedimen</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-pink-600">
-              {soedirman.levels.sediment?.toFixed(2) ?? 0} mdpl
+          {/* Weather Section */}
+          <div className="space-y-6">
+            <div className="flex items-center space-x-3">
+              <div className="w-1 h-8 bg-gradient-to-b from-amber-500 to-amber-600 rounded-full"></div>
+              <h2 className="text-2xl font-bold text-gray-800">Weather Station</h2>
             </div>
-            <p className="text-gray-500">current condition</p>
-          </CardContent>
-        </Card>
+            <AwsComponent />
+          </div>
+        </div>
       </div>
-
-      <InflowChartComponent />
-
-      <Card className="mt-6">
-        <CardHeader className="bg-gradient-to-r from-green-500 to-gray-300 text-white rounded-md">
-          <CardTitle>Telemetering PB Soedirman</CardTitle>
-        </CardHeader>
-      </Card>
-
-      <MonitoringPbsComponent />
-
-      <RainfallComponent />
-
-      <AwsComponent />
-
-    
     </div>
   );
 };

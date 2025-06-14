@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { jsPDF } from 'jspdf';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+import { IoDocumentTextOutline, IoDownloadOutline, IoCalendarOutline, IoStatsChartOutline, IoRefreshOutline, IoWarningOutline, IoFolderOutline, IoCheckmarkCircleOutline } from 'react-icons/io5';
 
 // Shadcn UI Components
 import { 
@@ -57,13 +58,15 @@ type FormattedHourlyData = {
 };
 
 const NoDataAlert = () => (
-  <Alert variant="destructive" className="my-4">
-    <AlertCircle className="h-4 w-4" />
-    <AlertTitle>Data Tidak Tersedia</AlertTitle>
-    <AlertDescription>
-      Tidak dapat menemukan data untuk periode yang dipilih. Silakan coba dengan periode yang berbeda.
-    </AlertDescription>
-  </Alert>
+  <div className="bg-red-500/20 backdrop-blur-md p-6 rounded-xl border border-red-400/30 mb-6">
+    <div className="flex items-center space-x-3">
+      <IoWarningOutline className="w-8 h-8 text-red-400" />
+      <div>
+        <h3 className="text-red-300 text-lg font-semibold">Data Tidak Tersedia</h3>
+        <p className="text-red-200 mt-1">Tidak dapat menemukan data untuk periode yang dipilih. Silakan coba dengan periode yang berbeda.</p>
+      </div>
+    </div>
+  </div>
 );
 
 const ReportContent: React.FC = () => {
@@ -756,133 +759,181 @@ const handleDownloadExcel = () => {
 
 
   return (
-    <div className="p-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Report Telemetering</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Report Select */}
-            <div>
-              <Select
-                value={selectedReport}
-                onValueChange={handleReportChange}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih Report" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {reportOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 p-6">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header Card */}
+        <Card className="bg-white/10 backdrop-blur-md border-white/20 shadow-2xl">
+          <CardHeader className="bg-gradient-to-r from-emerald-500/80 to-teal-600/80 text-white rounded-t-lg">
+            <CardTitle className="flex items-center space-x-4 text-3xl font-bold">
+              <IoDocumentTextOutline className="w-10 h-10" />
+              <div>
+                <h1>Report Telemetering</h1>
+                <p className="text-emerald-100 text-lg font-normal mt-1">Comprehensive Power Plant Reporting System</p>
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {/* Report Select */}
+              <div className="space-y-2">
+                <label className="text-white font-medium flex items-center space-x-2">
+                  <IoFolderOutline className="w-4 h-4" />
+                  <span>Jenis Report</span>
+                </label>
+                <Select
+                  value={selectedReport}
+                  onValueChange={handleReportChange}
+                >
+                  <SelectTrigger className="bg-white/90 border-white/30 text-slate-800 font-medium">
+                    <SelectValue placeholder="Pilih Report" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-slate-200">
+                    <SelectGroup>
+                      {reportOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value} className="hover:bg-slate-100">
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Date Inputs */}
+              <div className="space-y-2">
+                <label className="text-white font-medium flex items-center space-x-2">
+                  <IoCalendarOutline className="w-4 h-4" />
+                  <span>
+                    {selectedReport === 'elevasi' || selectedReport === 'rtow' 
+                      ? 'Tahun' 
+                      : selectedReport === 'ROH' 
+                        ? 'Tanggal' 
+                        : 'Tanggal Mulai'
+                    }
+                  </span>
+                </label>
+                {selectedReport === 'elevasi' || selectedReport === 'rtow' ? (
+                  <input
+                    type="number"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-white/30 rounded-xl bg-white/90 text-slate-800 font-medium focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/50 transition-all duration-300"
+                    placeholder="Masukkan Tahun (YYYY)"
+                  />
+                ) : (
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-white/30 rounded-xl bg-white/90 text-slate-800 font-medium focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/50 transition-all duration-300"
+                  />
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-white font-medium flex items-center space-x-2">
+                  <IoCalendarOutline className="w-4 h-4" />
+                  <span>Tanggal Akhir</span>
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-white/30 rounded-xl bg-white/90 text-slate-800 font-medium focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={disabledReports.includes(selectedReport)}
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col gap-3">
+                <Button 
+                  onClick={handleSubmit}
+                  disabled={isSubmitDisabled}
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-6 rounded-xl shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                >
+                  <IoStatsChartOutline className="w-5 h-5" />
+                  <span>Generate Report</span>
+                </Button>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      disabled={isDownloadDisabled}
+                      className="bg-white/90 border-2 border-white/30 text-slate-800 font-semibold py-3 px-6 rounded-xl shadow-lg hover:bg-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                    >
+                      <IoDownloadOutline className="w-5 h-5" />
+                      <span>Download</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent 
+                    align="start" 
+                    className="w-48 bg-white border border-gray-200 rounded-xl shadow-xl p-2"
+                    sideOffset={4}
+                  >
+                    <DropdownMenuItem 
+                      onClick={handleDownloadPDF}
+                      className="flex items-center cursor-pointer hover:bg-slate-100 px-4 py-3 rounded-lg transition-colors duration-200"
+                    >
+                      <FileText className="mr-3 h-5 w-5 text-red-600" />
+                      <span className="font-medium">Export PDF</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={handleDownloadExcel}
+                      className="flex items-center cursor-pointer hover:bg-slate-100 px-4 py-3 rounded-lg transition-colors duration-200"
+                    >
+                      <Table className="mr-3 h-5 w-5 text-green-600" />
+                      <span className="font-medium">Export Excel</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
+          </CardContent>
+        </Card>
 
-            {/* Date Inputs */}
-            <div>
-            {selectedReport === 'elevasi' || selectedReport === 'rtow' ? (
-              <input
-                type="number"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md"
-                placeholder="Masukkan Tahun (YYYY)"
-              />
-            ) : (
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md"
-                placeholder={selectedReport === 'ROH' ? 'Pilih Tanggal' : 'Tanggal Mulai'}
-              />
-            )}
-          </div>
-            <div>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md"
-                disabled={disabledReports.includes(selectedReport)}
-                placeholder="Tanggal Akhir"
-              />
-            </div>
+        {loading && (
+          <Card className="bg-white/10 backdrop-blur-md border-white/20 shadow-2xl">
+            <CardContent className="p-12">
+              <div className="flex justify-center items-center space-x-4 text-white">
+                <IoRefreshOutline className="w-10 h-10 animate-spin" />
+                <span className="text-2xl font-medium">Memuat data report...</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-            {/* Action Buttons */}
-            <div className="flex gap-2">
-              <Button 
-                onClick={handleSubmit}
-                disabled={isSubmitDisabled}
-              >
-                Submit
-              </Button>
-              <DropdownMenu>
-  <DropdownMenuTrigger asChild>
-    <Button variant="outline" disabled={isDownloadDisabled}>
-      <Download className="mr-2 h-4 w-4" />
-      <span>Download</span>
-    </Button>
-  </DropdownMenuTrigger>
-  <DropdownMenuContent 
-    align="start" 
-    className="w-48 bg-white border border-gray-200 rounded-md shadow-lg"
-    sideOffset={4}
-  >
-    <DropdownMenuItem 
-      onClick={handleDownloadPDF}
-      className="flex items-center cursor-pointer hover:bg-gray-100 px-4 py-2"
-    >
-      <FileText className="mr-2 h-4 w-4" />
-      <span>Export PDF</span>
-    </DropdownMenuItem>
-    <DropdownMenuItem 
-      onClick={handleDownloadExcel}
-      className="flex items-center cursor-pointer hover:bg-gray-100 px-4 py-2"
-    >
-      <Table className="mr-2 h-4 w-4" />
-      <span>Export Excel</span>
-    </DropdownMenuItem>
-  </DropdownMenuContent>
-</DropdownMenu>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        {hasError && <NoDataAlert />}
 
-      {loading && (
-        <div className="flex justify-center items-center my-4">
-          <Loader2 className="animate-spin" />
-          <span className="ml-2">Memuat data...</span>
-        </div>
-      )}
-
-      {hasError && <NoDataAlert />}
-
-      {showReport && selectedReport && !hasError && (
-        <div ref={reportRef}>
-          {selectedReport === 'ROH' && rohData && rohData.length > 0 && <RohTable rohData={rohData} />}
-          {selectedReport === 'TMA' && tmaData.content && tmaData.content.length > 0 && (
-            <TmaTable tmaData={tmaData.content} />
-          )}
-          {selectedReport === 'inflow' && inflowData.content && inflowData.content.length > 0 && (
-            <InflowTable inflowData={inflowData.content} />
-          )}
-          {selectedReport === 'outflow' && outflowData.content && outflowData.content.length > 0 && (
-            <OutflowTable outflowData={outflowData.content} />
-          )}
-          {selectedReport === 'elevasi' && elevationData && (
-            <ElevationTable report={elevationData} />
-          )}
-          {selectedReport === 'rtow' && rtowData && <RtowTable rtowData={rtowData} />}
-        </div>
-      )}
+        {showReport && selectedReport && !hasError && (
+          <Card className="bg-white/95 backdrop-blur-md border-white/20 shadow-2xl">
+            <CardHeader className="bg-gradient-to-r from-green-500/80 to-emerald-600/80 text-white rounded-t-lg">
+              <CardTitle className="flex items-center space-x-3 text-xl font-bold">
+                <IoCheckmarkCircleOutline className="w-7 h-7" />
+                <span>Report Generated Successfully</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div ref={reportRef}>
+                {selectedReport === 'ROH' && rohData && rohData.length > 0 && <RohTable rohData={rohData} />}
+                {selectedReport === 'TMA' && tmaData.content && tmaData.content.length > 0 && (
+                  <TmaTable tmaData={tmaData.content} />
+                )}
+                {selectedReport === 'inflow' && inflowData.content && inflowData.content.length > 0 && (
+                  <InflowTable inflowData={inflowData.content} />
+                )}
+                {selectedReport === 'outflow' && outflowData.content && outflowData.content.length > 0 && (
+                  <OutflowTable outflowData={outflowData.content} />
+                )}
+                {selectedReport === 'elevasi' && elevationData && (
+                  <ElevationTable report={elevationData} />
+                )}
+                {selectedReport === 'rtow' && rtowData && <RtowTable rtowData={rtowData} />}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 };

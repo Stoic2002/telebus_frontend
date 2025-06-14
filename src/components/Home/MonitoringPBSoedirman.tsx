@@ -8,6 +8,13 @@ import { cn } from "@/lib/utils";
 import usePbsNodeData from "@/hooks/usePbsNodeData";
 import useNodeBatch1 from "@/hooks/useNodeBatch1";
 import { AWLRService } from "@/services/AWLR/awlr";
+import { 
+  IoFlashOutline, 
+  IoWaterOutline, 
+  IoArrowDownOutline, 
+  IoLayersOutline, 
+  IoArrowUpOutline 
+} from 'react-icons/io5';
 
 const MonitoringPbsComponent = () => {
     const [serayuValue, setSerayuValue] = useState<AWLRData | null>(null);
@@ -153,19 +160,19 @@ const MonitoringPbsComponent = () => {
 const getStatusColor = (status: string) => {
     switch (status.toUpperCase()) {
       case 'NORMAL':
-        return 'bg-green-300 text-white-800';
+        return 'bg-green-100 text-green-800 border-green-300';
       case 'WASPADA':
-        return 'bg-amber-300 text-white-800';
+        return 'bg-amber-100 text-amber-800 border-amber-300';
       case 'AWAS':
-        return 'bg-red-400 text-white-800';
+        return 'bg-red-100 text-red-800 border-red-300';
       default:
-        return 'bg-gray-300 text-gray-800';
+        return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
 
   const StatusCell: React.FC<{ status: string }> = ({ status }) => (
     <span className={cn(
-      'px-2 py-1 rounded-full text-xs font-medium',
+      'px-3 py-1 rounded-full text-xs font-semibold border',
       getStatusColor(status)
     )}>
       {status}
@@ -176,47 +183,62 @@ const getStatusColor = (status: string) => {
     const pbsData = [
         {
           name: "Unit Load",
+          icon: IoFlashOutline,
+          gradient: "from-purple-500 to-indigo-600",
           item: [
             { id: 'PBS 1', value: soedirman.activeLoads.pb01?.toFixed(2) ?? 0},
             { id: "PBS 2", value:  soedirman.activeLoads.pb02?.toFixed(2) ?? 0},
             { id: 'PBS 3', value:  soedirman.activeLoads.pb03?.toFixed(2) ?? 0}
           ],
-          total : soedirman.activeLoads.total.toFixed(2) ?? 0
+          total : soedirman.activeLoads.total.toFixed(2) ?? 0,
+          unit: "MW"
         },
         {
           name: "Unit Outflow",
+          icon: IoWaterOutline,
+          gradient: "from-blue-500 to-cyan-600",
           item: [
             { id: 'PBS 1', value: soedirman2.flows.turbine.pb01?.toFixed(2) ?? 0},
             { id: 'PBS 2', value: soedirman2.flows.turbine.pb02?.toFixed(2) ?? 0},
             { id: 'PBS 3', value: soedirman2.flows.turbine.pb03?.toFixed(2) ?? 0}
           ],
-          total :  soedirman.flows.turbine.total ?? 0
+          total :  soedirman.flows.turbine.total ?? 0,
+          unit: "m³/s"
         },
         {
           name: "Inflow",
+          icon: IoArrowDownOutline,
+          gradient: "from-emerald-500 to-teal-600",
           item: [
             { id: 'Serayu', value: serayuValue !== null ? serayuValue.debit : 0},
             { id: 'Merawu', value: merawuValue !== null ? merawuValue.debit : 0 },
             { id: 'Lumajang', value: lumajangValue !== null ? lumajangValue.debit : 0 }
           ],
-          total :  serayuValue && merawuValue && lumajangValue !== null ? (serayuValue.debit + merawuValue.debit + lumajangValue.debit).toFixed(2) : 'N/A'
+          total :  serayuValue && merawuValue && lumajangValue !== null ? (serayuValue.debit + merawuValue.debit + lumajangValue.debit).toFixed(2) : 'N/A',
+          unit: "m³/s"
         },
         {
           name: "DAM",
+          icon: IoLayersOutline,
+          gradient: "from-slate-500 to-gray-600",
           item: [
             { id: 'TMA', value: soedirman.levels.elevation?.toFixed(2)?? 0 },
             { id: 'Sedimen lvl', value:soedirman.levels.sediment?.toFixed(2) ?? 0},
             { id: 'Water Depth', value: soedirman.levels.waterDepth?.toFixed(2) ?? 0}
-          ]
+          ],
+          unit: "m"
         },
         {
           name: "Outflow",
+          icon: IoArrowUpOutline,
+          gradient: "from-orange-500 to-red-600",
           item: [
             { id: 'irigasi', value: soedirman2.flows.irigasi?.toFixed(2) ?? 0},
             { id: 'ddc', value: soedirman2.flows.ddc?.toFixed(2) ?? 0},
             { id: 'spillway', value:soedirman2.flows.spillway.total.toFixed(2) ?? 0}
           ],
-          total : ((soedirman2.flows.ddc ?? 0) + (soedirman2.flows.spillway.total)).toFixed(2) ?? 0
+          total : ((soedirman2.flows.ddc ?? 0) + (soedirman2.flows.spillway.total)).toFixed(2) ?? 0,
+          unit: "m³/s"
         },
       ];
 
@@ -250,116 +272,113 @@ const getStatusColor = (status: string) => {
       ];
 
   return (
-    <div className="mt-6">
-   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-  {pbsData.map((item, index) => (
-    <Card key={index} className="w-full">
-      <CardHeader className="bg-blue-900 py-2">
-        <div className="flex justify-between items-center">
-          <p className="font-bold text-white">{item.name}</p>
-        </div>
-      </CardHeader>
-      <CardContent className="p-3">
-        <table className="w-full">
-          <tbody>
-            {item.item.map((subItem) => (
-              <tr key={subItem.id} className="border-b last:border-b-0">
-                <th className="py-2 font-bold text-gray-700 text-left">{subItem.id}</th>
-                <td className="py-2 text-right font-medium text-gray-600">
-                  {subItem.value !== "N/A"
-                    ? `${subItem.value} ${
-                        item.name === "Unit Load"
-                          ? "MW"
-                          : item.name === "Inflow" || item.name === "Unit Outflow" || item.name === "Outflow"
-                          ? "m³/s"
-                          : item.name === "DAM"
-                          ? "m"
-                          : "" // Default tanpa satuan
-                      }`
-                    : subItem.value}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {/* Kondisi untuk menampilkan total */}
-        {item.name !== "DAM" && (
-        <div className="mt-4 border-t pt-2 text-right font-bold text-gray-800">
-            <table className="w-full">
-            <tbody>
-                <tr>
-                <th className="text-left py-2">Total</th>
-                <td className="text-right py-2">
-                    {item.total !== "N/A"
-                    ? `${item.total} ${
-                        item.name === "Unit Load"
-                            ? "MW"
-                            : item.name === "Inflow" || item.name === "Unit Outflow" || item.name === "Outflow"
-                            ? "m³/s"
-                            : "" // Default tanpa satuan
-                        }`
-                    : item.total}
-                </td>
-                </tr>
-            </tbody>
-            </table>
-        </div>
-        )}
+    <div className="space-y-8">
+      {/* PBS Data Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        {pbsData.map((item, index) => (
+          <Card key={index} className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden">
+            <CardHeader className={`bg-gradient-to-r ${item.gradient} text-white p-4`}>
+              <div className="flex items-center space-x-3">
+                <item.icon className="text-2xl" />
+                <h3 className="font-semibold text-sm">{item.name}</h3>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 bg-gray-50">
+              <div className="space-y-3">
+                {item.item.map((subItem) => (
+                  <div key={subItem.id} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
+                    <span className="text-sm font-medium text-gray-700">{subItem.id}</span>
+                    <span className="text-sm font-bold text-gray-900">
+                      {subItem.value !== "N/A" ? `${subItem.value} ${item.unit || ""}` : subItem.value}
+                    </span>
+                  </div>
+                ))}
+                
+                {/* Total Section */}
+                {item.name !== "DAM" && (
+                  <div className="mt-4 pt-3 border-t-2 border-gray-300">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-bold text-gray-800">Total</span>
+                      <span className="text-lg font-bold text-gray-900">
+                        {item.total !== "N/A" ? `${item.total} ${item.unit || ""}` : item.total}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-      </CardContent>
-    </Card>
-  ))}
-</div>
-
-
-
-  <Card>
-        <CardHeader>
-          <CardTitle>Inflow Air Sungai AWLR</CardTitle>
+      {/* River Flow Table */}
+      <Card className="border-0 shadow-xl overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-700 text-white p-6">
+          <div className="flex items-center space-x-3">
+            <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
+            <CardTitle className="text-xl font-semibold">Inflow Air Sungai AWLR</CardTitle>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sensor</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Water Level (m)</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Debit (m3/s)</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Debit 1 jam (m3/h)</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Battery (v)</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data diterima</th>
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Sensor</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Water Level (m)</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Debit (m³/s)</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Debit 1 jam (m³/h)</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Battery (v)</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Data diterima</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {riverFlowData.map((reading, index) => (
-                  <tr key={index}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{reading.sensor}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{reading.waterLevel} </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{reading.inflowPerSec} </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{reading.inflowPerHour} </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white"><StatusCell status={reading.status} /> </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{reading.battery} </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{reading.receiveData} </td>
+                  <tr key={index} className="hover:bg-gray-50 transition-colors duration-200">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-2 h-8 bg-blue-500 rounded-full"></div>
+                        <span className="text-sm font-semibold text-gray-900">{reading.sensor}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{reading.waterLevel}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{reading.inflowPerSec}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{reading.inflowPerHour}</td>
+                    <td className="px-6 py-4 whitespace-nowrap"><StatusCell status={reading.status} /></td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{reading.battery}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{reading.receiveData}</td>
                   </tr>
                 ))}
               </tbody>
-              <tfoot>
+              <tfoot className="bg-gradient-to-r from-blue-50 to-cyan-50">
                 <tr>
-                  <td className="px-6 py-4 text-sm font-bold text-gray-700" colSpan={1}>Total</td>
-                  <td className="px-6 py-4 text-sm font-bold text-gray-700">{serayuValue && merawuValue && lumajangValue !== null ? (serayuValue.water_level + merawuValue.water_level + lumajangValue.water_level).toFixed(2) : "N/A"}</td>
-                  <td className="px-6 py-4 text-sm font-bold text-gray-700">{serayuValue && merawuValue && lumajangValue  !== null ? (serayuValue.debit + merawuValue.debit + lumajangValue.debit).toFixed(2) : "N/A"}</td>
-                  <td className="px-6 py-4 text-sm font-bold text-gray-700">{serayuValue && merawuValue && lumajangValue  !== null ? (serayuValue.water_level + merawuValue.water_level + lumajangValue.water_level).toFixed(2) : "N/A"}</td>
-                  <td className="px-6 py-4 text-sm font-bold text-white"><StatusCell status="NORMAL" /></td>
-                  <td className="px-6 py-4 text-sm font-bold text-gray-700" colSpan={3}></td> {/* Kosongkan untuk kolom Status, Battery, dan Data diterima */}
+                  <td className="px-6 py-4 text-sm font-bold text-gray-800">
+                    <div className="flex items-center space-x-2">
+                      <IoLayersOutline className="text-lg" />
+                      <span>Total</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-sm font-bold text-blue-700">
+                    {serayuValue && merawuValue && lumajangValue !== null ? (serayuValue.water_level + merawuValue.water_level + lumajangValue.water_level).toFixed(2) : "N/A"}
+                  </td>
+                  <td className="px-6 py-4 text-sm font-bold text-blue-700">
+                    {serayuValue && merawuValue && lumajangValue  !== null ? (serayuValue.debit + merawuValue.debit + lumajangValue.debit).toFixed(2) : "N/A"}
+                  </td>
+                  <td className="px-6 py-4 text-sm font-bold text-blue-700">
+                    {serayuValue && merawuValue && lumajangValue  !== null ? (serayuValue.water_level + merawuValue.water_level + lumajangValue.water_level).toFixed(2) : "N/A"}
+                  </td>
+                  <td className="px-6 py-4"><StatusCell status="NORMAL" /></td>
+                  <td className="px-6 py-4 text-sm text-gray-500" colSpan={2}>
+                    <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">Aggregated Data</span>
+                  </td>
                 </tr>
               </tfoot>
             </table>
           </div>
         </CardContent>
       </Card>
-</div>
-  
+    </div>
   );
 };
 

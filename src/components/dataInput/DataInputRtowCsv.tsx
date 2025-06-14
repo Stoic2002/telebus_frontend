@@ -9,6 +9,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Loader2, Save, Info, Download } from "lucide-react";
+import { IoDocumentTextOutline, IoSaveOutline, IoInformationCircleOutline, IoCloudDownloadOutline, IoCheckmarkCircleOutline, IoWarningOutline } from 'react-icons/io5';
 import axios from 'axios';
 import { fetchWithRetry } from '@/hooks/fetchWithRetry';
 
@@ -178,86 +179,103 @@ const DataInputRtowCsv: React.FC = () => {
   };
 
   return (
-    <Card className="w-full max-w-4xl mx-auto shadow-lg mt-6 mb-10">
-      <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-800">
-        <CardTitle className="text-center text-white text-xl">
-          Input Data RTOW (Rencana Tahunan Operasi Waduk)
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Alert variant="default" className="bg-blue-50 mt-3">
-          <Info className="h-4 w-4 text-blue-500" />
-          <AlertDescription className="text-blue-800">
-            Format file CSV yang didukung:
-            <ul className="list-disc pl-4 mt-2">
-              <li>Pemisah kolom menggunakan titik koma (;)</li>
-              <li>Format angka menggunakan titik (.) sebagai pemisah ribuan</li>
-              <li>Format desimal menggunakan koma (,)</li>
-              <li>Kolom: Bulan (1-12); Hari (1-31); Target Elevasi</li>
-              <li>Untuk lebih jelasnya bisa mendownload template csv di bawah ini</li>
-            </ul>
-          </AlertDescription>
-        </Alert>
-
-         {/* Tombol Download Template */}
-         <button 
-          onClick={downloadCsvTemplate} 
-          className="w-full bg-blue-600 text-white p-2 rounded hover:bg-green-700 flex items-center justify-center space-x-2"
-        >
-          <Download />
-          <span>Unduh Template CSV</span>
-        </button>
-
-        <div className="flex flex-col space-y-2">
-          <label className="text-sm font-medium">Pilih Tahun</label>
-          <Select 
-            value={selectedYear.toString()} 
-            onValueChange={(value) => setSelectedYear(Number(value))}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Pilih Tahun" />
-            </SelectTrigger>
-            <SelectContent>
-              {generateYears().map((year) => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex flex-col space-y-2">
-          <label className="text-sm font-medium">Unggah File CSV</label>
-          <input 
-            type="file" 
-            accept=".csv" 
-            onChange={handleFileChange} 
-            className="w-full border p-2 rounded"
-          />
-        </div>
-
-        {status.message && (
-          <Alert 
-            variant={status.type === 'error' ? 'destructive' : 'default'}
-            className="mt-4"
-          >
-            <AlertDescription>{status.message}</AlertDescription>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-emerald-900 to-slate-800 py-8 px-4">
+      <Card className="w-full max-w-4xl mx-auto bg-white/90 backdrop-blur-md shadow-2xl rounded-2xl overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white p-6">
+          <CardTitle className="text-center text-xl flex items-center justify-center space-x-3">
+            <IoDocumentTextOutline className="w-8 h-8" />
+            <span>Input Data RTOW (Rencana Tahunan Operasi Waduk)</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 p-6 bg-gradient-to-br from-gray-50 to-gray-100">
+          <Alert variant="default" className="bg-blue-50/80 backdrop-blur-sm border-blue-200">
+            <IoInformationCircleOutline className="h-5 w-5 text-blue-500" />
+            <AlertDescription className="text-blue-800">
+              <div className="font-medium mb-2">Format file CSV yang didukung:</div>
+              <ul className="list-disc pl-4 space-y-1">
+                <li>Pemisah kolom menggunakan titik koma (;)</li>
+                <li>Format angka menggunakan titik (.) sebagai pemisah ribuan</li>
+                <li>Format desimal menggunakan koma (,)</li>
+                <li>Kolom: Bulan (1-12); Hari (1-31); Target Elevasi</li>
+                <li>Untuk lebih jelasnya bisa mendownload template csv di bawah ini</li>
+              </ul>
+            </AlertDescription>
           </Alert>
-        )}
 
-        <button 
-          onClick={handleSubmit} 
-          disabled={loading || formData.length === 0}
-          className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 
-                   disabled:opacity-50 disabled:cursor-not-allowed flex items-center 
-                   justify-center space-x-2"
-        >
-          {loading ? <Loader2 className="animate-spin" /> : <Save />}
-          <span>Simpan Data</span>
-        </button>
-      </CardContent>
-    </Card>
+           {/* Tombol Download Template */}
+           <button 
+            onClick={downloadCsvTemplate} 
+            className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white p-3 rounded-lg hover:from-green-600 hover:to-green-700 flex items-center justify-center space-x-3 transition-all shadow-lg transform hover:scale-105"
+          >
+            <IoCloudDownloadOutline className="w-5 h-5" />
+            <span>Unduh Template CSV</span>
+          </button>
+
+          <div className="flex flex-col space-y-2">
+            <label className="text-sm font-semibold text-slate-700">Pilih Tahun</label>
+            <Select 
+              value={selectedYear.toString()} 
+              onValueChange={(value) => setSelectedYear(Number(value))}
+            >
+              <SelectTrigger className="bg-white/90 backdrop-blur-sm border-gray-300">
+                <SelectValue placeholder="Pilih Tahun" />
+              </SelectTrigger>
+              <SelectContent>
+                {generateYears().map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex flex-col space-y-2">
+            <label className="text-sm font-semibold text-slate-700">Unggah File CSV</label>
+            <input 
+              type="file" 
+              accept=".csv" 
+              onChange={handleFileChange} 
+              className="w-full border border-gray-300 p-3 rounded-lg bg-white/90 backdrop-blur-sm shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+            />
+          </div>
+
+          {status.message && (
+            <Alert 
+              variant={status.type === 'error' ? 'destructive' : 'default'}
+              className="bg-white/80 backdrop-blur-sm"
+            >
+              <div className="flex items-center space-x-2">
+                {status.type === 'success' ? (
+                  <IoCheckmarkCircleOutline className="w-5 h-5 text-green-500" />
+                ) : (
+                  <IoWarningOutline className="w-5 h-5 text-red-500" />
+                )}
+                <AlertDescription className="font-medium">{status.message}</AlertDescription>
+              </div>
+            </Alert>
+          )}
+
+          <button 
+            onClick={handleSubmit} 
+            disabled={loading || formData.length === 0}
+            className="w-full bg-gradient-to-r from-emerald-600 to-emerald-800 text-white p-3 rounded-lg hover:from-emerald-700 hover:to-emerald-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-3 transition-all shadow-lg transform hover:scale-105 disabled:hover:scale-100"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Menyimpan...</span>
+              </>
+            ) : (
+              <>
+                <IoSaveOutline className="w-5 h-5" />
+                <span>Simpan Data</span>
+              </>
+            )}
+          </button>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

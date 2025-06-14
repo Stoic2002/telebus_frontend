@@ -2,6 +2,7 @@ import React, { useState, ChangeEvent } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import { IoWaterOutline, IoSaveOutline, IoCheckmarkCircleOutline, IoWarningOutline } from 'react-icons/io5';
 import { fetchWithRetry } from '@/hooks/fetchWithRetry';
 import axios from 'axios';
 
@@ -109,81 +110,101 @@ const DataInputDdc: React.FC = () => {
 
 
   return (
-    <Card className="w-full max-w-2xl mx-auto shadow-lg mt-6 mb-24">
-      <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-800">
-        <CardTitle className="text-center text-white text-xl">
-          Form Input Target Operasi Harian
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-6">
-        {status.message && (
-          <Alert className={`mb-4 ${status.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
-            <AlertDescription>{status.message}</AlertDescription>
-          </Alert>
-        )}
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 py-8 px-4">
+      <Card className="w-full max-w-2xl mx-auto bg-white/90 backdrop-blur-md shadow-2xl rounded-2xl overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-6">
+          <CardTitle className="text-center text-xl flex items-center justify-center space-x-3">
+            <IoWaterOutline className="w-8 h-8" />
+            <span>Form Input Target Operasi Harian DDC</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6 bg-gradient-to-br from-gray-50 to-gray-100">
+          {status.message && (
+            <Alert className={`mb-6 ${status.type === 'success' ? 'bg-green-50/80 text-green-700 border-green-200' : 'bg-red-50/80 text-red-700 border-red-200'} backdrop-blur-sm`}>
+              <div className="flex items-center space-x-2">
+                {status.type === 'success' ? (
+                  <IoCheckmarkCircleOutline className="w-5 h-5 text-green-500" />
+                ) : (
+                  <IoWarningOutline className="w-5 h-5 text-red-500" />
+                )}
+                <AlertDescription className="font-medium">{status.message}</AlertDescription>
+              </div>
+            </Alert>
+          )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="flex space-x-4">
-            <div className="flex-1 space-y-2">
-              <label className="block text-sm font-semibold text-gray-700">
-                Tanggal
-              </label>
-              <input
-                type="date"
-                name="tanggal"
-                value={formData.tanggal}
-                onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                required
-              />
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="flex space-x-4">
+              <div className="flex-1 space-y-2">
+                <label className="block text-sm font-semibold text-slate-700 flex items-center space-x-2">
+                  <span>Tanggal</span>
+                </label>
+                <input
+                  type="date"
+                  name="tanggal"
+                  value={formData.tanggal}
+                  onChange={handleInputChange}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white/90 backdrop-blur-sm shadow-sm"
+                  required
+                />
+              </div>
+
+              <div className="flex-1 space-y-2">
+                <label className="block text-sm font-semibold text-slate-700 flex items-center space-x-2">
+                  <span>Jam</span>
+                </label>
+                <select
+                  name="jam"
+                  value={formData.jam}
+                  onChange={handleInputChange}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white/90 backdrop-blur-sm shadow-sm"
+                  required
+                >
+                  <option value="">Pilih Jam</option>
+                  {hourOptions.map(hour => (
+                    <option key={hour} value={hour}>{hour}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="flex-1 space-y-2">
-              <label className="block text-sm font-semibold text-gray-700">
-                Jam
-              </label>
-              <select
-                name="jam"
-                value={formData.jam}
-                onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                required
-              >
-                <option value="">Pilih Jam</option>
-                {hourOptions.map(hour => (
-                  <option key={hour} value={hour}>{hour}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-            <div className="flex-1 space-y-2">
-              <label className="block text-sm font-semibold text-gray-700">
-                Outflow DDC (m³/s)
+              <label className="block text-sm font-semibold text-slate-700 flex items-center space-x-2">
+                <IoWaterOutline className="w-4 h-4 text-blue-500" />
+                <span>Outflow DDC (m³/s)</span>
               </label>
               <input
                 type="number"
                 name="outflowDdcM3s"
                 value={formData.outflowDdcM3s}
                 onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white/90 backdrop-blur-sm shadow-sm"
                 step="0.01"
                 required
                 placeholder="Debit DDC"
               />
             </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white p-3 rounded-lg hover:from-blue-700 hover:to-blue-900 transition-all focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-70 flex items-center justify-center space-x-2"
-          >
-            {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-            <span>{loading ? 'Menyimpan...' : 'Simpan Data'}</span>
-          </button>
-        </form>
-      </CardContent>
-    </Card>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white p-3 rounded-lg hover:from-blue-700 hover:to-blue-900 transition-all focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-70 flex items-center justify-center space-x-3 shadow-lg transform hover:scale-105 disabled:hover:scale-100"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Menyimpan...</span>
+                </>
+              ) : (
+                <>
+                  <IoSaveOutline className="w-5 h-5" />
+                  <span>Simpan Data</span>
+                </>
+              )}
+            </button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

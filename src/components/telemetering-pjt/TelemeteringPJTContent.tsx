@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { IoWaterOutline, IoRainyOutline, IoLocationOutline, IoTimeOutline, IoRefreshOutline } from 'react-icons/io5';
 import axios from 'axios';
 import { RainfallData, TelemeterData } from '@/types/telemeteringPjtTypes';
 // import MapPJTContent from './MapPJTContent';
@@ -16,8 +17,6 @@ const TelemeteringPJTContent: React.FC = () => {
   const [telemeterData, setTelemeterData] = useState<TelemeterData>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-
 
   useEffect(() => {
     const fetchData = async () => {
@@ -80,112 +79,157 @@ const TelemeteringPJTContent: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">Loading telemetry data...</div>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 p-6">
+        <div className="max-w-7xl mx-auto">
+          <Card className="bg-white/10 backdrop-blur-md border-white/20 shadow-2xl">
+            <CardContent className="p-8">
+              <div className="flex items-center justify-center space-x-4 text-white">
+                <IoRefreshOutline className="w-8 h-8 animate-spin" />
+                <span className="text-xl font-medium">Loading telemetry data...</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-6">
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-red-500 text-center">{error}</div>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 p-6">
+        <div className="max-w-7xl mx-auto">
+          <Card className="bg-white/10 backdrop-blur-md border-white/20 shadow-2xl">
+            <CardContent className="p-8">
+              <div className="text-red-400 text-center text-xl font-medium">{error}</div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <Card className="mb-6">
-        <CardHeader className="bg-gradient-to-r from-green-500 to-gray-300 text-white rounded-t-md">
-          <CardTitle>Telemetering Perum Jasa Tirta</CardTitle>
-        </CardHeader>
-      </Card>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 p-6">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header Card */}
+        <Card className="bg-white/10 backdrop-blur-md border-white/20 shadow-2xl">
+          <CardHeader className="bg-gradient-to-r from-cyan-500/80 to-blue-600/80 text-white rounded-t-lg">
+            <CardTitle className="flex items-center space-x-3 text-2xl font-bold">
+              <IoWaterOutline className="w-8 h-8" />
+              <span>Telemetering Perum Jasa Tirta</span>
+            </CardTitle>
+          </CardHeader>
+        </Card>
 
-      <MapPJTContent />
+        {/* Map Component */}
+        <MapPJTContent />
 
-      <Tabs defaultValue="waterlevel" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="waterlevel">Water Level</TabsTrigger>
-          <TabsTrigger value="rainfall">Rainfall</TabsTrigger>
-        </TabsList>
+        {/* Tabs Section */}
+        <Card className="bg-white/10 backdrop-blur-md border-white/20 shadow-2xl">
+          <CardContent className="p-6">
+            <Tabs defaultValue="waterlevel" className="space-y-6">
+              <TabsList className="bg-white/20 backdrop-blur-sm border-white/30 p-1 rounded-xl">
+                <TabsTrigger 
+                  value="waterlevel" 
+                  className="data-[state=active]:bg-cyan-500 data-[state=active]:text-white text-white/80 rounded-lg px-6 py-3 font-medium transition-all duration-300"
+                >
+                  <IoWaterOutline className="w-5 h-5 mr-2" />
+                  Water Level
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="rainfall" 
+                  className="data-[state=active]:bg-blue-500 data-[state=active]:text-white text-white/80 rounded-lg px-6 py-3 font-medium transition-all duration-300"
+                >
+                  <IoRainyOutline className="w-5 h-5 mr-2" />
+                  Rainfall
+                </TabsTrigger>
+              </TabsList>
 
-        <TabsContent value="waterlevel">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {telemeterData.Waterlevel?.map((station) => (
-              <Card key={station.header.name}>
-                <CardHeader className="bg-gray-50">
-                  <CardTitle className="text-lg">{station.header.name}</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Current Level:</span>
-                      <span className="font-semibold">
-                        {getLatestValidReading(station.data, 'wl')} m
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Coordinates:</span>
-                      <span className="text-sm">
-                        {station.header.x}, {station.header.y}
-                      </span>
-                    </div>
-                    <div className="text-sm text-gray-500 mt-2">
-                      Last updated: {getLatestDateTime(station.data)}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
+              <TabsContent value="waterlevel">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {telemeterData.Waterlevel?.map((station, index) => (
+                    <Card key={station.header.name} className="bg-white/90 backdrop-blur-md border-slate-200 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+                      <CardHeader className="bg-gradient-to-r from-cyan-600 to-blue-700 text-white border-b border-slate-200">
+                        <CardTitle className="text-white text-lg font-semibold flex items-center space-x-2">
+                          <IoWaterOutline className="w-6 h-6 text-cyan-100" />
+                          <span>{station.header.name}</span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-6 space-y-4 bg-white">
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-700 font-medium">Current Level:</span>
+                          <span className="font-bold text-cyan-700 text-xl">
+                            {getLatestValidReading(station.data, 'wl')} m
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-700 font-medium flex items-center">
+                            <IoLocationOutline className="w-4 h-4 mr-1 text-slate-500" />
+                            Coordinates:
+                          </span>
+                          <span className="text-slate-600 text-sm font-mono">
+                            {station.header.x}, {station.header.y}
+                          </span>
+                        </div>
+                        <div className="pt-2 border-t border-slate-200">
+                          <div className="flex items-center text-slate-500 text-sm">
+                            <IoTimeOutline className="w-4 h-4 mr-2" />
+                            <span>Last updated: {getLatestDateTime(station.data)}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </TabsContent>
 
-        <TabsContent value="rainfall">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {telemeterData.Rainfall?.map((station) => (
-              <Card key={station.header.name}>
-                <CardHeader className="bg-gray-50">
-                  <CardTitle className="text-lg">{station.header.name}</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Current Rainfall:</span>
-                      <span className="font-semibold">
-                        {getLatestValidReading(station.data, 'rf')} mm
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Total Today:</span>
-                      <span className="font-semibold">
-                        {getTotalRainfall(station.data as RainfallData[])} mm
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Coordinates:</span>
-                      <span className="text-sm">
-                        {station.header.x}, {station.header.y}
-                      </span>
-                    </div>
-                    <div className="text-sm text-gray-500 mt-2">
-                      Last updated: {getLatestDateTime(station.data)}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-      </Tabs>
+              <TabsContent value="rainfall">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {telemeterData.Rainfall?.map((station, index) => (
+                    <Card key={station.header.name} className="bg-white/90 backdrop-blur-md border-slate-200 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+                      <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white border-b border-slate-200">
+                        <CardTitle className="text-white text-lg font-semibold flex items-center space-x-2">
+                          <IoRainyOutline className="w-6 h-6 text-blue-100" />
+                          <span>{station.header.name}</span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-6 space-y-4 bg-white">
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-700 font-medium">Current Rainfall:</span>
+                          <span className="font-bold text-blue-700 text-xl">
+                            {getLatestValidReading(station.data, 'rf')} mm
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-700 font-medium">Total Today:</span>
+                          <span className="font-bold text-indigo-700 text-xl">
+                            {getTotalRainfall(station.data as RainfallData[])} mm
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-700 font-medium flex items-center">
+                            <IoLocationOutline className="w-4 h-4 mr-1 text-slate-500" />
+                            Coordinates:
+                          </span>
+                          <span className="text-slate-600 text-sm font-mono">
+                            {station.header.x}, {station.header.y}
+                          </span>
+                        </div>
+                        <div className="pt-2 border-t border-slate-200">
+                          <div className="flex items-center text-slate-500 text-sm">
+                            <IoTimeOutline className="w-4 h-4 mr-2" />
+                            <span>Last updated: {getLatestDateTime(station.data)}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

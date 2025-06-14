@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceArea, Label } from 'recharts';
 import { Loader2, BarChart2, Download, Clock, AlertCircle } from 'lucide-react';
+import { IoHardwareChipOutline, IoCloudDownloadOutline, IoWarningOutline, IoCheckmarkCircleOutline } from 'react-icons/io5';
 import { PARAMETER_COLORS, Prediction, PredictionParameter, Y_AXIS_DOMAIN } from '@/types/machineLearningTypes';
 import { useLast24HData } from '@/hooks/useMachineLearningData';
 import { fetchPredictionsWithHistory, combinePredictionData } from '@/services/MachineLearning/machineLearningService';
@@ -615,10 +616,10 @@ const MachineLearningContent: React.FC = () => {
   const renderYesterdayPredictionsWarning = () => {
     if (isLoadingYesterdayPredictions) {
       return (
-        <div className="mb-2 bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
+        <div className="mb-2 bg-blue-50/80 backdrop-blur-sm p-3 rounded-md border-l-4 border-blue-400">
           <div className="flex items-center">
             <Loader2 className="w-5 h-5 text-blue-500 mr-2 animate-spin" />
-            <span>Loading yesterday's prediction data...</span>
+            <span className="text-blue-700">Loading yesterday's prediction data...</span>
           </div>
         </div>
       );
@@ -626,13 +627,16 @@ const MachineLearningContent: React.FC = () => {
     
     if (yesterdayPredictionsError) {
       return (
-        <div className="mb-2 bg-amber-50 p-3 rounded-md border-l-4 border-amber-400">
+        <div className="mb-2 bg-amber-50/80 backdrop-blur-sm p-3 rounded-md border-l-4 border-amber-400">
           <div className="flex items-center justify-between">
-            <span className="text-amber-700">
-              {hasYesterdayPredictions 
-                ? 'Using incomplete prediction data from yesterday' 
-                : 'No prediction data available for yesterday'}
-            </span>
+            <div className="flex items-center">
+              <IoWarningOutline className="w-5 h-5 text-amber-500 mr-2" />
+              <span className="text-amber-700">
+                {hasYesterdayPredictions 
+                  ? 'Using incomplete prediction data from yesterday' 
+                  : 'No prediction data available for yesterday'}
+              </span>
+            </div>
             <button 
               onClick={fetchYesterdayPredictions}
               className="px-3 py-1 bg-amber-500 text-white rounded-md hover:bg-amber-600 text-xs"
@@ -651,10 +655,10 @@ const MachineLearningContent: React.FC = () => {
   const renderYesterdayDataWarning = () => {
     if (isLoadingYesterdayData) {
       return (
-        <div className="mb-2 bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
+        <div className="mb-2 bg-blue-50/80 backdrop-blur-sm p-3 rounded-md border-l-4 border-blue-400">
           <div className="flex items-center">
             <Loader2 className="w-5 h-5 text-blue-500 mr-2 animate-spin" />
-            <span>Loading yesterday's actual data...</span>
+            <span className="text-blue-700">Loading yesterday's actual data...</span>
           </div>
         </div>
       );
@@ -662,9 +666,12 @@ const MachineLearningContent: React.FC = () => {
     
     if (yesterdayDataError) {
       return (
-        <div className="mb-2 bg-amber-50 p-3 rounded-md border-l-4 border-amber-400">
+        <div className="mb-2 bg-amber-50/80 backdrop-blur-sm p-3 rounded-md border-l-4 border-amber-400">
           <div className="flex items-center justify-between">
-            <span className="text-amber-700">Using mock data for yesterday (API connection failed)</span>
+            <div className="flex items-center">
+              <IoWarningOutline className="w-5 h-5 text-amber-500 mr-2" />
+              <span className="text-amber-700">Using mock data for yesterday (API connection failed)</span>
+            </div>
             <button 
               onClick={fetchYesterdayData}
               className="px-3 py-1 bg-amber-500 text-white rounded-md hover:bg-amber-600 text-xs"
@@ -687,9 +694,9 @@ const MachineLearningContent: React.FC = () => {
     
     if (missingActualDataPoints > 0 || missingPredictionDataPoints > 0) {
       return (
-        <div className="mb-2 bg-amber-50 p-3 rounded-md border-l-4 border-amber-400">
+        <div className="mb-2 bg-amber-50/80 backdrop-blur-sm p-3 rounded-md border-l-4 border-amber-400">
           <div className="flex items-center">
-            <AlertCircle className="w-5 h-5 text-amber-500 mr-2" />
+            <IoWarningOutline className="w-5 h-5 text-amber-500 mr-2" />
             <span className="text-amber-700">
               Data gaps detected: {missingActualDataPoints > 0 ? `${missingActualDataPoints} missing actual values` : ''}
               {missingActualDataPoints > 0 && missingPredictionDataPoints > 0 ? ' and ' : ''}
@@ -706,43 +713,45 @@ const MachineLearningContent: React.FC = () => {
   // Render an improved shimmer skeleton loading state
   const renderShimmerSkeleton = () => {
     return (
-      <Card className="w-full max-w-6xl mx-auto bg-white shadow-2xl rounded-2xl overflow-hidden mt-6">
-        <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-white/20 rounded-md animate-pulse"></div>
-              <div className="w-64 h-8 bg-white/20 rounded-md animate-pulse"></div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 py-8 px-4">
+        <Card className="w-full max-w-6xl mx-auto bg-white/90 backdrop-blur-md shadow-2xl rounded-2xl overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-4">
+                <div className="w-10 h-10 bg-white/20 rounded-md animate-pulse"></div>
+                <div className="w-64 h-8 bg-white/20 rounded-md animate-pulse"></div>
+              </div>
+              <div className="w-36 h-10 bg-white/20 rounded-full animate-pulse"></div>
             </div>
-            <div className="w-36 h-10 bg-white/20 rounded-full animate-pulse"></div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-6 bg-gray-50">
-          <div className="bg-white rounded-xl shadow-md p-4 mb-4">
-            <div className="mb-4 flex justify-between items-center">
-              <div className="w-60 h-8 bg-gray-200 rounded animate-pulse"></div>
-              <div className="w-40 h-6 bg-gray-200 rounded animate-pulse"></div>
+          </CardHeader>
+          <CardContent className="p-6 bg-gray-50">
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-md p-4 mb-4">
+              <div className="mb-4 flex justify-between items-center">
+                <div className="w-60 h-8 bg-gray-200 rounded animate-pulse"></div>
+                <div className="w-40 h-6 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+              
+              {/* Chart skeleton */}
+              <div className="w-full h-[400px] bg-gray-100 rounded-xl animate-pulse flex flex-col justify-center items-center">
+                <div className="w-16 h-16 rounded-full bg-gray-200 animate-pulse mb-4"></div>
+                <div className="w-48 h-6 bg-gray-200 rounded animate-pulse"></div>
+                <div className="w-36 h-4 bg-gray-200 rounded animate-pulse mt-2"></div>
+              </div>
             </div>
             
-            {/* Chart skeleton */}
-            <div className="w-full h-[400px] bg-gray-100 rounded-xl animate-pulse flex flex-col justify-center items-center">
-              <div className="w-16 h-16 rounded-full bg-gray-200 animate-pulse mb-4"></div>
-              <div className="w-48 h-6 bg-gray-200 rounded animate-pulse"></div>
-              <div className="w-36 h-4 bg-gray-200 rounded animate-pulse mt-2"></div>
+            {/* Table skeleton */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-md p-4">
+              <div className="w-48 h-6 bg-gray-200 rounded animate-pulse mb-6"></div>
+              <div className="space-y-3">
+                <div className="w-full h-10 bg-gray-200 rounded animate-pulse"></div>
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="w-full h-12 bg-gray-100 rounded animate-pulse"></div>
+                ))}
+              </div>
             </div>
-          </div>
-          
-          {/* Table skeleton */}
-          <div className="bg-white rounded-xl shadow-md p-4">
-            <div className="w-48 h-6 bg-gray-200 rounded animate-pulse mb-6"></div>
-            <div className="space-y-3">
-              <div className="w-full h-10 bg-gray-200 rounded animate-pulse"></div>
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="w-full h-12 bg-gray-100 rounded animate-pulse"></div>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     );
   };
 
@@ -762,207 +771,234 @@ const MachineLearningContent: React.FC = () => {
       : 'An unknown error occurred';
 
     return (
-      <Card className="w-full max-w-6xl mx-auto bg-gradient-to-br from-red-50 to-red-100 shadow-lg">
-        <CardContent className="flex flex-col items-center justify-center p-8 space-y-4">
-          <div className="text-red-600 text-lg font-semibold text-center">
-            {errorText}
-          </div>
-          <div className="flex space-x-4">
-            {(error || err1) && (
-              <button 
-                onClick={fetchPredictions} 
-                className="px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md"
-              >
-                Retry Prediction API
-              </button>
-            )}
-            {yesterdayDataError && (
-              <button 
-                onClick={fetchYesterdayData} 
-                className="px-6 py-3 bg-amber-600 text-white rounded-full hover:bg-amber-700 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md"
-              >
-                Retry Yesterday Data
-              </button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 py-8 px-4 flex items-center justify-center">
+        <Card className="w-full max-w-6xl mx-auto bg-gradient-to-br from-red-50 to-red-100 shadow-lg">
+          <CardContent className="flex flex-col items-center justify-center p-8 space-y-4">
+            <IoWarningOutline className="w-16 h-16 text-red-500" />
+            <div className="text-red-600 text-lg font-semibold text-center">
+              {errorText}
+            </div>
+            <div className="flex space-x-4">
+              {(error || err1) && (
+                <button 
+                  onClick={fetchPredictions} 
+                  className="px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md flex items-center space-x-2"
+                >
+                  <span>Retry Prediction API</span>
+                </button>
+              )}
+              {yesterdayDataError && (
+                <button 
+                  onClick={fetchYesterdayData} 
+                  className="px-6 py-3 bg-amber-600 text-white rounded-full hover:bg-amber-700 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md flex items-center space-x-2"
+                >
+                  <span>Retry Yesterday Data</span>
+                </button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <Card className="w-full max-w-6xl mx-auto bg-white shadow-2xl rounded-2xl overflow-hidden mt-6">
-      <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6">
-        <CardTitle className="flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <BarChart2 className="w-10 h-10" />
-            <span className="text-2xl font-bold">Inflow Predictions</span>
-          </div>
-          <div className="flex items-center space-x-4">
-            {/* Download button */}
-            <button
-              onClick={handleDownload}
-              className="px-4 py-2 bg-white text-blue-600 rounded-full flex items-center space-x-2 hover:bg-blue-50 transition-all duration-300"
-            >
-              <Download className="w-4 h-4" />
-              <span>Download CSV</span>
-            </button>
-          </div>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-6 bg-gray-50">
-        <div className="bg-white rounded-xl shadow-md p-4 mb-4">
-          <div className="mb-4 flex justify-between items-center">
-            <h3 className="text-xl font-semibold text-gray-700">
-              Inflow Historical and Prediction Data
-            </h3>
-            <div className="text-sm text-gray-500">
-              Showing {currentHistorical.length} historical + {currentPredictions.length} predicted hours
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 py-8 px-4">
+      <Card className="w-full max-w-6xl mx-auto bg-white/90 backdrop-blur-md shadow-2xl rounded-2xl overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6">
+          <CardTitle className="flex justify-between items-center">
+                         <div className="flex items-center space-x-4">
+               <IoHardwareChipOutline className="w-10 h-10" />
+               <span className="text-2xl font-bold">AI-Powered Inflow Predictions</span>
+             </div>
+            <div className="flex items-center space-x-4">
+              {/* Download button */}
+              <button
+                onClick={handleDownload}
+                className="px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-full flex items-center space-x-2 hover:bg-white/30 transition-all duration-300"
+              >
+                <IoCloudDownloadOutline className="w-4 h-4" />
+                <span>Download CSV</span>
+              </button>
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6 bg-gradient-to-br from-gray-50 to-gray-100">
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-md p-4 mb-4">
+            <div className="mb-4 flex justify-between items-center">
+                             <h3 className="text-xl font-semibold text-slate-700 flex items-center space-x-2">
+                 <IoHardwareChipOutline className="w-6 h-6 text-blue-500" />
+                 <span>Inflow Historical and Prediction Data</span>
+               </h3>
+              <div className="text-sm text-slate-500 bg-blue-50 px-3 py-1 rounded-full">
+                Showing {currentHistorical.length} historical + {currentPredictions.length} predicted hours
+              </div>
+            </div>
+            
+            {renderYesterdayDataWarning()}
+            {renderYesterdayPredictionsWarning()}
+            {renderMissingDataWarning()}
+            
+            <div className="relative">
+              <ResponsiveContainer width="100%" height={400}>
+                <LineChart data={processedData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                  {/* Reference area with appropriate labels */}
+                  {renderChartLabels()}
+                  {renderNotEnoughDataLabel()}
+                  <XAxis 
+                    dataKey="datetime" 
+                    tickFormatter={formatXAxisTick}
+                    interval={getXAxisInterval()}
+                    stroke="#6b7280"
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                    padding={{ left: 10, right: 10 }}
+                  />
+                  <YAxis 
+                    domain={Y_AXIS_DOMAIN[selectedParameter]}
+                    label={{ 
+                      value: `${selectedParameter} Value`, 
+                      angle: -90, 
+                      position: 'insideLeft',
+                      fill: '#6b7280'
+                    }} 
+                    stroke="#6b7280"
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'rgba(255,255,255,0.95)', 
+                      border: '1px solid #e0e0e0',
+                      borderRadius: '8px',
+                      backdropFilter: 'blur(4px)'
+                    }}
+                    labelFormatter={(value) => formatDateTime(value)} 
+                    formatter={(value, name) => {
+                      if (value === null || value === undefined || value === 0) return ['-', name];
+                      return [parseFloat(value.toString()).toFixed(2), name];
+                    }}
+                  />
+                  <Legend />
+                  {/* Yesterday's Actual Data Line */}
+                  <Line 
+                    type="monotone" 
+                    dataKey="actualValue" 
+                    stroke={CHART_COLORS.actual}
+                    strokeWidth={3}
+                    dot={false}
+                    activeDot={{ r: 8, strokeWidth: 2, fill: CHART_COLORS.actual }}
+                    name="Yesterday's Actual"
+                    connectNulls={false}
+                  />
+                  {/* Yesterday's Prediction Line */}
+                  <Line 
+                    type="monotone" 
+                    dataKey="predictedValue" 
+                    stroke={CHART_COLORS.yesterdayPrediction}
+                    strokeWidth={3}
+                    dot={false}
+                    activeDot={{ r: 8, strokeWidth: 2, fill: CHART_COLORS.yesterdayPrediction }}
+                    name="Yesterday's Prediction"
+                    connectNulls={false}
+                  />
+                  {/* Future Prediction Line (starting from today) */}
+                  <Line 
+                    type="monotone" 
+                    dataKey="value" 
+                    stroke={CHART_COLORS.futurePrediction}
+                    strokeWidth={3}
+                    dot={false}
+                    activeDot={{ r: 8, strokeWidth: 2, fill: CHART_COLORS.futurePrediction }}
+                    name="Future Prediction"
+                    connectNulls={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </div>
           
-          {renderYesterdayDataWarning()}
-          {renderYesterdayPredictionsWarning()}
-          {renderMissingDataWarning()}
-          
-          <div className="relative">
-            <ResponsiveContainer width="100%" height={400}>
-              <LineChart data={processedData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                {/* Reference area with appropriate labels */}
-                {renderChartLabels()}
-                {renderNotEnoughDataLabel()}
-                <XAxis 
-                  dataKey="datetime" 
-                  tickFormatter={formatXAxisTick}
-                  interval={getXAxisInterval()}
-                  stroke="#6b7280"
-                  angle={-45}
-                  textAnchor="end"
-                  height={60}
-                  padding={{ left: 10, right: 10 }}
-                />
-                <YAxis 
-                  domain={Y_AXIS_DOMAIN[selectedParameter]}
-                  label={{ 
-                    value: `${selectedParameter} Value`, 
-                    angle: -90, 
-                    position: 'insideLeft',
-                    fill: '#6b7280'
-                  }} 
-                  stroke="#6b7280"
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(255,255,255,0.9)', 
-                    border: '1px solid #e0e0e0',
-                    borderRadius: '8px'
-                  }}
-                  labelFormatter={(value) => formatDateTime(value)} 
-                  formatter={(value, name) => {
-                    if (value === null || value === undefined || value === 0) return ['-', name];
-                    return [parseFloat(value.toString()).toFixed(2), name];
-                  }}
-                />
-                <Legend />
-                {/* Yesterday's Actual Data Line */}
-                <Line 
-                  type="monotone" 
-                  dataKey="actualValue" 
-                  stroke={CHART_COLORS.actual}
-                  strokeWidth={3}
-                  dot={false}
-                  activeDot={{ r: 8, strokeWidth: 2, fill: CHART_COLORS.actual }}
-                  name="Yesterday's Actual"
-                  connectNulls={false}
-                />
-                {/* Yesterday's Prediction Line */}
-                <Line 
-                  type="monotone" 
-                  dataKey="predictedValue" 
-                  stroke={CHART_COLORS.yesterdayPrediction}
-                  strokeWidth={3}
-                  dot={false}
-                  activeDot={{ r: 8, strokeWidth: 2, fill: CHART_COLORS.yesterdayPrediction }}
-                  name="Yesterday's Prediction"
-                  connectNulls={false}
-                />
-                {/* Future Prediction Line (starting from today) */}
-                <Line 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke={CHART_COLORS.futurePrediction}
-                  strokeWidth={3}
-                  dot={false}
-                  activeDot={{ r: 8, strokeWidth: 2, fill: CHART_COLORS.futurePrediction }}
-                  name="Future Prediction"
-                  connectNulls={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+          {/* Prediction Table */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-md p-4">
+                         <h3 className="text-xl font-semibold mb-4 text-slate-700 flex items-center space-x-2">
+               <IoHardwareChipOutline className="w-6 h-6 text-purple-500" />
+               <span>Inflow Data Details</span>
+             </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left text-slate-600">
+                <thead className="bg-gradient-to-r from-slate-100 to-slate-200 text-slate-700 uppercase">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold">Date & Time</th>
+                    <th className="px-4 py-3 font-semibold">Actual Value</th>
+                    <th className="px-4 py-3 font-semibold">Predicted Value</th>
+                    <th className="px-4 py-3 font-semibold">Type</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {processedData.map((data, index) => {
+                    const isYesterday = data.actualValue !== undefined;
+                    const isMissingData = data.actualValue === null || data.predictedValue === null;
+                    return (
+                      <tr key={index} className={`border-b hover:bg-slate-50/70 transition-colors ${isYesterday ? 'bg-yellow-50/50' : ''} ${isMissingData ? 'bg-red-50/50' : ''}`}>
+                        <td className="px-4 py-3 font-medium text-slate-700">{formatDateTime(data.datetime)}</td>
+                        <td className="px-4 py-3">
+                          {data.actualValue === null 
+                            ? <span className="text-red-500 flex items-center space-x-1">
+                                <IoWarningOutline className="w-4 h-4" />
+                                <span>Missing Data</span>
+                              </span> 
+                            : data.actualValue?.toFixed(2) || '-'}
+                        </td>
+                        <td className="px-4 py-3">
+                          {isYesterday 
+                            ? (data.predictedValue === null 
+                                ? <span className="text-red-500 flex items-center space-x-1">
+                                    <IoWarningOutline className="w-4 h-4" />
+                                    <span>Missing Data</span>
+                                  </span> 
+                                : data.predictedValue?.toFixed(2)) 
+                            : data.value?.toFixed(2)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span 
+                            className={`px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${
+                              isYesterday 
+                                ? 'bg-yellow-100 text-yellow-800' 
+                                : 'bg-blue-100 text-blue-800'
+                            }`}
+                          >
+                            {isYesterday ? (
+                              <>
+                                <Clock className="w-3 h-3" />
+                                <span>Yesterday</span>
+                              </>
+                            ) : (
+                              <>
+                                <IoHardwareChipOutline className="w-3 h-3" />
+                                <span>Future Prediction</span>
+                              </>
+                            )}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  <tr className="bg-gradient-to-r from-slate-100 to-slate-200 font-semibold">
+                    <td className="px-4 py-3 text-slate-700 flex items-center space-x-2">
+                      <IoCheckmarkCircleOutline className="w-4 h-4 text-green-500" />
+                      <span>Total / Average</span>
+                    </td>
+                    <td className="px-4 py-3 text-blue-700 font-bold" colSpan={3}>
+                      {total.toFixed(2)} / {average.toFixed(2)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-        
-        {/* Prediction Table */}
-        <div className="bg-white rounded-xl shadow-md p-4">
-          <h3 className="text-xl font-semibold mb-4 text-gray-700">
-            Inflow Data Details
-          </h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left text-gray-600">
-              <thead className="bg-gray-100 text-gray-600 uppercase">
-                <tr>
-                  <th className="px-4 py-3">Date & Time</th>
-                  <th className="px-4 py-3">Actual Value</th>
-                  <th className="px-4 py-3">Predicted Value</th>
-                  <th className="px-4 py-3">Type</th>
-                </tr>
-              </thead>
-              <tbody>
-                {processedData.map((data, index) => {
-                  const isYesterday = data.actualValue !== undefined;
-                  const isMissingData = data.actualValue === null || data.predictedValue === null;
-                  return (
-                    <tr key={index} className={`border-b hover:bg-gray-50 ${isYesterday ? 'bg-yellow-50' : ''} ${isMissingData ? 'bg-red-50' : ''}`}>
-                      <td className="px-4 py-3">{formatDateTime(data.datetime)}</td>
-                      <td className="px-4 py-3">
-                        {data.actualValue === null 
-                          ? <span className="text-red-500">Missing Data</span> 
-                          : data.actualValue?.toFixed(2) || '-'}
-                      </td>
-                      <td className="px-4 py-3">
-                        {isYesterday 
-                          ? (data.predictedValue === null 
-                              ? <span className="text-red-500">Missing Data</span> 
-                              : data.predictedValue?.toFixed(2)) 
-                          : data.value?.toFixed(2)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span 
-                          className={`px-2 py-1 rounded-full text-xs ${
-                            isYesterday 
-                              ? 'bg-yellow-100 text-yellow-800' 
-                              : 'bg-blue-100 text-blue-800'
-                          }`}
-                        >
-                          {isYesterday ? 'Yesterday' : 'Future Prediction'}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-                <tr className="bg-gray-100 font-semibold">
-                  <td className="px-4 py-3 text-gray-700">Total / Average</td>
-                  <td className="px-4 py-3 text-blue-700" colSpan={3}>
-                    {total.toFixed(2)} / {average.toFixed(2)}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

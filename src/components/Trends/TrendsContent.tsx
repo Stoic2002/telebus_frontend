@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { IoTrendingUpOutline, IoFlashOutline, IoWaterOutline, IoRefreshOutline, IoWarningOutline, IoStatsChartOutline, IoTimeOutline } from 'react-icons/io5';
 import axios from 'axios';
 import { ARRData, BebanData, FormattedData, InflowData, OutflowData, TMAData } from '@/types/trendsTypes';
 import ErrorComponent from '../error/ErrorComponent';
-import { Card, CardContent } from '../ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 // import ErrorComponent from '../error/ErrorComponent';
 
 const TrendsContent = () => {
@@ -174,10 +175,10 @@ const TrendsContent = () => {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-4 border rounded-lg shadow-lg">
-          <p className="font-bold mb-2">{`Waktu: ${label}`}</p>
+        <div className="bg-slate-900/95 backdrop-blur-md p-4 border border-white/20 rounded-xl shadow-2xl">
+          <p className="font-bold mb-2 text-white">{`Waktu: ${label}`}</p>
           {payload.map((pld: any) => (
-            <p key={pld.name} style={{ color: pld.color }}>
+            <p key={pld.name} style={{ color: pld.color }} className="font-medium">
               {`${pld.name}: ${pld.value.toFixed(2)}`}
             </p>
           ))}
@@ -198,45 +199,45 @@ const TrendsContent = () => {
               type="monotone" 
               dataKey="totalBeban" 
               name="Total Beban"
-              stroke="#2563eb"
-              strokeWidth={2}
+              stroke="#3b82f6"
+              strokeWidth={3}
               dot={false}
-              activeDot={{ r: 6 }}
+              activeDot={{ r: 8, strokeWidth: 2, fill: '#3b82f6' }}
             />
             <Line 
               type="monotone" 
               dataKey="inflow" 
               name="Inflow"
-              stroke="#16a34a"
-              strokeWidth={2}
+              stroke="#10b981"
+              strokeWidth={3}
               dot={false}
-              activeDot={{ r: 6 }}
+              activeDot={{ r: 8, strokeWidth: 2, fill: '#10b981' }}
             />
             <Line 
               type="monotone" 
               dataKey="tma" 
               name="TMA"
-              stroke="#dc2626"
-              strokeWidth={2}
+              stroke="#f59e0b"
+              strokeWidth={3}
               dot={false}
-              activeDot={{ r: 6 }}
+              activeDot={{ r: 8, strokeWidth: 2, fill: '#f59e0b' }}
             />
             <Line 
               type="monotone" 
               dataKey="outflow" 
               name="Outflow"
-              stroke="#ffc658"
-              strokeWidth={2}
+              stroke="#ef4444"
+              strokeWidth={3}
               dot={false}
-              activeDot={{ r: 6 }}
+              activeDot={{ r: 8, strokeWidth: 2, fill: '#ef4444' }}
             />
           </>
         );
         legend = [
-          { name: 'Total Beban', color: '#2563eb' },
-          { name: 'Inflow', color: '#16a34a' },
-          { name: 'TMA', color: '#dc2626' },
-          { name: 'Outflow', color: '#ffc658' }
+          { name: 'Total Beban', color: '#3b82f6', icon: IoFlashOutline },
+          { name: 'Inflow', color: '#10b981', icon: IoWaterOutline },
+          { name: 'TMA', color: '#f59e0b', icon: IoStatsChartOutline },
+          { name: 'Outflow', color: '#ef4444', icon: IoWaterOutline }
         ];
         yAxisLabel = 'Values';
         break;
@@ -248,35 +249,35 @@ const TrendsContent = () => {
               type="monotone" 
               dataKey="arrST01" 
               name="ARR ST01"
-              stroke="#2563eb"
-              strokeWidth={2}
+              stroke="#3b82f6"
+              strokeWidth={3}
               dot={false}
-              activeDot={{ r: 6 }}
+              activeDot={{ r: 8, strokeWidth: 2, fill: '#3b82f6' }}
             />
             <Line 
               type="monotone" 
               dataKey="arrST02" 
               name="ARR ST02"
-              stroke="#16a34a"
-              strokeWidth={2}
+              stroke="#10b981"
+              strokeWidth={3}
               dot={false}
-              activeDot={{ r: 6 }}
+              activeDot={{ r: 8, strokeWidth: 2, fill: '#10b981' }}
             />
             <Line 
               type="monotone" 
               dataKey="arrST03" 
               name="ARR ST03"
-              stroke="#dc2626"
-              strokeWidth={2}
+              stroke="#ef4444"
+              strokeWidth={3}
               dot={false}
-              activeDot={{ r: 6 }}
+              activeDot={{ r: 8, strokeWidth: 2, fill: '#ef4444' }}
             />
           </>
         );
         legend = [
-          { name: 'ARR ST01', color: '#2563eb' },
-          { name: 'ARR ST02', color: '#16a34a' },
-          { name: 'ARR ST03', color: '#dc2626' }
+          { name: 'ARR ST01', color: '#3b82f6', icon: IoStatsChartOutline },
+          { name: 'ARR ST02', color: '#10b981', icon: IoStatsChartOutline },
+          { name: 'ARR ST03', color: '#ef4444', icon: IoStatsChartOutline }
         ];
         yAxisLabel = 'Values';
         break;
@@ -287,14 +288,14 @@ const TrendsContent = () => {
             type="monotone" 
             dataKey="inflow" 
             name="Inflow"
-            stroke="#2563eb"
-            strokeWidth={2}
+            stroke="#3b82f6"
+            strokeWidth={3}
             dot={false}
-            activeDot={{ r: 6 }}
+            activeDot={{ r: 8, strokeWidth: 2, fill: '#3b82f6' }}
           />
         );
         legend = [
-          { name: 'Inflow', color: '#2563eb' }
+          { name: 'Inflow', color: '#3b82f6', icon: IoWaterOutline }
         ];
         yAxisLabel = 'Value';
         break;
@@ -302,18 +303,19 @@ const TrendsContent = () => {
 
     return (
       <>
-        <div className="flex justify-center gap-8 mb-4">
+        <div className="flex justify-center gap-8 mb-6">
           {legend.map((item) => (
-            <div key={item.name} className="flex items-center gap-2">
+            <div key={item.name} className="flex items-center gap-3 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-xl border border-white/20">
               <div 
-                className="w-4 h-4 rounded-full" 
+                className="w-5 h-5 rounded-full shadow-lg" 
                 style={{ backgroundColor: item.color }}
               />
-              <span className="text-sm font-medium">{item.name}</span>
+              <item.icon className="w-5 h-5 text-white/80" />
+              <span className="text-sm font-semibold text-white">{item.name}</span>
             </div>
           ))}
         </div>
-        <div className="h-96">
+        <div className="h-[500px] bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={data}
@@ -324,7 +326,7 @@ const TrendsContent = () => {
                 bottom: 60
               }}
             >
-              <CartesianGrid strokeDasharray="3 3" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff20" />
               <XAxis 
                 dataKey="time" 
                 angle={-45}
@@ -332,16 +334,19 @@ const TrendsContent = () => {
                 interval={0}
                 height={40}
                 label={{value:'Time', position: 'bottom'}}
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 12, fill: '#ffffff80' }}
+                stroke="#ffffff60"
               />
               <YAxis 
                 label={{ 
                   value: yAxisLabel, 
                   angle: -90, 
                   position: 'insideLeft',
-                  offset: -30
+                  offset: -30,
+                  style: { fill: '#ffffff80' }
                 }}
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 12, fill: '#ffffff80' }}
+                stroke="#ffffff60"
               />
               <Tooltip content={<CustomTooltip />} />
               {lines}
@@ -354,63 +359,116 @@ const TrendsContent = () => {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="animate-pulse">
-        <div className="h-6 bg-gray-300 rounded w-32 mb-4 mx-auto"></div>
-        <div className="h-96 bg-gray-200 rounded"></div>
-      </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 p-6">
+        <div className="max-w-7xl mx-auto">
+          <Card className="bg-white/10 backdrop-blur-md border-white/20 shadow-2xl">
+            <CardContent className="p-12">
+              <div className="flex items-center justify-center space-x-4 text-white">
+                <IoRefreshOutline className="w-10 h-10 animate-spin" />
+                <span className="text-2xl font-medium">Loading trends data...</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
-
   if (error) {
     return (
-      <Card className="w-full max-w-6xl mx-auto bg-gradient-to-br from-red-50 to-red-100 shadow-lg">
-        <CardContent className="flex flex-col items-center justify-center p-8 space-y-4">
-          <div className="text-red-600 text-lg font-semibold text-center">
-            {error}
-          </div>
-          <button 
-            onClick={fetchData} 
-            className="px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md"
-          >
-            Retry Connection
-          </button>
-        </CardContent>
-      </Card>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 p-6">
+        <div className="max-w-7xl mx-auto">
+          <Card className="bg-gradient-to-br from-red-500/20 to-red-700/20 backdrop-blur-md border-red-400/30 shadow-2xl">
+            <CardContent className="flex flex-col items-center justify-center p-12 space-y-6">
+              <IoWarningOutline className="w-16 h-16 text-red-400" />
+              <div className="text-red-300 text-xl font-semibold text-center">
+                {error}
+              </div>
+              <button 
+                onClick={fetchData} 
+                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg font-medium flex items-center space-x-2"
+              >
+                <IoRefreshOutline className="w-5 h-5" />
+                <span>Retry Connection</span>
+              </button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <div className="w-full p-4 bg-white rounded-lg shadow-lg ">
-        <h2 className="text-xl font-bold mb-4 text-center">Trends</h2>
-        
-        <div className="flex justify-center mb-4">
-          <div className="flex space-x-4">
-            <button 
-              onClick={() => setActiveTab('trends1')}
-              className={`px-4 py-2 rounded ${activeTab === 'trends1' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-            >
-              Trends 1 (Total Beban, Inflow, TMA, Outflow)
-            </button>
-            <button 
-              onClick={() => setActiveTab('trends2')}
-              className={`px-4 py-2 rounded ${activeTab === 'trends2' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-            >
-              Trends 2 (ARR)
-            </button>
-            <button 
-              onClick={() => setActiveTab('trends3')}
-              className={`px-4 py-2 rounded ${activeTab === 'trends3' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-            >
-              Trends 3 (Inflow)
-            </button>
-          </div>
-        </div>
-        
-        {renderChart()}
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 p-6">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header Card */}
+        <Card className="bg-white/10 backdrop-blur-md border-white/20 shadow-2xl">
+          <CardHeader className="bg-gradient-to-r from-emerald-500/80 to-teal-600/80 text-white rounded-t-lg">
+            <CardTitle className="flex items-center space-x-4 text-3xl font-bold">
+              <IoTrendingUpOutline className="w-10 h-10" />
+              <div>
+                <h1>Data Trends Analytics</h1>
+                <p className="text-emerald-100 text-lg font-normal mt-1">Real-time Power Plant Performance Monitoring</p>
+              </div>
+            </CardTitle>
+          </CardHeader>
+        </Card>
+
+        {/* Main Content Card */}
+        <Card className="bg-white/10 backdrop-blur-md border-white/20 shadow-2xl">
+          <CardContent className="p-8">
+            {/* Tab Navigation */}
+            <div className="flex justify-center mb-8">
+              <div className="flex space-x-4 bg-white/10 backdrop-blur-sm p-2 rounded-2xl border border-white/20">
+                <button 
+                  onClick={() => setActiveTab('trends1')}
+                  className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-2 ${
+                    activeTab === 'trends1' 
+                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg scale-105' 
+                      : 'text-white/80 hover:bg-white/10'
+                  }`}
+                >
+                  <IoStatsChartOutline className="w-5 h-5" />
+                  <span>Trends 1 (Total Beban, Inflow, TMA, Outflow)</span>
+                </button>
+                <button 
+                  onClick={() => setActiveTab('trends2')}
+                  className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-2 ${
+                    activeTab === 'trends2' 
+                      ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg scale-105' 
+                      : 'text-white/80 hover:bg-white/10'
+                  }`}
+                >
+                  <IoFlashOutline className="w-5 h-5" />
+                  <span>Trends 2 (ARR)</span>
+                </button>
+                <button 
+                  onClick={() => setActiveTab('trends3')}
+                  className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-2 ${
+                    activeTab === 'trends3' 
+                      ? 'bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-lg scale-105' 
+                      : 'text-white/80 hover:bg-white/10'
+                  }`}
+                >
+                  <IoWaterOutline className="w-5 h-5" />
+                  <span>Trends 3 (Inflow)</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Data Info Banner */}
+            <div className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 backdrop-blur-sm rounded-xl p-4 mb-6 border border-blue-400/30">
+              <div className="flex items-center space-x-3 text-blue-100">
+                <IoTimeOutline className="w-6 h-6" />
+                <span className="font-medium">
+                  Showing data trends for today • Last updated: {new Date().toLocaleTimeString('id-ID')} • Auto-refresh every 5 minutes
+                </span>
+              </div>
+            </div>
+            
+            {renderChart()}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

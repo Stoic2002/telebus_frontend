@@ -204,161 +204,182 @@ const Header = () => {
 
   return (
     <>
-      <header className="flex justify-between items-center p-4 bg-gradient-to-r from-green-500 to-gray-300 text-white shadow-md relative">
-        {/* Logo and Mobile Menu Toggle */}
-        <div className="flex items-center justify-between w-full md:w-auto">
-          <img 
-            onClick={() => handleHomeClick('home')} 
-            src="/assets/ip-mrica-logo.png" 
-            alt="Logo" 
-            className="h-12 sm:h-16 cursor-pointer" 
-          />
-          
-          {/* Mobile Menu Toggle */}
-          <button 
-            className="md:hidden"
-            onClick={toggleMobileMenu}
-          >
-            {isMobileMenuOpen ? <AiOutlineClose /> : <AiOutlineMenu />}
-          </button>
-        </div>
-
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex flex-1 justify-center gap-4 lg:gap-8">
-          {getPermittedMenuItems().map((menuItem) => 
-            menuItem.show ? (
-              <Button
-                key={menuItem.route}
-                variant="ghost"
-                className="text-white hover:text-white hover:bg-gray-700"
-                onClick={() => handleHomeClick(menuItem.route)}
+      <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50 backdrop-blur-lg">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo and Mobile Menu Toggle */}
+            <div className="flex items-center">
+              <div 
+                onClick={() => handleHomeClick('home')} 
+                className="flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-200"
               >
-                <menuItem.icon className="mr-2" /> {menuItem.label}
-              </Button>
-            ) : null
-          )}
-
-          {getPermittedDataInputItems().some(item => item.show) && (
-            <div className="relative" ref={dropdownRef}>
-              <Button 
-                variant="ghost" 
-                className="text-white hover:text-white hover:bg-gray-700"
-                onClick={toggleDataInputDropdown}
+                <img src="/assets/ip-mrica-logo.png" alt="Logo" className="h-10 w-auto" />
+              </div>
+              
+              {/* Mobile Menu Toggle */}
+              <button 
+                className="md:hidden ml-4 p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                onClick={toggleMobileMenu}
               >
-                Data Input
-              </Button>
-              {isDataInputDropdownOpen && (
-                <div className="absolute left-0 mt-2 bg-gray-800 text-white rounded-md shadow-lg z-50">
-                  {getPermittedDataInputItems().map((dataInput) => 
-                    dataInput.show ? (
-                      <div 
-                        key={dataInput.route}
-                        onClick={() => {
-                          router.push(`/dashboard/${dataInput.route}`);
-                          setIsDataInputDropdownOpen(false);
-                        }} 
-                        className="px-4 py-2 cursor-pointer hover:bg-gray-700"
-                      >
-                        {dataInput.label}
-                      </div>
-                    ) : null
-                  )}
-                </div>
-              )}
+                {isMobileMenuOpen ? (
+                  <AiOutlineClose className="h-6 w-6 text-gray-600" />
+                ) : (
+                  <AiOutlineMenu className="h-6 w-6 text-gray-600" />
+                )}
+              </button>
             </div>
-          )}
-        </nav>
 
-        {/* Logo and Logout for Desktop */}
-        <div className="hidden md:flex items-center gap-4">
-          <img 
-            src="/assets/tele-bus.png" 
-            alt="Logo" 
-            className="h-10 w-auto sm:h-15" 
-          />
-          <Button
-            variant="ghost"
-            className="text-white hover:text-white hover:bg-red-600"
-            onClick={() => setIsLogoutDialogOpen(true)}
-          >
-            <AiOutlineLogout className="mr-2 h-4 w-4" />
-            Logout
-          </Button>
-        </div>
-
-        {/* Mobile Menu Overlay */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 w-full bg-gradient-to-r from-green-500 to-gray-300 z-50">
-            <div className="flex flex-col items-start p-4 space-y-2">
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex flex-1 justify-center space-x-1">
               {getPermittedMenuItems().map((menuItem) => 
                 menuItem.show ? (
                   <Button
                     key={menuItem.route}
                     variant="ghost"
-                    className="w-full text-left text-white hover:text-white hover:bg-gray-700"
+                    className="text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg px-4 py-2 font-medium transition-all duration-200"
                     onClick={() => handleHomeClick(menuItem.route)}
                   >
-                    <menuItem.icon className="mr-2" /> {menuItem.label}
+                    <menuItem.icon className="mr-2 h-4 w-4" /> 
+                    {menuItem.label}
                   </Button>
                 ) : null
               )}
 
               {getPermittedDataInputItems().some(item => item.show) && (
-                <div className="w-full">
+                <div className="relative" ref={dropdownRef}>
                   <Button 
                     variant="ghost" 
-                    className="w-full text-left text-white hover:text-white hover:bg-gray-700"
+                    className="text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg px-4 py-2 font-medium transition-all duration-200"
                     onClick={toggleDataInputDropdown}
                   >
-                    <AiOutlineForm className='mr-2'/>
+                    <AiOutlineForm className="mr-2 h-4 w-4" />
                     Data Input
+                    <svg className="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
                   </Button>
                   {isDataInputDropdownOpen && (
-                    <div className="pl-4 space-y-2 mt-2">
+                    <div className="absolute left-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
                       {getPermittedDataInputItems().map((dataInput) => 
                         dataInput.show ? (
-                          <div 
+                          <button
                             key={dataInput.route}
-                            onClick={() => router.push(`/dashboard/${dataInput.route}`)} 
-                            className="text-white cursor-pointer hover:bg-gray-700 p-2"
+                            onClick={() => {
+                              router.push(`/dashboard/${dataInput.route}`);
+                              setIsDataInputDropdownOpen(false);
+                            }} 
+                            className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors duration-200"
                           >
                             {dataInput.label}
-                          </div>
+                          </button>
                         ) : null
                       )}
                     </div>
                   )}
                 </div>
               )}
+            </nav>
 
-              <div className="w-full border-t border-white/30 pt-2 mt-2">
-                <Button
-                  variant="ghost"
-                  className="w-full text-left text-white hover:text-white hover:bg-red-600"
-                  onClick={() => setIsLogoutDialogOpen(true)}
-                >
-                  <AiOutlineLogout className="mr-2 h-4 w-4" />
-                  Logout
-                </Button>
+            {/* Right Side - Logo and Logout */}
+            <div className="flex items-center space-x-4">
+              <div className="hidden md:block">
+                <img src="/assets/tele-bus.png" alt="Tele Bus Logo" className="h-8 w-auto" />
               </div>
+              <Button
+                variant="ghost"
+                className="text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg px-4 py-2 font-medium transition-all duration-200"
+                onClick={() => setIsLogoutDialogOpen(true)}
+              >
+                <AiOutlineLogout className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Logout</span>
+              </Button>
             </div>
           </div>
+        </div>
+
+        {/* Mobile Menu Overlay */}
+        {isMobileMenuOpen && (
+          <>
+            <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden" onClick={() => setIsMobileMenuOpen(false)}></div>
+            <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-lg z-50">
+              <div className="p-4 space-y-2">
+                {getPermittedMenuItems().map((menuItem) => 
+                  menuItem.show ? (
+                    <Button
+                      key={menuItem.route}
+                      variant="ghost"
+                      className="w-full justify-start text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg p-3 font-medium transition-all duration-200"
+                      onClick={() => handleHomeClick(menuItem.route)}
+                    >
+                      <menuItem.icon className="mr-3 h-5 w-5" /> 
+                      {menuItem.label}
+                    </Button>
+                  ) : null
+                )}
+
+                {getPermittedDataInputItems().some(item => item.show) && (
+                  <div className="space-y-2">
+                    <Button 
+                      variant="ghost" 
+                      className="w-full justify-start text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg p-3 font-medium transition-all duration-200"
+                      onClick={toggleDataInputDropdown}
+                    >
+                      <AiOutlineForm className='mr-3 h-5 w-5'/>
+                      Data Input
+                      <svg className="ml-auto h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </Button>
+                    {isDataInputDropdownOpen && (
+                      <div className="pl-6 space-y-1">
+                        {getPermittedDataInputItems().map((dataInput) => 
+                          dataInput.show ? (
+                            <button
+                              key={dataInput.route}
+                              onClick={() => {
+                                router.push(`/dashboard/${dataInput.route}`);
+                                setIsMobileMenuOpen(false);
+                              }} 
+                              className="w-full text-left p-3 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors duration-200"
+                            >
+                              {dataInput.label}
+                            </button>
+                          ) : null
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="border-t border-gray-200 pt-4 mt-4">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg p-3 font-medium transition-all duration-200"
+                    onClick={() => setIsLogoutDialogOpen(true)}
+                  >
+                    <AiOutlineLogout className="mr-3 h-5 w-5" />
+                    Logout
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </>
         )}
       </header>
 
       <AlertDialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
-        <AlertDialogContent className='bg-white'>
+        <AlertDialogContent className='bg-white rounded-2xl border-0 shadow-2xl'>
           <AlertDialogHeader>
-            <AlertDialogTitle>Konfirmasi Logout</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-xl font-semibold text-gray-800">Konfirmasi Logout</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-600">
               Apakah Anda yakin ingin keluar dari sistem?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Tidak</AlertDialogCancel>
+          <AlertDialogFooter className="space-x-3">
+            <AlertDialogCancel className="rounded-lg border-gray-300 hover:bg-gray-50">Tidak</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleLogout}
-              className="bg-red-500 hover:bg-red-600"
+              className="bg-red-500 hover:bg-red-600 rounded-lg"
             >
               Ya, Logout
             </AlertDialogAction>
