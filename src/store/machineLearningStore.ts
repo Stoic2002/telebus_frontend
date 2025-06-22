@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { Prediction, PredictionParameter, TransformedLast24HData } from '@/types/machineLearningTypes';
+import { PredictionService } from '@/services/MachineLearning/predictionService';
 
 type PredictionDuration = '7-day' | '14-day' | '30-day';
 
@@ -102,25 +103,21 @@ export const useMachineLearningStore = create<MachineLearningState & MachineLear
   fetchPredictions: async (parameter) => {
     set({ predictionsLoading: true, predictionsError: null });
     try {
-      const response = await fetch(`/api/predictions/${parameter.toLowerCase()}`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch ${parameter} predictions`);
-      }
-      
-      const data = await response.json();
+      // Use PredictionService instead of localhost API
+      const predictionData = await PredictionService.fetchPredictionData(parameter);
       
       set((state) => ({
         predictions: {
           ...state.predictions,
-          [parameter]: data.predictions || []
+          [parameter]: predictionData.predictionData || []
         },
         historicalData: {
           ...state.historicalData,
-          [parameter]: data.historical || []
+          [parameter]: predictionData.actualData || []
         },
         accuracy: {
           ...state.accuracy,
-          [parameter]: data.accuracy || 0
+          [parameter]: predictionData.accuracy || 0
         },
         predictionsLoading: false
       }));
@@ -149,14 +146,11 @@ export const useMachineLearningStore = create<MachineLearningState & MachineLear
   fetchYesterdayData: async (parameter) => {
     set({ isLoadingYesterdayData: true, yesterdayDataError: null });
     try {
-      const response = await fetch(`/api/predictions/yesterday/${parameter.toLowerCase()}`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch yesterday's ${parameter} data`);
-      }
+      // Use PredictionService for consistency
+      const predictionData = await PredictionService.fetchPrevDayPrediction(parameter);
       
-      const data = await response.json();
       set({ 
-        actualYesterdayData: data.actual || [],
+        actualYesterdayData: predictionData?.actualData || [],
         isLoadingYesterdayData: false 
       });
     } catch (error) {
@@ -168,15 +162,12 @@ export const useMachineLearningStore = create<MachineLearningState & MachineLear
   fetchYesterdayPredictions: async (parameter) => {
     set({ isLoadingYesterdayPredictions: true, yesterdayPredictionsError: null });
     try {
-      const response = await fetch(`/api/predictions/yesterday-predictions/${parameter.toLowerCase()}`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch yesterday's ${parameter} predictions`);
-      }
+      // Use PredictionService for consistency
+      const predictionData = await PredictionService.fetchPrevDayPrediction(parameter);
       
-      const data = await response.json();
       set({ 
-        yesterdayPredictions: data.predictions || [],
-        hasYesterdayPredictions: data.predictions && data.predictions.length > 0,
+        yesterdayPredictions: predictionData?.predictionData || [],
+        hasYesterdayPredictions: predictionData?.predictionData && predictionData.predictionData.length > 0,
         isLoadingYesterdayPredictions: false 
       });
     } catch (error) {
