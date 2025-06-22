@@ -49,7 +49,7 @@ const MachineLearningContent: React.FC = () => {
   const currentHistorical = actualYesterdayData;
   
   // Calculate stats
-  const total = currentPredictions.reduce((sum, p) => sum + (p.value || 0), 0);
+  const total = currentPredictions.reduce((sum: number, p) => sum + (p.value || 0), 0);
   const average = currentPredictions.length > 0 ? total / currentPredictions.length : 0;
   
   // Process chart data - simplified version
