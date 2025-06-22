@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Prediction, PredictionParameter, TransformedLast24HData } from '@/types/machineLearningTypes';
-import { PredictionService } from '@/services/MachineLearning/predictionService';
+import { fetchPredictionsWithHistory } from '@/services/MachineLearning/machineLearningService';
 
 type PredictionDuration = '7-day' | '14-day' | '30-day';
 
@@ -40,11 +40,16 @@ export interface MachineLearningState {
 }
 
 export interface MachineLearningActions {
+  // Helper functions
+  getDurationSteps: () => number;
+  transformYesterdayData: (data: any[]) => Prediction[];
+  transformYesterdayPredictions: (data: any[]) => Prediction[];
+  
   // Fetch data
-  fetchPredictions: (parameter: PredictionParameter) => Promise<void>;
+  fetchPredictions: (dataLast24H?: TransformedLast24HData[]) => Promise<void>;
   fetchLast24HData: () => Promise<void>;
-  fetchYesterdayData: (parameter: PredictionParameter) => Promise<void>;
-  fetchYesterdayPredictions: (parameter: PredictionParameter) => Promise<void>;
+  fetchYesterdayData: () => Promise<void>;
+  fetchYesterdayPredictions: () => Promise<void>;
   
   // Set parameters
   setSelectedParameter: (parameter: PredictionParameter) => void;
@@ -99,31 +104,179 @@ export const useMachineLearningStore = create<MachineLearningState & MachineLear
   
   accuracy: initialAccuracy,
 
-  // Actions
-  fetchPredictions: async (parameter) => {
-    set({ predictionsLoading: true, predictionsError: null });
-    try {
-      // Use PredictionService instead of localhost API
-      const predictionData = await PredictionService.fetchPredictionData(parameter);
+  // Helper function to get duration steps
+  getDurationSteps: (): number => 24 * 7, // Always 7-day (168 hours)
+
+  // Transform yesterday data
+  transformYesterdayData: (data: any[]): Prediction[] => {
+    const hourData = new Map<number, number>();
+    
+    data.forEach((item: any) => {
+      const timestamp = new Date(item.timestamp);
+      const hour = timestamp.getHours();
+      const parsedValue = parseFloat(item.value);
+      const absoluteValue = Math.abs(parsedValue);
       
-      set((state) => ({
-        predictions: {
-          ...state.predictions,
-          [parameter]: predictionData.predictionData || []
-        },
-        historicalData: {
-          ...state.historicalData,
-          [parameter]: predictionData.actualData || []
-        },
-        accuracy: {
-          ...state.accuracy,
-          [parameter]: predictionData.accuracy || 0
-        },
-        predictionsLoading: false
-      }));
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : `Failed to fetch ${parameter} predictions`;
-      set({ predictionsError: errorMessage, predictionsLoading: false });
+      hourData.set(hour, absoluteValue);
+    });
+    
+    const transformedData: Prediction[] = [];
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const refDate = new Date(data[0]?.timestamp || yesterday);
+    refDate.setDate(refDate.getDate());
+    
+    for (let hour = 0; hour < 24; hour++) {
+      const date = new Date(refDate);
+      date.setHours(hour, 0, 0, 0);
+      
+      const value = hourData.get(hour);
+      
+      if (value !== undefined) {
+        transformedData.push({
+          datetime: date.toISOString(),
+          value: value,
+          actualValue: value,
+          predictedValue: undefined
+        });
+      } else {
+        transformedData.push({
+          datetime: date.toISOString(),
+          value: null as any,
+          actualValue: null as any,
+          predictedValue: undefined
+        });
+      }
+    }
+    
+    return transformedData.sort((a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime());
+  },
+
+  // Transform yesterday predictions
+  transformYesterdayPredictions: (data: any[]): Prediction[] => {
+    const hourData = new Map<number, number>();
+    
+    data.forEach((item: any) => {
+      const timestamp = new Date(item.date);
+      const hour = timestamp.getHours();
+      const value = Math.abs(parseFloat(item.inflow_prediction_value));
+      hourData.set(hour, value);
+    });
+    
+    const transformedData: Prediction[] = [];
+    const refDate = new Date(data[0]?.date || new Date());
+    
+    for (let hour = 0; hour < 24; hour++) {
+      const date = new Date(refDate);
+      date.setHours(hour, 0, 0, 0);
+      
+      const value = hourData.get(hour);
+      
+      if (value !== undefined) {
+        transformedData.push({
+          datetime: date.toISOString(),
+          value: value,
+          predictedValue: value,
+          actualValue: undefined
+        });
+      } else {
+        transformedData.push({
+          datetime: date.toISOString(),
+          value: null as any,
+          predictedValue: null as any,
+          actualValue: undefined
+        });
+      }
+    }
+    
+    return transformedData.sort((a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime());
+  },
+
+  // Actions
+  fetchPredictions: async (dataLast24H) => {
+    const parameters: PredictionParameter[] = ['INFLOW', 'OUTFLOW', 'TMA', 'BEBAN'];
+    const steps = 168; // 7 days * 24 hours
+    
+    try {
+      set({ loading: true, error: null });
+      const predictionResults: Record<PredictionParameter, Prediction[]> = {
+        INFLOW: [],
+        OUTFLOW: [],
+        TMA: [],
+        BEBAN: []
+      };
+      
+      const historicalResults: Record<PredictionParameter, Prediction[]> = {
+        INFLOW: [],
+        OUTFLOW: [],
+        TMA: [],
+        BEBAN: []
+      };
+
+      // Fetch predictions for each parameter
+      for (const param of parameters) {
+        const result = await fetchPredictionsWithHistory(param, steps, dataLast24H || []);
+        
+        // Process future predictions to ensure absolute values
+        predictionResults[param] = result.predictions.map((pred: Prediction) => ({
+          ...pred,
+          value: Math.abs(pred.value),
+          predictedValue: pred.predictedValue !== undefined ? Math.abs(pred.predictedValue) : undefined,
+          actualValue: pred.actualValue !== undefined ? Math.abs(pred.actualValue) : undefined
+        }));
+        
+        if (param === 'INFLOW') {
+          const state = get();
+          // For INFLOW, use the actual API data for actual values
+          if (state.actualYesterdayData.length > 0) {
+            historicalResults[param] = state.actualYesterdayData.map((actualItem, index) => {
+              const predictionItem = state.hasYesterdayPredictions && state.yesterdayPredictions.length > index 
+                ? state.yesterdayPredictions[index] 
+                : null;
+              
+              return {
+                datetime: actualItem.datetime,
+                value: 0,
+                actualValue: actualItem.actualValue,
+                predictedValue: predictionItem ? predictionItem.predictedValue : undefined
+              };
+            });
+          } else {
+            historicalResults[param] = result.historicalData.map((histItem: Prediction, index: number) => {
+              const state = get();
+              const predictionItem = state.hasYesterdayPredictions && state.yesterdayPredictions.length > index 
+                ? state.yesterdayPredictions[index] 
+                : null;
+              
+              return {
+                ...histItem,
+                value: 0,
+                predictedValue: predictionItem ? predictionItem.predictedValue : histItem.predictedValue
+              };
+            });
+          }
+        } else {
+          historicalResults[param] = result.historicalData.map((histItem: Prediction) => ({
+            ...histItem,
+            value: 0,
+            predictedValue: histItem.predictedValue !== undefined ? Math.abs(histItem.predictedValue) : undefined,
+            actualValue: histItem.actualValue !== undefined ? Math.abs(histItem.actualValue) : undefined
+          }));
+        }
+      }
+
+      set({
+        predictions: predictionResults,
+        historicalData: historicalResults,
+        loading: false
+      });
+    } catch (err) {
+      set({
+        error: 'Failed to fetch predictions. Please check your API connection.',
+        loading: false
+      });
+      console.error('API Error:', err);
     }
   },
 
@@ -143,54 +296,73 @@ export const useMachineLearningStore = create<MachineLearningState & MachineLear
     }
   },
 
-  fetchYesterdayData: async (parameter) => {
-    set({ isLoadingYesterdayData: true, yesterdayDataError: null });
+  fetchYesterdayData: async () => {
     try {
-      // Use PredictionService for consistency
-      const predictionData = await PredictionService.fetchPrevDayPrediction(parameter);
+      set({ isLoadingYesterdayData: true, yesterdayDataError: null });
+      const response = await fetch('http://192.168.105.90/pbs-inflow-calc-h-yesterday');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const transformedData = get().transformYesterdayData(data);
       
       set({ 
-        actualYesterdayData: predictionData?.actualData || [],
+        actualYesterdayData: transformedData,
         isLoadingYesterdayData: false 
       });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : `Failed to fetch yesterday's ${parameter} data`;
-      set({ yesterdayDataError: errorMessage, isLoadingYesterdayData: false });
+      console.error('Error fetching yesterday data:', error);
+      set({ 
+        yesterdayDataError: 'Failed to fetch yesterday data',
+        isLoadingYesterdayData: false 
+      });
     }
   },
 
-  fetchYesterdayPredictions: async (parameter) => {
-    set({ isLoadingYesterdayPredictions: true, yesterdayPredictionsError: null });
+  fetchYesterdayPredictions: async () => {
     try {
-      // Use PredictionService for consistency
-      const predictionData = await PredictionService.fetchPrevDayPrediction(parameter);
+      set({ isLoadingYesterdayPredictions: true, yesterdayPredictionsError: null });
+      const response = await fetch('http://192.168.105.90/prediction-inflow-yesterday');
       
-      set({ 
-        yesterdayPredictions: predictionData?.predictionData || [],
-        hasYesterdayPredictions: predictionData?.predictionData && predictionData.predictionData.length > 0,
-        isLoadingYesterdayPredictions: false 
-      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.length) {
+        const transformedData = get().transformYesterdayPredictions(data);
+        set({
+          yesterdayPredictions: transformedData,
+          hasYesterdayPredictions: true,
+          isLoadingYesterdayPredictions: false
+        });
+      } else {
+        set({
+          yesterdayPredictions: [],
+          hasYesterdayPredictions: false,
+          yesterdayPredictionsError: 'Not enough historical prediction data',
+          isLoadingYesterdayPredictions: false
+        });
+      }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : `Failed to fetch yesterday's ${parameter} predictions`;
+      console.error('Error fetching yesterday predictions:', error);
       set({ 
-        yesterdayPredictionsError: errorMessage, 
-        isLoadingYesterdayPredictions: false,
-        hasYesterdayPredictions: false 
+        yesterdayPredictionsError: 'Error loading prediction data',
+        hasYesterdayPredictions: false,
+        isLoadingYesterdayPredictions: false
       });
     }
   },
 
   setSelectedParameter: (parameter) => {
     set({ selectedParameter: parameter });
-    // Auto-fetch data for the new parameter
-    get().fetchPredictions(parameter);
   },
 
   setPredictionDuration: (duration) => {
     set({ predictionDuration: duration });
-    // Re-fetch predictions with new duration
-    const currentParameter = get().selectedParameter;
-    get().fetchPredictions(currentParameter);
   },
 
   clearErrors: () => {
