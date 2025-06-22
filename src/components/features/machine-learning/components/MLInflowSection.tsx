@@ -1,44 +1,32 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceArea, Label } from 'recharts';
-import { Loader2, BarChart2, Download, Clock, AlertCircle } from 'lucide-react';
-import { PARAMETER_COLORS, Prediction, PredictionParameter, Y_AXIS_DOMAIN } from '@/types/machineLearningTypes';
+import { Loader2, Download, AlertCircle } from 'lucide-react';
+import { Prediction, PredictionParameter, Y_AXIS_DOMAIN } from '@/types/machineLearningTypes';
 import { useLast24HData } from '@/hooks/useMachineLearningData';
-import { fetchPredictionsWithHistory, combinePredictionData } from '@/services/MachineLearning/machineLearningService';
+import { fetchPredictionsWithHistory } from '@/services/MachineLearning/machineLearningService';
+import { MetricCard } from '@/components/common/cards/MetricCard';
+import { CARD_THEMES } from '@/constants/colors';
+import { Button } from '@/components/ui/button';
+import { 
+  IoWaterOutline,
+  IoStatsChartOutline,
+  IoTrendingUpOutline,
+  IoAnalyticsOutline
+} from 'react-icons/io5';
 
-// Define prediction duration type
-type PredictionDuration = '7-day';
-
-// Modified chart colors
+// Modified chart colors - same as legacy
 const CHART_COLORS = {
   actual: '#FFB800',    // Yellow for actual data
   yesterdayPrediction: '#93C5FD', // Light blue for yesterday's predictions
   futurePrediction: '#2563EB' // Dark blue for future predictions
 };
 
-const MachineLearningContent: React.FC = () => {
-  // State for predictions, loading, error, and parameter selection
-  const [predictions, setPredictions] = useState<Record<PredictionParameter, Prediction[]>>({
-    INFLOW: [],
-    OUTFLOW: [],
-    TMA: [],
-    BEBAN: []
-  });
-  
-  const [historicalData, setHistoricalData] = useState<Record<PredictionParameter, Prediction[]>>({
-    INFLOW: [],
-    OUTFLOW: [],
-    TMA: [],
-    BEBAN: []
-  });
-  
+export const MLInflowSection: React.FC = () => {
+  // State for predictions, loading, error - only INFLOW focused
+  const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [historicalData, setHistoricalData] = useState<Prediction[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  // Set default parameter to INFLOW only
-  const [selectedParameter] = useState<PredictionParameter>('INFLOW');
-  
-  // Set default to 7-day only
-  const [predictionDuration] = useState<PredictionDuration>('7-day');
   
   // Add state for actual yesterday data
   const [actualYesterdayData, setActualYesterdayData] = useState<Prediction[]>([]);
@@ -53,6 +41,7 @@ const MachineLearningContent: React.FC = () => {
   
   const { data: dataLast24H, isLoading, error: err1 } = useLast24HData();
 
+  // Format datetime for CSV - same as legacy
   const formatDateTimeForCSV = (datetime: string) => {
     const date = new Date(datetime);
     return date.toLocaleString('id-ID', {
@@ -63,16 +52,16 @@ const MachineLearningContent: React.FC = () => {
       minute: '2-digit',
       hour12: false,
       timeZone: 'Asia/Jakarta'
-    }).replace(',', ''); // Remove comma between date and time
+    }).replace(',', '');
   };
 
-  // Always return 7-day steps (24 * 7 = 168)
+  // Always return 7-day steps (24 * 7 = 168) - same as legacy
   const getDurationSteps = (): number => 24 * 7;
 
-  // Get appropriate X-axis interval for 7-day
+  // Get appropriate X-axis interval for 7-day - same as legacy
   const getXAxisInterval = (): number => 23; // Show every 24th hour (once a day)
 
-  // Fetch actual yesterday data from API
+  // Fetch actual yesterday data from API - EXACT same as legacy
   const fetchYesterdayData = async () => {
     try {
       setIsLoadingYesterdayData(true);
@@ -123,10 +112,9 @@ const MachineLearningContent: React.FC = () => {
           });
         } else {
           // If hour is missing, add a placeholder with null value
-          // This will create a gap in the line chart rather than connecting through incorrect values
           transformedData.push({
             datetime: date.toISOString(),
-            value: null as any, // Use null to create a gap
+            value: null as any,
             actualValue: null as any,
             predictedValue: undefined
           });
@@ -146,12 +134,7 @@ const MachineLearningContent: React.FC = () => {
     }
   };
 
-  // Use effect to fetch yesterday's actual data
-  useEffect(() => {
-    fetchYesterdayData();
-  }, []);
-
-  // Fetch yesterday's predictions from API
+  // Fetch yesterday's predictions from API - EXACT same as legacy
   const fetchYesterdayPredictions = async () => {
     try {
       setIsLoadingYesterdayPredictions(true);
@@ -201,7 +184,7 @@ const MachineLearningContent: React.FC = () => {
             // For missing hours, add a placeholder with null value
             transformedData.push({
               datetime: date.toISOString(),
-              value: null as any, // Use null to create a gap in the chart
+              value: null as any,
               predictedValue: null as any,
               actualValue: undefined
             });
@@ -229,89 +212,58 @@ const MachineLearningContent: React.FC = () => {
     }
   };
 
-  // Use effect to fetch yesterday's predictions on component mount
-  useEffect(() => {
-    fetchYesterdayPredictions();
-  }, []);
-
-  // Fetch predictions from API
+  // Fetch predictions from API - simplified for INFLOW only
   const fetchPredictions = async () => {
-    const parameters: PredictionParameter[] = ['INFLOW', 'OUTFLOW', 'TMA', 'BEBAN'];
     const steps = getDurationSteps();
     
     try {
       setLoading(true);
-      const predictionResults: Record<PredictionParameter, Prediction[]> = {
-        INFLOW: [],
-        OUTFLOW: [],
-        TMA: [],
-        BEBAN: []
-      };
       
-      const historicalResults: Record<PredictionParameter, Prediction[]> = {
-        INFLOW: [],
-        OUTFLOW: [],
-        TMA: [],
-        BEBAN: []
-      };
+      // Only fetch INFLOW predictions
+      const result = await fetchPredictionsWithHistory('INFLOW', 168, dataLast24H);
+      
+      // Process future predictions to ensure absolute values
+      const futurePredictions = result.predictions.map((pred: Prediction) => ({
+        ...pred,
+        value: Math.abs(pred.value),
+        predictedValue: pred.predictedValue !== undefined ? Math.abs(pred.predictedValue) : undefined,
+        actualValue: pred.actualValue !== undefined ? Math.abs(pred.actualValue) : undefined
+      }));
 
-      // Fetch predictions for each parameter
-      for (const param of parameters) {
-        // Only use the service for predictions and predicted historical data
-        const result = await fetchPredictionsWithHistory(param, 168, dataLast24H);
-        
-        // Process future predictions to ensure absolute values
-        predictionResults[param] = result.predictions.map((pred: Prediction) => ({
-          ...pred,
-          value: Math.abs(pred.value), // Ensure value is absolute (positive)
-          predictedValue: pred.predictedValue !== undefined ? Math.abs(pred.predictedValue) : undefined,
-          actualValue: pred.actualValue !== undefined ? Math.abs(pred.actualValue) : undefined
-        }));
-        
-        if (param === 'INFLOW') {
-          // For INFLOW, use the actual API data for actual values
-          if (actualYesterdayData.length > 0) {
-            // Create a map of yesterday's historical data with both actual and predicted values
-            historicalResults[param] = actualYesterdayData.map((actualItem, index) => {
-              // Get corresponding prediction from API data if available
-              const predictionItem = hasYesterdayPredictions && yesterdayPredictions.length > index 
-                ? yesterdayPredictions[index] 
-                : null;
-              
-              return {
-                datetime: actualItem.datetime,
-                value: 0, // Set to 0 to hide future prediction line
-                actualValue: actualItem.actualValue, // Actual value from API
-                predictedValue: predictionItem ? predictionItem.predictedValue : undefined // From API
-              };
-            });
-          } else {
-            // If no actual data, use service mock data
-            historicalResults[param] = result.historicalData.map((histItem: Prediction, index: number) => {
-              // Get corresponding prediction from API data if available
-              const predictionItem = hasYesterdayPredictions && yesterdayPredictions.length > index 
-                ? yesterdayPredictions[index] 
-                : null;
-              
-              return {
-                ...histItem,
-                value: 0, // Set to 0 to hide future prediction line
-                predictedValue: predictionItem ? predictionItem.predictedValue : histItem.predictedValue
-              };
-            });
-          }
-        } else {
-          // For other parameters, use the service mock data
-          historicalResults[param] = result.historicalData.map((histItem: Prediction) => ({
+      // For INFLOW, use the actual API data for historical values
+      let historicalResults: Prediction[] = [];
+      if (actualYesterdayData.length > 0) {
+        // Create a map of yesterday's historical data with both actual and predicted values
+        historicalResults = actualYesterdayData.map((actualItem, index) => {
+          // Get corresponding prediction from API data if available
+          const predictionItem = hasYesterdayPredictions && yesterdayPredictions.length > index 
+            ? yesterdayPredictions[index] 
+            : null;
+          
+          return {
+            datetime: actualItem.datetime,
+            value: 0, // Set to 0 to hide future prediction line
+            actualValue: actualItem.actualValue, // Actual value from API
+            predictedValue: predictionItem ? predictionItem.predictedValue : undefined // From API
+          };
+        });
+      } else {
+        // If no actual data, use service mock data
+        historicalResults = result.historicalData.map((histItem: Prediction, index: number) => {
+          // Get corresponding prediction from API data if available
+          const predictionItem = hasYesterdayPredictions && yesterdayPredictions.length > index 
+            ? yesterdayPredictions[index] 
+            : null;
+          
+          return {
             ...histItem,
             value: 0, // Set to 0 to hide future prediction line
-            predictedValue: histItem.predictedValue !== undefined ? Math.abs(histItem.predictedValue) : undefined,
-            actualValue: histItem.actualValue !== undefined ? Math.abs(histItem.actualValue) : undefined
-          }));
-        }
+            predictedValue: predictionItem ? predictionItem.predictedValue : histItem.predictedValue
+          };
+        });
       }
 
-      setPredictions(predictionResults);
+      setPredictions(futurePredictions);
       setHistoricalData(historicalResults);
       setError(null);
     } catch (err) {
@@ -322,35 +274,41 @@ const MachineLearningContent: React.FC = () => {
     }
   };
 
-  // Use effect to fetch predictions when data changes or when actualYesterdayData changes
+  // Use effects - same as legacy
+  useEffect(() => {
+    fetchYesterdayData();
+  }, []);
+
+  useEffect(() => {
+    fetchYesterdayPredictions();
+  }, []);
+
   useEffect(() => {
     if (dataLast24H && dataLast24H.length > 0) {
       fetchPredictions();
     }
   }, [dataLast24H, actualYesterdayData]);
 
-  // Format datetime for better readability
+  // Format datetime for better readability - same as legacy
   const formatDateTime = (datetime: string) => {
     const date = new Date(datetime);
     
-    // Create a formatter for Indonesian locale
     const formatter = new Intl.DateTimeFormat('id-ID', {
       month: 'short', 
       day: 'numeric', 
       hour: '2-digit', 
       minute: '2-digit', 
-      hour12: false, // Use 24-hour format
-      timeZone: 'Asia/Jakarta' // Explicitly set to WIB
+      hour12: false,
+      timeZone: 'Asia/Jakarta'
     });
 
     return formatter.format(date);
   };
 
-  // Format X-axis labels for 7-day view
+  // Format X-axis labels for 7-day view - same as legacy
   const formatXAxisTick = (datetime: string) => {
     const date = new Date(datetime);
     
-    // Show day and hour for 7-day view
     const dayStr = new Intl.DateTimeFormat('id-ID', {
       day: 'numeric',
       month: 'short',
@@ -367,7 +325,7 @@ const MachineLearningContent: React.FC = () => {
     return `${dayStr} ${hourStr}`;
   };
 
-  // Calculate total and average for selected parameter
+  // Calculate total and average - same as legacy
   const calculateStats = (data: Prediction[]) => {
     if (data.length === 0) return { total: 0, average: 0 };
     
@@ -380,71 +338,39 @@ const MachineLearningContent: React.FC = () => {
     };
   };
 
-  // Modified download function with proper CSV handling
+  // Download function - same as legacy
   const handleDownload = () => {
-    const currentPredictions = predictions[selectedParameter];
-    
-    // Properly escape and format CSV content
     const escapeCsvValue = (value: string) => {
-      // If value contains commas, quotes, or newlines, wrap in quotes
       if (value.includes(',') || value.includes('"') || value.includes('\n')) {
         return `"${value.replace(/"/g, '""')}"`;
       }
       return value;
     };
 
-    // Create CSV content with proper formatting
     const csvRows = [
-      // Header row
-      [`DateTime,${selectedParameter}_Predicted_Value`],
-      // Data rows
-      ...currentPredictions.map((prediction: Prediction) => 
+      [`DateTime,INFLOW_Predicted_Value`],
+      ...predictions.map((prediction: Prediction) => 
         `${escapeCsvValue(formatDateTimeForCSV(prediction.datetime))},${prediction.value.toFixed(2)}`
       ),
-      // Summary rows
-      `Total,${calculateStats(currentPredictions).total.toFixed(2)}`,
-      `Average,${calculateStats(currentPredictions).average.toFixed(2)}`
+      `Total,${calculateStats(predictions).total.toFixed(2)}`,
+      `Average,${calculateStats(predictions).average.toFixed(2)}`
     ];
 
     const csvContent = csvRows.join('\n');
-
-    // Create and trigger download
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     
     link.setAttribute('href', url);
-    link.setAttribute('download', `${selectedParameter}_predictions_7-day_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `INFLOW_predictions_7-day_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url); // Clean up the URL object
+    URL.revokeObjectURL(url);
   };
 
-  // Prepare data for the chart with separate actual and predicted values
-  const prepareChartData = (historical: Prediction[], predictions: Prediction[]) => {
-    const historicalData = historical.map((item: Prediction) => ({
-      ...item,
-      actualValue: item.value,
-      predictedValue: null
-    }));
-
-    const predictionData = predictions.map((item: Prediction) => ({
-      ...item,
-      actualValue: null,
-      predictedValue: item.value
-    }));
-
-    return [...historicalData, ...predictionData];
-  };
-
-  // Get current predictions and stats
-  const currentPredictions = predictions[selectedParameter];
-  const currentHistorical = historicalData[selectedParameter];
-
-  // Process data to ensure future prediction line doesn't appear for yesterday
-  const processedData = [...currentHistorical, ...currentPredictions].map((item: Prediction) => {
-    // For historical data (yesterday), explicitly set value to null to hide the future prediction line
+  // Process data to ensure future prediction line doesn't appear for yesterday - same as legacy
+  const processedData = [...historicalData, ...predictions].map((item: Prediction) => {
     if (item.actualValue !== undefined || item.predictedValue !== undefined) {
       return {
         ...item,
@@ -454,7 +380,7 @@ const MachineLearningContent: React.FC = () => {
     return item;
   });
 
-  // Calculate prediction accuracy for yesterday
+  // Calculate prediction accuracy for yesterday - same as legacy  
   const calculateAccuracy = (historical: Prediction[]) => {
     if (!historical || historical.length === 0) return { accuracy: 0, mape: 0, meanError: 0 };
     
@@ -463,13 +389,11 @@ const MachineLearningContent: React.FC = () => {
     let count = 0;
     
     historical.forEach((item: Prediction) => {
-      // Only include points that have both actual and predicted values (not null)
       if (item.actualValue !== undefined && item.predictedValue !== undefined && 
           item.actualValue !== null && item.predictedValue !== null) {
         const error = Math.abs(item.actualValue - item.predictedValue);
         totalError += error;
         
-        // Prevent division by zero
         if (item.actualValue !== 0) {
           const percentageError = (error / Math.abs(item.actualValue)) * 100;
           totalPercentageError += percentageError;
@@ -479,13 +403,10 @@ const MachineLearningContent: React.FC = () => {
       }
     });
     
-    // If no valid matching points, return 0
     if (count === 0) return { accuracy: 0, mape: 0, meanError: 0 };
     
     const meanError = totalError / count;
-    const mape = totalPercentageError / count; // Mean Absolute Percentage Error
-    
-    // Convert MAPE to accuracy (100% - MAPE)
+    const mape = totalPercentageError / count;
     const accuracy = Math.max(0, Math.min(100, 100 - mape));
     
     return { 
@@ -495,14 +416,11 @@ const MachineLearningContent: React.FC = () => {
     };
   };
 
-  const { accuracy: accuracyYesterday, mape: mapeYesterday, meanError: meanErrorYesterday } = calculateAccuracy(currentHistorical);
-  const { total, average } = calculateStats([...currentHistorical, ...currentPredictions]);
-
-  // Find first and last datetime of yesterday's data to position the "Not enough data" message
+  // Get yesterday bounds - same as legacy
   const getYesterdayBounds = () => {
-    if (currentHistorical.length === 0) return { start: "", end: "" };
+    if (historicalData.length === 0) return { start: "", end: "" };
     
-    const sorted = [...currentHistorical].sort((a, b) => 
+    const sorted = [...historicalData].sort((a, b) => 
       new Date(a.datetime).getTime() - new Date(b.datetime).getTime()
     );
     
@@ -512,110 +430,15 @@ const MachineLearningContent: React.FC = () => {
     };
   };
 
+  const { accuracy: accuracyYesterday } = calculateAccuracy(historicalData);
+  const { total, average } = calculateStats([...historicalData, ...predictions]);
   const { start: yesterdayStart, end: yesterdayEnd } = getYesterdayBounds();
 
-  // Render info for missing predictions or data points
-  const renderChartLabels = () => {
-    // For missing yesterday predictions
-    if (!hasYesterdayPredictions && !isLoadingYesterdayPredictions && yesterdayStart && yesterdayEnd) {
-      return (
-        <ReferenceArea
-          x1={yesterdayStart}
-          x2={yesterdayEnd}
-          fill="#FEF9C3"
-          fillOpacity={0.2}
-          strokeOpacity={0}
-        >
-          
-        </ReferenceArea>
-      );
-    }
-    
-    // Check for missing data points
-    const missingDataPoints = currentHistorical.filter(
-      (item: Prediction) => item.actualValue === null || item.predictedValue === null
-    ).length;
-    
-    if (missingDataPoints > 0 && yesterdayStart && yesterdayEnd) {
-      return (
-        <ReferenceArea
-          x1={yesterdayStart}
-          x2={yesterdayEnd}
-          fill="#FEF9C3"
-          fillOpacity={0.2}
-          strokeOpacity={0}
-        >
-          <Label
-            value={`Accuracy: ${accuracyYesterday}%`}
-            position="insideTop"
-            fill="#B45309"
-            fontSize={12}
-            offset={10}
-          />
-          <Label
-            value={`(${missingDataPoints} missing data)`}
-            position="insideTop"
-            fill="#B45309"
-            fontSize={12}
-            offset={20}
-          />
-        </ReferenceArea>
-      );
-    }
-    
-    // Default label with accuracy
-    if (yesterdayStart && yesterdayEnd) {
-      return (
-        <ReferenceArea
-          x1={yesterdayStart}
-          x2={yesterdayEnd}
-          fill="#FEF9C3"
-          fillOpacity={0.4}
-          strokeOpacity={0}
-        >
-          <Label
-            value={`Accuracy: ${accuracyYesterday}%`}
-            position="insideTop"
-            fill="#B45309"
-            fontSize={12}
-            offset={10}
-          />
-        </ReferenceArea>
-      );
-    }
-    
-    return null;
-  };
-
-  // Render info for missing predictions
-  const renderNotEnoughDataLabel = () => {
-    if (!hasYesterdayPredictions && !isLoadingYesterdayPredictions && yesterdayStart && yesterdayEnd) {
-      return (
-        <ReferenceArea
-          x1={yesterdayStart}
-          x2={yesterdayEnd}
-          fill="#FEF9C3"
-          fillOpacity={0.2}
-          strokeOpacity={0}
-        >
-          <Label
-            value="Not enough data"
-            position="center"
-            fill="#B45309"
-            fontSize={14}
-            fontWeight="bold"
-          />
-        </ReferenceArea>
-      );
-    }
-    return null;
-  };
-
-  // Add warning for yesterday predictions
+  // Warning components - same logic as legacy
   const renderYesterdayPredictionsWarning = () => {
     if (isLoadingYesterdayPredictions) {
       return (
-        <div className="mb-2 bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
+        <div className="mb-4 bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
           <div className="flex items-center">
             <Loader2 className="w-5 h-5 text-blue-500 mr-2 animate-spin" />
             <span>Loading yesterday's prediction data...</span>
@@ -625,20 +448,20 @@ const MachineLearningContent: React.FC = () => {
     }
     
     if (yesterdayPredictionsError) {
-    return (
-        <div className="mb-2 bg-amber-50 p-3 rounded-md border-l-4 border-amber-400">
+      return (
+        <div className="mb-4 bg-amber-50 p-3 rounded-md border-l-4 border-amber-400">
           <div className="flex items-center justify-between">
             <span className="text-amber-700">
               {hasYesterdayPredictions 
                 ? 'Using incomplete prediction data from yesterday' 
                 : 'No prediction data available for yesterday'}
-                </span>
-            <button 
+            </span>
+            <Button 
               onClick={fetchYesterdayPredictions}
               className="px-3 py-1 bg-amber-500 text-white rounded-md hover:bg-amber-600 text-xs"
             >
               Retry
-            </button>
+            </Button>
           </div>
         </div>
       );
@@ -647,11 +470,10 @@ const MachineLearningContent: React.FC = () => {
     return null;
   };
 
-  // Add warning for yesterday data
   const renderYesterdayDataWarning = () => {
     if (isLoadingYesterdayData) {
       return (
-        <div className="mb-2 bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
+        <div className="mb-4 bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
           <div className="flex items-center">
             <Loader2 className="w-5 h-5 text-blue-500 mr-2 animate-spin" />
             <span>Loading yesterday's actual data...</span>
@@ -662,15 +484,15 @@ const MachineLearningContent: React.FC = () => {
     
     if (yesterdayDataError) {
       return (
-        <div className="mb-2 bg-amber-50 p-3 rounded-md border-l-4 border-amber-400">
+        <div className="mb-4 bg-amber-50 p-3 rounded-md border-l-4 border-amber-400">
           <div className="flex items-center justify-between">
             <span className="text-amber-700">Using mock data for yesterday (API connection failed)</span>
-            <button 
+            <Button 
               onClick={fetchYesterdayData}
               className="px-3 py-1 bg-amber-500 text-white rounded-md hover:bg-amber-600 text-xs"
             >
               Retry
-            </button>
+            </Button>
           </div>
         </div>
       );
@@ -679,23 +501,21 @@ const MachineLearningContent: React.FC = () => {
     return null;
   };
 
-  // Add warning for missing data points
   const renderMissingDataWarning = () => {
-    // Count missing data points
-    const missingActualDataPoints = currentHistorical.filter((item: Prediction) => item.actualValue === null).length;
-    const missingPredictionDataPoints = currentHistorical.filter((item: Prediction) => item.predictedValue === null).length;
+    const missingActualDataPoints = historicalData.filter((item: Prediction) => item.actualValue === null).length;
+    const missingPredictionDataPoints = historicalData.filter((item: Prediction) => item.predictedValue === null).length;
     
     if (missingActualDataPoints > 0 || missingPredictionDataPoints > 0) {
       return (
-        <div className="mb-2 bg-amber-50 p-3 rounded-md border-l-4 border-amber-400">
+        <div className="mb-4 bg-amber-50 p-3 rounded-md border-l-4 border-amber-400">
           <div className="flex items-center">
             <AlertCircle className="w-5 h-5 text-amber-500 mr-2" />
             <span className="text-amber-700">
               Data gaps detected: {missingActualDataPoints > 0 ? `${missingActualDataPoints} missing actual values` : ''}
               {missingActualDataPoints > 0 && missingPredictionDataPoints > 0 ? ' and ' : ''}
               {missingPredictionDataPoints > 0 ? `${missingPredictionDataPoints} missing prediction values` : ''}
-                </span>
-              </div>
+            </span>
+          </div>
         </div>
       );
     }
@@ -703,58 +523,43 @@ const MachineLearningContent: React.FC = () => {
     return null;
   };
 
-  // Render an improved shimmer skeleton loading state
-  const renderShimmerSkeleton = () => {
+  // Shimmer loading - simplified for project pattern
+  if (loading || isLoading || isLoadingYesterdayData) {
     return (
-      <Card className="w-full max-w-6xl mx-auto bg-white shadow-2xl rounded-2xl overflow-hidden mt-6">
-        <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-white/20 rounded-md animate-pulse"></div>
-              <div className="w-64 h-8 bg-white/20 rounded-md animate-pulse"></div>
-            </div>
-            <div className="w-36 h-10 bg-white/20 rounded-full animate-pulse"></div>
+      <div className="space-y-6">
+        {/* Metrics Section Loading */}
+        <div className="space-y-6">
+          <div className="flex items-center space-x-3">
+            <div className="w-1 h-6 bg-gradient-to-b from-blue-600 to-blue-700 rounded-full"></div>
+            <div className="h-6 bg-gray-200 rounded w-48 animate-pulse"></div>
           </div>
-        </CardHeader>
-        <CardContent className="p-6 bg-gray-50">
-          <div className="bg-white rounded-xl shadow-md p-4 mb-4">
-            <div className="mb-4 flex justify-between items-center">
-              <div className="w-60 h-8 bg-gray-200 rounded animate-pulse"></div>
-              <div className="w-40 h-6 bg-gray-200 rounded animate-pulse"></div>
-            </div>
-            
-            {/* Chart skeleton */}
-            <div className="w-full h-[400px] bg-gray-100 rounded-xl animate-pulse flex flex-col justify-center items-center">
-              <div className="w-16 h-16 rounded-full bg-gray-200 animate-pulse mb-4"></div>
-              <div className="w-48 h-6 bg-gray-200 rounded animate-pulse"></div>
-              <div className="w-36 h-4 bg-gray-200 rounded animate-pulse mt-2"></div>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-white rounded-xl shadow-xl overflow-hidden animate-pulse">
+                <div className="bg-gray-200 h-16"></div>
+                <div className="p-4 space-y-2">
+                  <div className="h-8 bg-gray-200 rounded"></div>
+                  <div className="h-4 bg-gray-200 rounded w-20"></div>
+                </div>
+              </div>
+            ))}
           </div>
-          
-          {/* Table skeleton */}
-          <div className="bg-white rounded-xl shadow-md p-4">
-            <div className="w-48 h-6 bg-gray-200 rounded animate-pulse mb-6"></div>
-            <div className="space-y-3">
-              <div className="w-full h-10 bg-gray-200 rounded animate-pulse"></div>
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="w-full h-12 bg-gray-100 rounded animate-pulse"></div>
-              ))}
+        </div>
+        
+        {/* Chart Section Loading */}
+        <div className="bg-white rounded-xl shadow-xl overflow-hidden">
+          <div className="bg-gray-200 h-16 animate-pulse"></div>
+          <div className="p-6">
+            <div className="h-[400px] bg-gray-100 rounded animate-pulse"></div>
+          </div>
         </div>
       </div>
-        </CardContent>
-      </Card>
     );
-  };
-
-  // Render loading state
-  if (loading || isLoading || isLoadingYesterdayData) {
-    return renderShimmerSkeleton();
   }
 
-  // Render error state
-  if (error || err1 || yesterdayDataError) {
-    // Convert errors to string to avoid React Node issues
-    const errorMessage = error || err1 || yesterdayDataError;
+  // Error state
+  if (error || err1) {
+    const errorMessage = error || err1;
     const errorText = errorMessage ? 
       (typeof errorMessage === 'object' ? 
         (errorMessage.message || 'An unknown error occurred') : 
@@ -762,76 +567,152 @@ const MachineLearningContent: React.FC = () => {
       : 'An unknown error occurred';
 
     return (
-      <Card className="w-full max-w-6xl mx-auto bg-gradient-to-br from-red-50 to-red-100 shadow-lg">
-        <CardContent className="flex flex-col items-center justify-center p-8 space-y-4">
-          <div className="text-red-600 text-lg font-semibold text-center">
-            {errorText}
+      <div className="bg-white rounded-xl shadow-xl overflow-hidden">
+        <div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-6">
+          <div className="flex items-center space-x-3">
+            <div className="w-3 h-3 bg-red-300 rounded-full"></div>
+            <h3 className="text-xl font-semibold">Error Loading Data</h3>
           </div>
-          <div className="flex space-x-4">
-            {(error || err1) && (
-              <button 
+        </div>
+        <div className="p-6 bg-white">
+          <div className="text-center space-y-4">
+            <div className="text-red-600 text-lg font-semibold">
+              {errorText}
+            </div>
+            <div className="flex space-x-4 justify-center">
+              <Button 
                 onClick={fetchPredictions} 
-                className="px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md"
+                className="bg-blue-600 hover:bg-blue-700"
               >
                 Retry Prediction API
-              </button>
-            )}
-            {yesterdayDataError && (
-              <button 
-                onClick={fetchYesterdayData} 
-                className="px-6 py-3 bg-amber-600 text-white rounded-full hover:bg-amber-700 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md"
-              >
-                Retry Yesterday Data
-              </button>
-            )}
+              </Button>
+              {yesterdayDataError && (
+                <Button 
+                  onClick={fetchYesterdayData} 
+                  className="bg-amber-600 hover:bg-amber-700"
+                >
+                  Retry Yesterday Data
+                </Button>
+              )}
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
+  // Calculate metrics for MetricCards
+  const currentPredictions = predictions || [];
+  const currentHistorical = historicalData || [];
+  
+  const avgValue = currentPredictions.length > 0 ? 
+    currentPredictions.reduce((sum, item) => sum + item.value, 0) / currentPredictions.length : 0;
+  const maxValue = currentPredictions.length > 0 ? 
+    Math.max(...currentPredictions.map(item => item.value)) : 0;
+
+  // Metric cards configuration
+  const metricCards = [
+    {
+      title: "Akurasi Kemarin",
+      value: `${accuracyYesterday.toFixed(1)}%`,
+      subtitle: "accuracy prediction",
+      icon: IoAnalyticsOutline,
+      ...CARD_THEMES.waterLevel
+    },
+    {
+      title: "Rata-rata Prediksi",
+      value: `${avgValue.toFixed(2)} m³/s`,
+      subtitle: "7 hari kedepan",
+      icon: IoWaterOutline,
+      ...CARD_THEMES.volumeEffective
+    },
+    {
+      title: "Nilai Maksimum",
+      value: `${maxValue.toFixed(2)} m³/s`,
+      subtitle: "peak prediction",
+      icon: IoTrendingUpOutline,
+      ...CARD_THEMES.totalLoad
+    },
+    {
+      title: "Total Data Points",
+      value: `${currentHistorical.length + currentPredictions.length}`,
+      subtitle: "historical + predicted",
+      icon: IoStatsChartOutline,
+      ...CARD_THEMES.prediction
+    }
+  ];
+
   return (
-    <Card className="w-full max-w-6xl mx-auto bg-white shadow-2xl rounded-2xl overflow-hidden mt-6">
-      <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6">
-        <CardTitle className="flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <BarChart2 className="w-10 h-10" />
-            <span className="text-2xl font-bold">Inflow Predictions</span>
+    <div className="space-y-8">
+      {/* Metrics Overview */}
+      <div className="space-y-6">
+        <div className="flex items-center space-x-3">
+          <div className="w-1 h-6 bg-gradient-to-b from-blue-600 to-blue-700 rounded-full"></div>
+          <h2 className="text-xl font-semibold text-gray-800">Inflow Metrics</h2>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {metricCards.map((card, index) => (
+            <MetricCard
+              key={index}
+              title={card.title}
+              value={card.value}
+              subtitle={card.subtitle}
+              icon={card.icon}
+              gradient={card.gradient}
+              bgColor={card.bgColor}
+              textColor={card.textColor}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Main Chart */}
+      <div className="bg-white rounded-xl shadow-xl border-0 overflow-hidden">
+        <div className="bg-gradient-to-r from-slate-800 to-slate-700 text-white p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+              <h3 className="text-xl font-semibold">Inflow Predictions - 7 Day Forecast</h3>
             </div>
-          <div className="flex items-center space-x-4">
-            {/* Download button */}
-            <button
+            <Button
               onClick={handleDownload}
-              className="px-4 py-2 bg-white text-blue-600 rounded-full flex items-center space-x-2 hover:bg-blue-50 transition-all duration-300"
+              className="bg-white/20 hover:bg-white/30 text-white flex items-center space-x-2"
             >
               <Download className="w-4 h-4" />
               <span>Download CSV</span>
-            </button>
+            </Button>
           </div>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-6 bg-gray-50">
-        <div className="bg-white rounded-xl shadow-md p-4 mb-4">
-          <div className="mb-4 flex justify-between items-center">
-            <h3 className="text-xl font-semibold text-gray-700">
-              Inflow Historical and Prediction Data
-            </h3>
-            <div className="text-sm text-gray-500">
-              Showing {currentHistorical.length} historical + {currentPredictions.length} predicted hours
-            </div>
-          </div>
-          
+        </div>
+        <div className="p-6 bg-white">
+          {/* Warnings */}
           {renderYesterdayDataWarning()}
           {renderYesterdayPredictionsWarning()}
           {renderMissingDataWarning()}
           
+          {/* Chart */}
           <div className="relative">
             <ResponsiveContainer width="100%" height={400}>
               <LineChart data={processedData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                 {/* Reference area with appropriate labels */}
-                {renderChartLabels()}
-                {renderNotEnoughDataLabel()}
+                {yesterdayStart && yesterdayEnd && (
+                  <ReferenceArea
+                    x1={yesterdayStart}
+                    x2={yesterdayEnd}
+                    fill="#FEF9C3"
+                    fillOpacity={0.4}
+                    strokeOpacity={0}
+                  >
+                    <Label
+                      value={`Accuracy: ${accuracyYesterday}%`}
+                      position="insideTop"
+                      fill="#B45309"
+                      fontSize={12}
+                      offset={10}
+                    />
+                  </ReferenceArea>
+                )}
                 <XAxis 
                   dataKey="datetime" 
                   tickFormatter={formatXAxisTick}
@@ -843,9 +724,9 @@ const MachineLearningContent: React.FC = () => {
                   padding={{ left: 10, right: 10 }}
                 />
                 <YAxis 
-                  domain={Y_AXIS_DOMAIN[selectedParameter]}
+                  domain={Y_AXIS_DOMAIN['INFLOW']}
                   label={{ 
-                    value: `${selectedParameter} Value`, 
+                    value: `INFLOW Value`, 
                     angle: -90, 
                     position: 'insideLeft',
                     fill: '#6b7280'
@@ -902,12 +783,17 @@ const MachineLearningContent: React.FC = () => {
             </ResponsiveContainer>
           </div>
         </div>
+      </div>
 
-        {/* Prediction Table */}
-        <div className="bg-white rounded-xl shadow-md p-4">
-          <h3 className="text-xl font-semibold mb-4 text-gray-700">
-            Inflow Data Details
-          </h3>
+      {/* Prediction Table */}
+      <div className="bg-white rounded-xl shadow-xl border-0 overflow-hidden">
+        <div className="bg-gradient-to-r from-slate-800 to-slate-700 text-white p-6">
+          <div className="flex items-center space-x-3">
+            <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+            <h3 className="text-xl font-semibold">Inflow Data Details</h3>
+          </div>
+        </div>
+        <div className="p-6 bg-white">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left text-gray-600">
               <thead className="bg-gray-100 text-gray-600 uppercase">
@@ -960,10 +846,8 @@ const MachineLearningContent: React.FC = () => {
               </tbody>
             </table>
           </div>
-            </div>
-          </CardContent>
-        </Card>
+        </div>
+      </div>
+    </div>
   );
-};
-
-export default MachineLearningContent; 
+}; 
