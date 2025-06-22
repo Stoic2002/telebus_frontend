@@ -3,7 +3,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { IoDownloadOutline, IoChevronBackOutline, IoChevronForwardOutline, IoDocumentOutline, IoRefreshOutline } from 'react-icons/io5';
 import { ElevationTableProps } from '@/types/reportTypes';
-import { formatNumber } from '@/lib/formatNumber';
+import { formatNumber } from '@/lib/utils/formatNumber';
 
 const ElevationTable: React.FC<ElevationTableProps> = ({ report }) => {
     const itemsPerTable = 30; // Number of items per table

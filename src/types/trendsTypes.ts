@@ -26,7 +26,7 @@ export interface BebanData {
     timestamp: string;
   }
   
- export  interface InflowData {
+ export  interface TrendsInflowData {
     id: number;
     name: string;
     value: string;

@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TelemeterData } from '@/types/telemeteringPjtTypes';
+import { useDataStore } from '@/store/dataStore';
 import { IoWaterOutline, IoRainyOutline, IoMapOutline, IoLocationOutline, IoRefreshOutline } from 'react-icons/io5';
-import axios from 'axios';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -17,35 +16,14 @@ declare global {
 type LatLngTuple = [number, number];
 
 const MapPJTContent: React.FC = () => {
-    const [telemeterData, setTelemeterData] = useState<TelemeterData>({});
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'waterlevel' | 'rainfall'>('waterlevel');
-  
-    useEffect(() => {
-      const fetchData = async () => {
-        try {
-          const [waterLevelRes, rainfallRes] = await Promise.all([
-            axios.get('/api/pjt-wl'),
-            axios.get('/api/pjt-rf')
-          ]);
-          setTelemeterData({
-            Waterlevel: waterLevelRes.data.Waterlevel,
-            Rainfall: rainfallRes.data.Rainfall
-          });
-          setLoading(false);
-        } catch (err) {
-          setError('Failed to fetch telemetry data');
-          setLoading(false);
-        }
-      };
-  
-      fetchData();
-  
-      // Refresh data every 5 minutes
-      const intervalId = setInterval(fetchData, 5 * 60 * 1000);
-      return () => clearInterval(intervalId);
-    }, []);
+    const { 
+      telemeterData,
+      loading: { telemetering: loading },
+      telemeterError: error,
+      activeTab: { telemetering: activeTab },
+      fetchTelemeterData,
+      setActiveTelemeteringTab,
+    } = useDataStore();
   
     const getLatestValidReading = (data: any[], key: 'wl' | 'rf') => {
       const sortedData = [...data].sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime());
@@ -54,7 +32,7 @@ const MapPJTContent: React.FC = () => {
     };
   
     const toggleMapType = (type: 'waterlevel' | 'rainfall') => {
-      setActiveTab(type);
+      setActiveTelemeteringTab(type);
     };
   
     if (loading) {
@@ -74,7 +52,15 @@ const MapPJTContent: React.FC = () => {
       return (
         <Card className="bg-white/10 backdrop-blur-md border-white/20 shadow-2xl">
           <CardContent className="p-8">
-            <div className="text-red-400 text-center text-xl font-medium">{error}</div>
+            <div className="text-center">
+              <div className="text-red-400 text-xl font-medium mb-4">{error}</div>
+              <button
+                onClick={() => fetchTelemeterData()}
+                className="px-4 py-2 bg-red-600/80 text-white rounded-lg hover:bg-red-700/80 transition-colors backdrop-blur-sm"
+              >
+                Retry Loading Data
+              </button>
+            </div>
           </CardContent>
         </Card>
       );
@@ -128,12 +114,6 @@ const MapPJTContent: React.FC = () => {
   
     return (
       <Card className="bg-white/10 backdrop-blur-md border-white/20 shadow-2xl">
-        <CardHeader className="bg-gradient-to-r from-emerald-500/80 to-cyan-600/80 text-white rounded-t-lg">
-          <CardTitle className="flex items-center space-x-3 text-xl font-bold">
-            <IoMapOutline className="w-7 h-7" />
-            <span>Telemetering Perum Jasa Tirta - Map View</span>
-          </CardTitle>
-        </CardHeader>
         <CardContent className="p-0">
           {/* Enhanced Tab Buttons */}
           <div className="flex space-x-4 p-6 bg-gradient-to-r from-slate-800/50 to-slate-700/50 backdrop-blur-sm">
@@ -146,7 +126,7 @@ const MapPJTContent: React.FC = () => {
               onClick={() => toggleMapType('waterlevel')}
             >
               <IoWaterOutline className="w-5 h-5" />
-              <span>Water Level Stations</span>
+              <span>Water Level Stations ({telemeterData.Waterlevel?.length || 0})</span>
             </button>
             <button
               className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-2 ${
@@ -157,7 +137,7 @@ const MapPJTContent: React.FC = () => {
               onClick={() => toggleMapType('rainfall')}
             >
               <IoRainyOutline className="w-5 h-5" />
-              <span>Rainfall Stations</span>
+              <span>Rainfall Stations ({telemeterData.Rainfall?.length || 0})</span>
             </button>
           </div>
           
@@ -183,9 +163,28 @@ const MapPJTContent: React.FC = () => {
                   <IoWaterOutline className="w-4 h-4 text-cyan-600" /> : 
                   <IoRainyOutline className="w-4 h-4 text-blue-600" />
                 }
-                <span>{stations?.length || 0} Stations</span>
+                <span>{stations?.length || 0} Active Stations</span>
               </div>
             </div>
+
+            {/* Empty State Overlay */}
+            {(!stations || stations.length === 0) && !loading && (
+              <div className="absolute inset-0 z-30 bg-black/20 backdrop-blur-sm flex items-center justify-center">
+                <div className="bg-white/90 backdrop-blur-md rounded-xl p-6 text-center shadow-xl">
+                  <IoMapOutline className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">No Station Data Available</h3>
+                  <p className="text-gray-600 mb-4">
+                    {activeTab === 'waterlevel' ? 'Water level' : 'Rainfall'} stations data is not available.
+                  </p>
+                  <button
+                    onClick={() => fetchTelemeterData()}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Refresh Data
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

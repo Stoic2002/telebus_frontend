@@ -5,7 +5,7 @@ export const last24HDataService = {
   async fetchLast24HData(): Promise<TransformedLast24HData[]> {
     try {
       const response = await axios.get('http://192.168.105.90/data-combined-7-days-before');
-      console.log('Data fetched:', this.transformData(response.data));
+      
       return this.transformData(response.data);
     } catch (error) {
       console.error('Error fetching PBS data:', error);

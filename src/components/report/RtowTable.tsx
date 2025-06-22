@@ -4,7 +4,7 @@ import { IoCalendarOutline, IoLocationOutline, IoStatsChartOutline, IoTimeOutlin
 
 const RtowTable: React.FC<{ rtowData: RtowData }> = ({ rtowData }) => {
     // Mengelompokkan data berdasarkan bulan dan hari
-    console.log('Received RTOW Data:', rtowData);
+  
     const groupedData: Record<string, Record<number, number>> = {};
 
     rtowData.data.forEach(item => {
