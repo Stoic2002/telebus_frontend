@@ -7,6 +7,7 @@ import { useMachineLearningStore } from '@/store';
 import { PredictionChart } from '@/components/features/machine-learning/components';
 import { ErrorAlert } from '@/components/common/feedback/ErrorAlert';
 import { MetricCard } from '@/components/common/cards';
+import type { Prediction } from '@/types/machineLearningTypes';
 
 const MachineLearningContent: React.FC = () => {
   // Zustand store - centralized ML state management
@@ -49,17 +50,17 @@ const MachineLearningContent: React.FC = () => {
   const currentHistorical = actualYesterdayData;
   
   // Calculate stats
-  const total = currentPredictions.reduce((sum: number, p) => sum + (p.value || 0), 0);
+  const total = currentPredictions.reduce((sum: number, p: Prediction) => sum + (p.value || 0), 0);
   const average = currentPredictions.length > 0 ? total / currentPredictions.length : 0;
   
   // Process chart data - simplified version
   const processedData = [
-    ...currentHistorical.map(d => ({
+    ...currentHistorical.map((d: Prediction) => ({
       datetime: d.datetime,
       actualValue: d.value,
       predictedValue: null
     })),
-    ...currentPredictions.map(p => ({
+    ...currentPredictions.map((p: Prediction) => ({
       datetime: p.datetime,
       actualValue: null,
       predictedValue: p.value
