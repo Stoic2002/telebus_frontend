@@ -2,7 +2,7 @@ import React from 'react';
 import { useRouter } from 'next/router';
 import Header from '../../components/Header';
 import { Sidebar } from '../../components/ui/sidebar';
-import { MachineLearningContent } from '@/components/features/machine-learning/legacy';
+import { MachineLearningContent } from '@/components/features/machine-learning/components';
 import { TrendsContent } from '@/components/features/trends/legacy';
 import { HomeContent } from '@/components/features/home/legacy';
 import ReportContent from '@/components/report/ReportContent';
