@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import axios from 'axios';
-import { RainfallData, TelemeterData } from '@/types/telemeteringPjtTypes';
-// import MapPJTContent from './MapPJTContent';
-
-  
+import { Loading } from '@/components/ui/loading';
+import { IoWaterOutline, IoRainyOutline, IoRefreshOutline } from 'react-icons/io5';
+import { useDataStore } from '@/store';
+import { StationGrid } from '@/components/features/telemetering/components';
+import { ErrorAlert } from '@/components/common/feedback/ErrorAlert';
 import dynamic from 'next/dynamic';
 
 const MapPJTContent = dynamic(() => import('@/components/telemetering-pjt/MapPJTContent'), {
@@ -13,179 +13,152 @@ const MapPJTContent = dynamic(() => import('@/components/telemetering-pjt/MapPJT
 });
 
 const TelemeteringPJTContent: React.FC = () => {
-  const [telemeterData, setTelemeterData] = useState<TelemeterData>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Zustand store for centralized telemetering data management
+  const { 
+    telemeterData,
+    loading,
+    error,
+    activeTab,
+    fetchTelemeterData,
+    setActiveTelemeteringTab,
+    clearError
+  } = useDataStore();
 
-
-
+  // Auto-clear errors
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [waterLevelRes, rainfallRes] = await Promise.all([
-          axios.get('/api/pjt-wl'),
-          axios.get('/api/pjt-rf')
-        ]);
-        setTelemeterData({
-          Waterlevel: waterLevelRes.data.Waterlevel,
-          Rainfall: rainfallRes.data.Rainfall
-        });
-        setLoading(false);
-      } catch (err) {
-        setError('Failed to fetch telemetry data');
-        setLoading(false);
-      }
-    };
+    if (error) {
+      const timer = setTimeout(() => {
+        clearError();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, clearError]);
 
-    fetchData();
+  // Initial data fetching and interval setup
+  useEffect(() => {
+    // Initial fetch
+    fetchTelemeterData();
 
     // Refresh data every 5 minutes
-    const intervalId = setInterval(fetchData, 5 * 60 * 1000);
-    return () => clearInterval(intervalId);
-  }, []);
-
-  const getLatestValidReading = (data: any[], key: 'wl' | 'rf') => {
-    // Sort data by datetime in descending order (most recent first)
-    const sortedData = [...data].sort((a, b) => 
-      new Date(b.datetime).getTime() - new Date(a.datetime).getTime()
-    );
+    const intervalId = setInterval(() => {
+      fetchTelemeterData();
+    }, 5 * 60 * 1000);
     
-    // Find the first valid reading
-    const validReading = sortedData.find(reading => reading[key] !== '-');
-    return validReading ? validReading[key] : '-';
-  };
+    return () => clearInterval(intervalId);
+  }, [fetchTelemeterData]);
 
-  const getLatestDateTime = (data: any[]) => {
-    // Sort data by datetime in descending order and get the most recent
-    const sortedData = [...data].sort((a, b) => 
-      new Date(b.datetime).getTime() - new Date(a.datetime).getTime()
-    );
-    return sortedData[0]?.datetime || '-';
-  };
-
-  const getTotalRainfall = (data: RainfallData[]) => {
-    // Get today's date at start of day for comparison
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    return data
-      .filter(reading => {
-        // Only include readings from today
-        const readingDate = new Date(reading.datetime);
-        return readingDate >= today && reading.rf !== '-';
-      })
-      .reduce((sum, reading) => sum + parseFloat(reading.rf || '0'), 0)
-      .toFixed(2);
-  };
-
-  if (loading) {
+  // Loading state
+  if (loading.telemetering) {
     return (
-      <div className="p-6">
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">Loading telemetry data...</div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-red-500 text-center">{error}</div>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="p-6 space-y-8">
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center space-y-4">
+              <Loading size="lg" />
+              <p className="text-gray-600 font-medium">Loading telemetry data...</p>
+              <div className="flex items-center justify-center space-x-4 text-sm text-gray-500">
+                <span className="text-blue-600">
+                  Loading water level and rainfall data...
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <Card className="mb-6">
-        <CardHeader className="bg-gradient-to-r from-green-500 to-gray-300 text-white rounded-t-md">
-          <CardTitle>Telemetering Perum Jasa Tirta</CardTitle>
-        </CardHeader>
-      </Card>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+      <div className="p-6 space-y-8">
+        {/* Error Alert */}
+        {error && (
+          <ErrorAlert
+            error={error}
+            onDismiss={clearError}
+            onRetry={fetchTelemeterData}
+            showRetry={true}
+            variant="error"
+          />
+        )}
 
-      <MapPJTContent />
-
-      <Tabs defaultValue="waterlevel" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="waterlevel">Water Level</TabsTrigger>
-          <TabsTrigger value="rainfall">Rainfall</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="waterlevel">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {telemeterData.Waterlevel?.map((station) => (
-              <Card key={station.header.name}>
-                <CardHeader className="bg-gray-50">
-                  <CardTitle className="text-lg">{station.header.name}</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Current Level:</span>
-                      <span className="font-semibold">
-                        {getLatestValidReading(station.data, 'wl')} m
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Coordinates:</span>
-                      <span className="text-sm">
-                        {station.header.x}, {station.header.y}
-                      </span>
-                    </div>
-                    <div className="text-sm text-gray-500 mt-2">
-                      Last updated: {getLatestDateTime(station.data)}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+        {/* Header Section */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-1 h-8 bg-gradient-to-b from-cyan-500 to-blue-600 rounded-full"></div>
+              <h1 className="text-3xl font-bold text-gray-800">Telemetering Perum Jasa Tirta</h1>
+            </div>
           </div>
-        </TabsContent>
+        </div>
 
-        <TabsContent value="rainfall">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {telemeterData.Rainfall?.map((station) => (
-              <Card key={station.header.name}>
-                <CardHeader className="bg-gray-50">
-                  <CardTitle className="text-lg">{station.header.name}</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Current Rainfall:</span>
-                      <span className="font-semibold">
-                        {getLatestValidReading(station.data, 'rf')} mm
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Total Today:</span>
-                      <span className="font-semibold">
-                        {getTotalRainfall(station.data as RainfallData[])} mm
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Coordinates:</span>
-                      <span className="text-sm">
-                        {station.header.x}, {station.header.y}
-                      </span>
-                    </div>
-                    <div className="text-sm text-gray-500 mt-2">
-                      Last updated: {getLatestDateTime(station.data)}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-      </Tabs>
+        {/* Map Component */}
+        <Card className="border-0 shadow-xl overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-700 text-white p-6">
+            <div className="flex items-center space-x-3">
+              <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+              <CardTitle className="text-xl font-semibold">Station Locations Map</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0 bg-white">
+            <MapPJTContent />
+          </CardContent>
+        </Card>
+
+        {/* Tabs Section */}
+        <Card className="border-0 shadow-xl overflow-hidden">
+          <CardContent className="p-6">
+            <Tabs 
+              value={activeTab.telemetering} 
+              onValueChange={(value) => setActiveTelemeteringTab(value as 'waterlevel' | 'rainfall')}
+              className="space-y-6"
+            >
+              <TabsList className="bg-gray-100 p-1 rounded-xl w-full justify-start">
+                <TabsTrigger 
+                  value="waterlevel" 
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-md rounded-lg px-6 py-3 font-medium transition-all duration-300"
+                >
+                  <IoWaterOutline className="w-5 h-5 mr-2" />
+                  Water Level
+                  {telemeterData.Waterlevel && (
+                    <span className="ml-2 px-2 py-1 bg-cyan-100 text-cyan-700 rounded-full text-xs font-semibold">
+                      {telemeterData.Waterlevel.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="rainfall" 
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-md rounded-lg px-6 py-3 font-medium transition-all duration-300"
+                >
+                  <IoRainyOutline className="w-5 h-5 mr-2" />
+                  Rainfall
+                  {telemeterData.Rainfall && (
+                    <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
+                      {telemeterData.Rainfall.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="waterlevel">
+                <StationGrid
+                  stations={telemeterData.Waterlevel || null}
+                  type="waterlevel"
+                  isLoading={loading.telemetering}
+                />
+              </TabsContent>
+
+              <TabsContent value="rainfall">
+                <StationGrid
+                  stations={telemeterData.Rainfall || null}
+                  type="rainfall"
+                  isLoading={loading.telemetering}
+                />
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

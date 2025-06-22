@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TelemeterData } from '@/types/telemeteringPjtTypes';
-import axios from 'axios';
+import { useDataStore } from '@/store/dataStore';
+import { IoWaterOutline, IoRainyOutline, IoMapOutline, IoLocationOutline, IoRefreshOutline } from 'react-icons/io5';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-
 
 // Declare Leaflet types to avoid TypeScript errors
 declare global {
@@ -17,35 +16,14 @@ declare global {
 type LatLngTuple = [number, number];
 
 const MapPJTContent: React.FC = () => {
-    const [telemeterData, setTelemeterData] = useState<TelemeterData>({});
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'waterlevel' | 'rainfall'>('waterlevel');
-  
-    useEffect(() => {
-      const fetchData = async () => {
-        try {
-          const [waterLevelRes, rainfallRes] = await Promise.all([
-            axios.get('/api/pjt-wl'),
-            axios.get('/api/pjt-rf')
-          ]);
-          setTelemeterData({
-            Waterlevel: waterLevelRes.data.Waterlevel,
-            Rainfall: rainfallRes.data.Rainfall
-          });
-          setLoading(false);
-        } catch (err) {
-          setError('Failed to fetch telemetry data');
-          setLoading(false);
-        }
-      };
-  
-      fetchData();
-  
-      // Refresh data every 5 minutes
-      const intervalId = setInterval(fetchData, 5 * 60 * 1000);
-      return () => clearInterval(intervalId);
-    }, []);
+    const { 
+      telemeterData,
+      loading: { telemetering: loading },
+      telemeterError: error,
+      activeTab: { telemetering: activeTab },
+      fetchTelemeterData,
+      setActiveTelemeteringTab,
+    } = useDataStore();
   
     const getLatestValidReading = (data: any[], key: 'wl' | 'rf') => {
       const sortedData = [...data].sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime());
@@ -54,30 +32,37 @@ const MapPJTContent: React.FC = () => {
     };
   
     const toggleMapType = (type: 'waterlevel' | 'rainfall') => {
-      setActiveTab(type);
+      setActiveTelemeteringTab(type);
     };
   
     if (loading) {
       return (
-        <div className="p-6">
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center">Loading map data...</div>
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="bg-white/10 backdrop-blur-md border-white/20 shadow-2xl">
+          <CardContent className="p-8">
+            <div className="flex items-center justify-center space-x-4 text-white">
+              <IoRefreshOutline className="w-8 h-8 animate-spin" />
+              <span className="text-xl font-medium">Loading map data...</span>
+            </div>
+          </CardContent>
+        </Card>
       );
     }
   
     if (error) {
       return (
-        <div className="p-6">
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-red-500 text-center">{error}</div>
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="bg-white/10 backdrop-blur-md border-white/20 shadow-2xl">
+          <CardContent className="p-8">
+            <div className="text-center">
+              <div className="text-red-400 text-xl font-medium mb-4">{error}</div>
+              <button
+                onClick={() => fetchTelemeterData()}
+                className="px-4 py-2 bg-red-600/80 text-white rounded-lg hover:bg-red-700/80 transition-colors backdrop-blur-sm"
+              >
+                Retry Loading Data
+              </button>
+            </div>
+          </CardContent>
+        </Card>
       );
     }
   
@@ -91,21 +76,34 @@ const MapPJTContent: React.FC = () => {
         if (!isNaN(lat) && !isNaN(lng)) {
           const value = getLatestValidReading(station.data, activeTab === 'waterlevel' ? 'wl' : 'rf');
           const unit = activeTab === 'waterlevel' ? 'm' : 'mm';
-          const iconColor = activeTab === 'waterlevel' ? 'blue' : 'green';
+          const iconColor = activeTab === 'waterlevel' ? '#0891b2' : '#3b82f6'; // cyan-600 and blue-500
   
           const customIcon = L.divIcon({
             className: 'custom-div-icon',
-            html: `<div style="background-color: ${iconColor}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>`,
-            iconSize: [16, 16],
-            iconAnchor: [8, 8]
+            html: `<div style="background-color: ${iconColor}; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.3);"></div>`,
+            iconSize: [22, 22],
+            iconAnchor: [11, 11]
           });
   
           return (
             <Marker key={name} position={[lat, lng]} icon={customIcon}>
-              <Popup>
-                <strong>{name}</strong><br />
-                Current {activeTab === 'waterlevel' ? 'Water Level' : 'Rainfall'}: {value} {unit}<br />
-                Coordinates: {y}, {x}
+              <Popup className="custom-popup">
+                <div className="p-2 bg-white rounded-lg shadow-lg">
+                  <div className="font-bold text-slate-800 mb-2 flex items-center">
+                    {activeTab === 'waterlevel' ? 
+                      <IoWaterOutline className="w-4 h-4 mr-1 text-cyan-600" /> : 
+                      <IoRainyOutline className="w-4 h-4 mr-1 text-blue-600" />
+                    }
+                    {name}
+                  </div>
+                  <div className="text-slate-600 text-sm">
+                    <strong>Current {activeTab === 'waterlevel' ? 'Water Level' : 'Rainfall'}:</strong> {value} {unit}
+                  </div>
+                  <div className="text-slate-500 text-xs mt-1 flex items-center">
+                    <IoLocationOutline className="w-3 h-3 mr-1" />
+                    {y}, {x}
+                  </div>
+                </div>
               </Popup>
             </Marker>
           );
@@ -115,36 +113,81 @@ const MapPJTContent: React.FC = () => {
     });
   
     return (
-      <div className="p-6">
-        <Card className="mb-6">
-          <CardHeader className="bg-gradient-to-r from-green-500 to-gray-300 text-white rounded-t-md">
-            <CardTitle>Telemetering Perum Jasa Tirta - Map View</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="flex space-x-2 p-2 bg-gray-50">
-              <button
-                className={`px-4 py-2 rounded-md ${activeTab === 'waterlevel' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-                onClick={() => toggleMapType('waterlevel')}
-              >
-                Water Level Stations
-              </button>
-              <button
-                className={`px-4 py-2 rounded-md ${activeTab === 'rainfall' ? 'bg-green-500 text-white' : 'bg-gray-200'}`}
-                onClick={() => toggleMapType('rainfall')}
-              >
-                Rainfall Stations
-              </button>
-            </div>
-            <MapContainer center={[-7.305318, 109.644628]} zoom={9} style={{ height: '400px', width: '100%' }}>
+      <Card className="bg-white/10 backdrop-blur-md border-white/20 shadow-2xl">
+        <CardContent className="p-0">
+          {/* Enhanced Tab Buttons */}
+          <div className="flex space-x-4 p-6 bg-gradient-to-r from-slate-800/50 to-slate-700/50 backdrop-blur-sm">
+            <button
+              className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-2 ${
+                activeTab === 'waterlevel' 
+                  ? 'bg-gradient-to-r from-cyan-600 to-cyan-700 text-white shadow-xl scale-105 border-2 border-cyan-400' 
+                  : 'bg-white/90 text-slate-700 hover:bg-white hover:text-slate-800 backdrop-blur-sm border-2 border-slate-300 hover:border-cyan-400'
+              }`}
+              onClick={() => toggleMapType('waterlevel')}
+            >
+              <IoWaterOutline className="w-5 h-5" />
+              <span>Water Level Stations ({telemeterData.Waterlevel?.length || 0})</span>
+            </button>
+            <button
+              className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-2 ${
+                activeTab === 'rainfall' 
+                  ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-xl scale-105 border-2 border-blue-400' 
+                  : 'bg-white/90 text-slate-700 hover:bg-white hover:text-slate-800 backdrop-blur-sm border-2 border-slate-300 hover:border-blue-400'
+              }`}
+              onClick={() => toggleMapType('rainfall')}
+            >
+              <IoRainyOutline className="w-5 h-5" />
+              <span>Rainfall Stations ({telemeterData.Rainfall?.length || 0})</span>
+            </button>
+          </div>
+          
+          {/* Map Container with Enhanced Styling */}
+          <div className="relative overflow-hidden rounded-b-lg">
+            <MapContainer 
+              center={[-7.305318, 109.644628]} 
+              zoom={9} 
+              style={{ height: '500px', width: '100%' }}
+              className="z-10"
+            >
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               {markers}
             </MapContainer>
-          </CardContent>
-        </Card>
-      </div>
+            
+            {/* Station Count Overlay */}
+            <div className="absolute top-4 right-4 z-20 bg-white/90 backdrop-blur-md rounded-xl px-4 py-2 shadow-lg border border-white/50">
+              <div className="text-sm font-semibold text-slate-700 flex items-center space-x-2">
+                {activeTab === 'waterlevel' ? 
+                  <IoWaterOutline className="w-4 h-4 text-cyan-600" /> : 
+                  <IoRainyOutline className="w-4 h-4 text-blue-600" />
+                }
+                <span>{stations?.length || 0} Active Stations</span>
+              </div>
+            </div>
+
+            {/* Empty State Overlay */}
+            {(!stations || stations.length === 0) && !loading && (
+              <div className="absolute inset-0 z-30 bg-black/20 backdrop-blur-sm flex items-center justify-center">
+                <div className="bg-white/90 backdrop-blur-md rounded-xl p-6 text-center shadow-xl">
+                  <IoMapOutline className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">No Station Data Available</h3>
+                  <p className="text-gray-600 mb-4">
+                    {activeTab === 'waterlevel' ? 'Water level' : 'Rainfall'} stations data is not available.
+                  </p>
+                  <button
+                    onClick={() => fetchTelemeterData()}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Refresh Data
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     );
   };
   

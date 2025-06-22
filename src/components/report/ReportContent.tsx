@@ -1,100 +1,60 @@
 import React, { useState, useRef } from 'react';
-import { jsPDF } from 'jspdf';
-import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
+import { IoDocumentTextOutline, IoWarningOutline, IoCheckmarkCircleOutline } from 'react-icons/io5';
 
-// Shadcn UI Components
-import { 
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue 
-} from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { AlertCircle, Download, FileText, Loader2, Table } from 'lucide-react';
+// Import refactored components
+import ReportForm from '@/components/features/reports/components/ReportForm';
+import ReportDisplay from '@/components/features/reports/components/ReportDisplay';
+import { LoadingState } from '@/components/features/reports/components/ReportStates';
+import { useReportData } from '@/components/features/reports/hooks/useReportData';
+import { downloadExcel } from '@/components/features/reports/utils';
 
-// Components and Data
-
+// Components
 import TmaTable from './TmaTable';
 import InflowTable from './InflowTable';
 import OutflowTable from './Outflow.table';
-import axios from 'axios';
 import ElevationTable from './ElevationTable';
 import RtowTable from './RtowTable';
-import html2canvas from 'html2canvas';
-import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
-import { error } from 'console';
-import { fetchWithRetry } from '@/hooks/fetchWithRetry';
-import { ApiElevationData, ApiReportData, RohData } from '@/types/reportTypes';
 import RohTable from './RohTable';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@radix-ui/react-dropdown-menu';
-
 
 // Types
+import { RohData } from '@/types/reportTypes';
+
 interface ReportOption {
   value: string;
   label: string;
 }
 
-interface ApiData {
-  id: number;
-  name: string;
-  value: string;
-  timestamp: string;
-}
-
-type FormattedHourlyData = {
-  headers: string[];
-  data: (string | number)[][];
-};
-
 const NoDataAlert = () => (
-  <Alert variant="destructive" className="my-4">
-    <AlertCircle className="h-4 w-4" />
-    <AlertTitle>Data Tidak Tersedia</AlertTitle>
-    <AlertDescription>
-      Tidak dapat menemukan data untuk periode yang dipilih. Silakan coba dengan periode yang berbeda.
-    </AlertDescription>
-  </Alert>
+  <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg animate-fade-in">
+    <div className="flex items-center">
+      <IoWarningOutline className="w-5 h-5 text-red-400 mr-2" />
+      <div>
+        <h3 className="text-sm font-medium text-red-800">
+          Data Tidak Tersedia
+        </h3>
+        <div className="mt-2 text-sm text-red-700">
+          <p>Tidak dapat menemukan data untuk periode yang dipilih. Silakan coba dengan periode yang berbeda.</p>
+        </div>
+      </div>
+    </div>
+  </div>
 );
 
 const ReportContent: React.FC = () => {
   // State Management
   const [selectedReport, setSelectedReport] = useState<string>('');
   const [startDate, setStartDate] = useState<string>('');
-  const [elevationData, setElevationData] = useState<any>(null);
-  const [rtowData, setRtowData] = useState<any>(null);
   const [endDate, setEndDate] = useState<string>('');
   const [showReport, setShowReport] = useState<boolean>(false);
+  
+  // Data State
+  const [elevationData, setElevationData] = useState<any>(null);
+  const [rtowData, setRtowData] = useState<any>(null);
   const [tmaData, setTmaData] = useState<{ content: any[] }>({ content: [] });
   const [inflowData, setInflowData] = useState<{ content: any[] }>({ content: [] });
   const [outflowData, setOutflowData] = useState<{ content: any[] }>({ content: [] });
-  const [loading, setLoading] = useState<boolean>(false);
-  const [hasError, setHasError] = useState(false);
   
-  // Refs
-  const reportRef = useRef<HTMLDivElement>(null);
-
-  // Report Options
-  const reportOptions: ReportOption[] = [
-    { value: 'ROH', label: 'ROH' },
-    { value: 'inflow', label: 'Inflow' },
-    { value: 'outflow', label: 'Outflow' },
-    { value: 'TMA', label: 'TMA' },
-    { value: 'elevasi', label: 'Volume efektif' },
-    { value: 'rtow', label: 'RTOW' },
-  ];
-
-  const disabledReports = ['ROH', 'elevasi', 'rtow'];
-
+  // Initial ROH Data
   const [rohData, setRohData] = useState<RohData[]>([{
     header: {
         logo: '/assets/ip-mrica-logo.png',
@@ -114,775 +74,176 @@ const ReportContent: React.FC = () => {
         spillwayJam: 0,
         totalOutflow: 0,
         estimasiVolumeWaduk: 0,
-        estimasiOutflow:0,
+        estimasiOutflow: 0,
         estimasiElevasiWadukSetelahOperasi: 0,
         estimasiVolumeWadukSetelahOperasi: 0,
         totalDaya: 0
     }
-}]);
-// const [isLoading, setIsLoading] = useState(true);
-// const [error, setError] = useState<string | null>(null);
+  }]);
 
+  // Refs
+  const reportRef = useRef<HTMLDivElement>(null);
 
-    const fetchDataRoh = async (date: string) => {
+  // Custom Hook
+  const {
+    loading,
+    hasError,
+    fetchTmaData,
+    fetchInflowData,
+    fetchOutflowData,
+    fetchElevationData,
+    fetchRtowData,
+    fetchDataRoh
+  } = useReportData();
 
-      console.log(date)
-        try {
-          setLoading(true);
-          setHasError(false);
-            // Fetch report data
-            const reportResponse = await fetchWithRetry(
-              () => axios.post<ApiReportData>('http://192.168.105.90/report-data', {
-                date: date
-              }),
-              3, // max attempts
-              1000 // delay in ms
-            );
-            if (!reportResponse.data || Object.keys(reportResponse.data).length === 0) {
-              setHasError(true);
-              setShowReport(false);
-              return;
-            }
-            const totalOutflow = (reportResponse.data.outflow.average_outflow_irigasi * 24 * 3600)  + 
-                (reportResponse.data.outflow.total_outflow_ddc_m3s * 3600 * reportResponse.data.outflow.total_outflow_ddc_jam) 
-                + (reportResponse.data.outflow.total_outflow_spillway_m3s * 3600 * reportResponse.data.outflow.total_outflow_spillway_jam);
+  // Report Options
+  const reportOptions: ReportOption[] = [
+    { value: 'ROH', label: 'ROH' },
+    { value: 'inflow', label: 'Inflow' },
+    { value: 'outflow', label: 'Outflow' },
+    { value: 'TMA', label: 'TMA' },
+    { value: 'elevasi', label: 'Volume efektif' },
+    { value: 'rtow', label: 'RTOW' },
+  ];
 
-            const estimasiVolumeWaduk = parseFloat(reportResponse.data.realisasiElv.volume) +
-             ((parseFloat(reportResponse.data.estimationInflow.inflow_estimation)) * 3600 * 24) - 
-                parseFloat(reportResponse.data.targetElv.volume) - totalOutflow;
-           
+  const disabledReports = ['ROH', 'elevasi', 'rtow'];
 
-            const totalDaya = ((
-                estimasiVolumeWaduk -
-                (reportResponse.data.outflow.average_outflow_irigasi * 24 * 3600))/4080) - 50
-            // Calculate volume for elevation after operation
-
-            const estimasiOutflow = (totalDaya * 4080)+ reportResponse.data.outflow.average_outflow_irigasi * 3600 * 24
-
-
-            const volumeAfterOperation = parseFloat(reportResponse.data.realisasiElv.volume) + 
-                ((parseFloat(reportResponse.data.estimationInflow.inflow_estimation))* 24 * 3600) - 
-                estimasiOutflow - totalOutflow
-
-            
-              const year = date.split('-')[0];
-              console.log('year',year)
-            // Fetch elevation after operation
-            const elevationResponse = await axios.post<ApiElevationData>('http://192.168.105.90/elevation-after', {
-                volume: volumeAfterOperation.toString(),
-                year: year
-            });
-
-            // function formatCustomDate(date: string | number | Date) {
-            //   const options = { day: '2-digit', month: 'long', year: 'numeric' };
-            //   return new Date(date).toLocaleDateString('id-ID', options );
-            // }
-            
-            // Update state with fetched data
-            setRohData([{
-                ...rohData[0],
-                content: {
-                    ...rohData[0].content,
-                    hariOrTanggal: new Date(date).toLocaleDateString('id-ID',{day:"2-digit",month:"long",year:"numeric"}),
-                    estimasiInflow: parseFloat(reportResponse.data.estimationInflow.inflow_estimation),
-                    targetELevasiHariIni: parseFloat(reportResponse.data.targetElv.targetElevasi),
-                    volumeTargetELevasiHariIni: parseFloat(reportResponse.data.targetElv.volume),
-                    realisasiElevasi: parseFloat(reportResponse.data.realisasiElv.tma_value),
-                    volumeRealisasiElevasi: parseFloat(reportResponse.data.realisasiElv.volume),
-                    estimasiIrigasi: reportResponse.data.outflow.average_outflow_irigasi,
-                    estimasiDdcXTotalJamPembukaan: reportResponse.data.outflow.total_outflow_ddc_m3s,
-                    ddcJam: reportResponse.data.outflow.total_outflow_ddc_jam,
-                    estimasiSpillwayTotalJamPembukaan: reportResponse.data.outflow.total_outflow_spillway_m3s,
-                    spillwayJam: reportResponse.data.outflow.total_outflow_spillway_jam,
-                    estimasiElevasiWadukSetelahOperasi: parseFloat(elevationResponse.data.interpolated_elevation),
-                    estimasiVolumeWadukSetelahOperasi: volumeAfterOperation,
-                    totalDaya: totalDaya,
-                    estimasiOutflow: estimasiOutflow,
-                    estimasiVolumeWaduk:estimasiVolumeWaduk,
-                }
-            }]);
-
-            setShowReport(true);
-            setLoading(false)
-        } catch (err) {
-            // setError('Failed to fetch data');
-            setHasError(true);
-            setLoading(false);
-        } finally {
-          setLoading(false);
-        }
-    };
-
-
-
-  // Fetch TMA Data from API
-  const fetchTmaData = async (start: string, end: string) => {
-    try {
-      setLoading(true);
-      setHasError(false);
-      const response = await fetchWithRetry(
-        () => axios.get('http://192.168.105.90/pbs-tma-h-date', {
-          params: { startDate: start, endDate: end }
-        }),
-        3, // max attempts
-        1000 // delay in ms
-      );
-      // console.log(start)
-      // console.log(end)
-      
-
-      if (!response.data || response.data.length === 0) {
-        setHasError(true);
-        setShowReport(false);
-        return;
-      }
-
-      // Transform API data to match TmaTable's expected format
-      const transformedData = {
-        header: {
-          logo: '/assets/ip-mrica-logo2.png', // Update with your default logo path
-          judul: 'LAPORAN TINGGI MUKA ARI WADUK (MDPL)',
-          unit: 'UNIT PEMBANGKITAN MRICA',
-          periode: `${start} - ${end}`,
-          lokasi: 'WADUK PLTA PB SOEDIRMAN'
-        },
-        content: processApiDataTma(response.data)
-      };
-
-      setTmaData({ content: [transformedData] });
-      setShowReport(true);
-    } catch (error) {
-      setHasError(true);
-      setShowReport(false);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchInflowData = async (start: string, end: string) => {
-    try {
-      setLoading(true);
-      setHasError(false);
-      const response = await fetchWithRetry(
-        () => axios.get('http://192.168.105.90/pbs-inflow-h-date', {
-          params: { startDate: start, endDate: end }
-        }),
-        3, // max attempts
-        1000 // delay in ms
-      );
-
-
-      if (!response.data || response.data.length === 0) {
-        setHasError(true);
-        setShowReport(false);
-        return;
-      }
-  
-      const transformedData = {
-        header: {
-          logo: '/assets/ip-mrica-logo2.png', 
-          judul: 'LAPORAN DATA INFLOW (m3/s)',
-          unit: 'UNIT PEMBANGKITAN MRICA',
-          periode: `${start} - ${end}`,
-          lokasi: 'WADUK PLTA PB SOEDIRMAN',
-        },
-        content: processApiDataInflow(response.data),
-      };
-  
-      setInflowData({ content: [transformedData] });
-      setShowReport(true);
-    } catch (error) {
-      setHasError(true);
-      setShowReport(false);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const fetchOutflowData = async (start: string, end: string) => {
-    try {
-      setLoading(true);
-      setHasError(false)
-
-      const response = await fetchWithRetry(
-        () => axios.get('http://192.168.105.90/pbs-outflow-h-date', {
-          params: { startDate: start, endDate: end }
-        }),
-        3, // max attempts
-        1000 // delay in ms
-      );
-      console.log(response)
-      if (!response.data || response.data.length === 0) {
-        setHasError(true);
-        setShowReport(false);
-        return;
-      }
-  
-      const transformedData = {
-        header: {
-          logo: '/assets/ip-mrica-logo2.png',
-          judul: 'LAPORAN DATA OUTFLOW (m3/s)',
-          unit: 'UNIT PEMBANGKITAN MRICA',
-          periode: `${start} - ${end}`,
-          lokasi: 'WADUK PLTA PB SOEDIRMAN',
-        },
-        content: processApiDataOutflow(response.data),
-      };
-  
-      setOutflowData({ content: [transformedData] });
-      setShowReport(true);
-    } catch (error) {
-      setHasError(true);
-      setShowReport(false);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchElevationData = async (year: string) => {
-    try {
-      setLoading(true);
-      setHasError(false);
-
-      const response = await fetchWithRetry(
-        () => axios.get(`http://192.168.105.90/elevation/${year}`),
-        3, // max attempts
-        1000 // delay in ms
-      );
-      
-      if (!response.data || response.data.length === 0) {
-        setHasError(true);
-        setShowReport(false);
-        return;
-      }
-      // Transformasi data sesuai dengan format yang diharapkan oleh ElevationTable
-      const transformedData = {
-        id: response.data.id,
-        year: response.data.year,
-        status: response.data.status,
-        createdAt: response.data.createdAt,
-        updatedAt: response.data.updatedAt,
-        elevationData: response.data.elevationData.map((item: any) => ({
-          id: item.id,
-          ghwDataId: item.ghwDataId,
-          elevation: item.elevation,
-          volume: item.volume,
-          area: item.area,
-          createdAt: item.createdAt,
-          updatedAt: item.updatedAt,
-        })),
-      };
-      
-      setElevationData(transformedData); // Simpan data ke state
-      setShowReport(true);  // Mengembalikan data yang telah diproses
-    } catch (error) {
-      setHasError(true);
-      setShowReport(false);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchRtowData = async (year: string) => {
-    try {
-      setLoading(true);
-      setHasError(false)
-      const response = await fetchWithRetry(
-        () => axios.get(`http://192.168.105.90/rtow/${year}`),
-        3, // max attempts
-        1000 // delay in ms
-      );
-
-      if (!response.data || response.data.length === 0) {
-        setHasError(true);
-        setShowReport(false);
-        return;
-      }
-      
-      // Transform the response data as needed for the RtowTable
-      const transformedData = {
-        id: response.data.id,
-        tahun: response.data.tahun,
-        createdAt: response.data.createdAt,
-        updatedAt: response.data.updatedAt,
-        data: response.data.data.map((item: any) => ({
-          id: item.id,
-          bulan: item.bulan,
-          hari: item.hari,
-          targetElevasi: item.targetElevasi,
-          rtowId: item.rtowId,
-          createdAt: item.createdAt,
-          updatedAt: item.updatedAt,
-        })),
-      };
-      console.log('Transformed RTOW Data:', transformedData);
-      setRtowData(transformedData)
-      setShowReport(true); // Show the report after fetching data// Return the transformed data
-    } catch (error) {
-      setHasError(true);
-      setShowReport(false);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-
-  // Process API data into TmaTable format
-  const processApiDataTma = (apiData: ApiData[]) => {
-    // Group data by date and organize by hour
-    const groupedByDate: { [key: string]: { tanggal: number, item: { jam: number, tma: number }[] } } = {};
-
-    apiData.forEach(item => {
-      const date = new Date(item.timestamp);
-      const tanggal = date.getDate();
-      const jam = date.getHours();
-
-      if (!groupedByDate[tanggal]) {
-        groupedByDate[tanggal] = { tanggal, item: [] };
-      }
-      const filteredValue = parseFloat(item.value).toFixed(2);
-      groupedByDate[tanggal].item.push({
-        jam,
-        tma: parseFloat(filteredValue)
-      });
-    });
-
-    return Object.values(groupedByDate);
-  };
-  const processApiDataInflow = (apiData: ApiData[]) => {
-    // Group data by date and organize by hour
-    const groupedByDate: { [key: string]: { tanggal: number, item: { jam: number, inflow: number }[] } } = {};
-
-    apiData.forEach(item => {
-      const date = new Date(item.timestamp);
-      const tanggal = date.getDate();
-      const jam = date.getHours();
-
-      if (!groupedByDate[tanggal]) {
-        groupedByDate[tanggal] = { tanggal, item: [] };
-      }
-      // Convert to absolute value to ensure there are no negative values
-      const parsedValue = parseFloat(item.value);
-      const absoluteValue = Math.abs(parsedValue);
-      const filteredValue = absoluteValue.toFixed(2);
-      
-      groupedByDate[tanggal].item.push({
-        jam,
-        inflow: parseFloat(filteredValue)
-      });
-    });
-
-    return Object.values(groupedByDate);
-  };
-  const processApiDataOutflow = (apiData: ApiData[]) => {
-    // Group data by date and organize by hour
-    const groupedByDate: { [key: string]: { tanggal: number, item: { jam: number, outflow: number }[] } } = {};
-
-    apiData.forEach(item => {
-      const date = new Date(item.timestamp);
-      const tanggal = date.getDate();
-      const jam = date.getHours();
-
-      if (!groupedByDate[tanggal]) {
-        groupedByDate[tanggal] = { tanggal, item: [] };
-      }
-      const filteredValue = parseFloat(item.value).toFixed(2);
-      groupedByDate[tanggal].item.push({
-        jam,
-        outflow: parseFloat(filteredValue)
-      });
-    });
-
-    return Object.values(groupedByDate);
-  };
-
-  // Handle Report Selection
+  // Event Handlers
   const handleReportChange = (value: string) => {
     setSelectedReport(value);
-    // Reset dates when changing reports
     setStartDate('');
     setEndDate('');
     setShowReport(false);
   };
 
-  // Submit Handler
   const handleSubmit = async () => {
-    if (selectedReport === 'TMA' && startDate && endDate) {
-      fetchTmaData(startDate, endDate);
-    } else if (selectedReport === 'ROH' && startDate) {
-      fetchDataRoh(startDate)
-    } else if (selectedReport === 'inflow' && startDate && endDate) {
-      fetchInflowData(startDate, endDate);
-    } else if (selectedReport === 'outflow' && startDate && endDate) {
-      fetchOutflowData(startDate, endDate);
-    } else if (selectedReport === 'elevasi' && startDate) {
-      const year = startDate; // Menggunakan startDate sebagai tahun
-      await fetchElevationData(year);
-      // elevationData sudah disimpan dalam state di dalam fetchElevationData
-    } else if (selectedReport === 'rtow' && startDate) {
-      const year = startDate; // Using startDate as the year
-      await fetchRtowData(year);
-    }
-  };
+    let result = null;
 
-
-  // PDF Download Handler
-const handleDownloadPDF = async () => {
-  if (!reportRef.current) return;
-
-  try {
-    const canvas = await html2canvas(reportRef.current, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-    });
-
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4',
-      compress: true
-    });
-
-    const imgWidth = pdf.internal.pageSize.getWidth();
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-    const imgData = canvas.toDataURL('image/png');
-    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-
-    const formattedStartDate = new Date(startDate).toLocaleDateString('id-ID');
-    const filename = selectedReport === 'ROH' 
-      ? `${selectedReport}_${formattedStartDate}.pdf`
-      : `${selectedReport}_${formattedStartDate}_${new Date(endDate).toLocaleDateString('id-ID')}.pdf`;
-    
-    pdf.save(filename);
-  } catch (error) {
-    console.error('Error generating PDF:', error);
-    alert('Gagal membuat PDF. Silakan coba lagi.');
-  }
-};
-
-const handleDownloadExcel = () => {
-  const formatHourlyData = (data: any, valueKey: string): FormattedHourlyData => {
-    if (!data?.content?.[0]?.content || data.content[0].content.length === 0) {
-      return { headers: [], data: [] };
-    }
-
-    interface DayItem {
-      tanggal: number;
-      item: {
-        jam: number;
-        [key: string]: any;
-      }[];
-    }
-
-    const content = data.content[0].content as DayItem[];
-    const tanggalKeys: number[] = content.map(day => day.tanggal);
-    
-    // Always use hours 0-23 for consistent ordering
-    const jamKeys: number[] = Array.from({ length: 24 }, (_, i) => i);
-
-    // Create a mapping for quick lookups
-    const valueMap: { [key: number]: { [key: number]: number } } = {};
-    content.forEach(day => {
-      day.item.forEach(item => {
-        const jamValue = parseInt(String(item.jam), 10);
-        if (!valueMap[jamValue]) valueMap[jamValue] = {};
-        
-        // Apply Math.abs for inflow values only
-        if (valueKey === 'inflow') {
-          valueMap[jamValue][day.tanggal] = Math.abs(item[valueKey]);
-        } else {
-          valueMap[jamValue][day.tanggal] = item[valueKey];
+    switch (selectedReport) {
+      case 'TMA':
+        if (startDate && endDate) {
+          result = await fetchTmaData(startDate, endDate);
+          if (result) setTmaData(result);
         }
-      });
-    });
+        break;
 
-    // Create headers: Jam + Tanggal values
-    const headers = ['Jam', ...tanggalKeys.map(String)];
+      case 'ROH':
+        if (startDate) {
+          console.log('ROH: Fetching data for date:', startDate);
+          console.log('ROH: Initial rohData:', rohData);
+          result = await fetchDataRoh(startDate, rohData);
+          console.log('ROH: fetchDataRoh result:', result);
+          if (result) {
+            setRohData(result);
+            console.log('ROH: Data set successfully:', result);
+          } else {
+            console.log('ROH: No result returned from fetchDataRoh');
+          }
+        }
+        break;
 
-    // Create rows: for each jam, ensure proper ordering from 0-23
-    const rows: (string | number)[][] = jamKeys.map(jam => {
-      const rowData: (string | number)[] = [jam];
-      tanggalKeys.forEach((tanggal: number) => {
-        rowData.push(valueMap[jam]?.[tanggal] !== undefined ? valueMap[jam][tanggal] : 0);
-      });
-      return rowData;
-    });
+      case 'inflow':
+        if (startDate && endDate) {
+          result = await fetchInflowData(startDate, endDate);
+          if (result) setInflowData(result);
+        }
+        break;
 
-    // Add stats rows (AVG, MAX, MIN)
-    const statRows: (string | number)[][] = [
-      ['AVG'],
-      ['MAX'],
-      ['MIN']
-    ];
+      case 'outflow':
+        if (startDate && endDate) {
+          result = await fetchOutflowData(startDate, endDate);
+          if (result) setOutflowData(result);
+        }
+        break;
 
-    // Calculate stats for each column
-    tanggalKeys.forEach((tanggal: number) => {
-      // Get values for this tanggal column (excluding jam column)
-      const columnValues = jamKeys
-        .map(jam => valueMap[jam]?.[tanggal])
-        .filter(value => value !== undefined) as number[];
+      case 'elevasi':
+        if (startDate) {
+          result = await fetchElevationData(startDate);
+          if (result) setElevationData(result);
+        }
+        break;
 
-      // Average
-      const avg = columnValues.length ? columnValues.reduce((sum, val) => sum + val, 0) / columnValues.length : 0;
-      statRows[0].push(avg);
+      case 'rtow':
+        if (startDate) {
+          result = await fetchRtowData(startDate);
+          if (result) setRtowData(result);
+        }
+        break;
+    }
 
-      // Max
-      const max = columnValues.length ? Math.max(...columnValues) : 0;
-      statRows[1].push(max);
-
-      // Min
-      const min = columnValues.length ? Math.min(...columnValues) : 0;
-      statRows[2].push(min);
-    });
-
-    return {
-      headers,
-      data: [...rows, ...statRows]
-    };
+    setShowReport(!!result);
   };
 
-  let worksheet;
-  let filename;
-  const formattedStartDate = new Date(startDate).toLocaleDateString('id-ID');
-  const formattedEndDate = new Date(endDate).toLocaleDateString('id-ID');
-
-  switch (selectedReport) {
-    case 'TMA':
-    case 'inflow':
-    case 'outflow': {
-      const valueKey = {
-        'TMA': 'tma',
-        'inflow': 'inflow',
-        'outflow': 'outflow'
-      }[selectedReport];
-      
-      const data = {
-        'TMA': tmaData,
-        'inflow': inflowData,
-        'outflow': outflowData
-      }[selectedReport];
-
-      const formattedData = formatHourlyData(data, valueKey);
-      
-      // Create worksheet from the formatted data
-      worksheet = XLSX.utils.aoa_to_sheet([
-        formattedData.headers,
-        ...formattedData.data
-      ]);
-
-      // Set column widths
-      const colWidth = Array(formattedData.headers.length).fill({ wch: 12 });
-      colWidth[0] = { wch: 8 }; // Width for Jam column
-      worksheet['!cols'] = colWidth;
-
-      filename = `${selectedReport}_${formattedStartDate}_${formattedEndDate}.xlsx`;
-      break;
-    }
+  const handleDownloadExcel = () => {
+    console.log('Download Excel - selectedReport:', selectedReport);
+    console.log('Download Excel - rohData:', rohData);
+    console.log('Download Excel - rohData[0]?.content:', rohData[0]?.content);
     
-    case 'ROH': {
-      const data = rohData.map((item: any) => ({
-        Tanggal: item.content.hariOrTanggal,
-        'Estimasi Inflow': Math.abs(item.content.estimasiInflow), // Use absolute value for inflow
-        'Target Elevasi Hari Ini': item.content.targetELevasiHariIni,
-        'Volume Target Elevasi Hari Ini': item.content.volumeTargetELevasiHariIni,
-        'Realisasi Elevasi': item.content.realisasiElevasi,
-        'Volume Realisasi Elevasi': item.content.volumeRealisasiElevasi,
-        'Estimasi Irigasi': item.content.estimasiIrigasi,
-        'Estimasi DDC': item.content.estimasiDdcXTotalJamPembukaan,
-        'DDC Jam': item.content.ddcJam,
-        'Estimasi Spillway': item.content.estimasiSpillwayTotalJamPembukaan,
-        'Spillway Jam': item.content.spillwayJam,
-        'Total Outflow': item.content.totalOutflow,
-        'Estimasi Volume Waduk': item.content.estimasiVolumeWaduk,
-        'Estimasi Outflow': item.content.estimasiOutflow,
-        'Water Consumption 1 MW': 1.13,
-        'Water Consumption 1 MW To 1 Hour': 4080,
-        'Estimasi Elevasi Waduk Setelah Operasi': item.content.estimasiElevasiWadukSetelahOperasi,
-        'Estimasi Volume Waduk Setelah Operasi': item.content.estimasiVolumeWadukSetelahOperasi,
-        'Total Daya': item.content.totalDaya,
-      }));
-      worksheet = XLSX.utils.json_to_sheet(data);
-      filename = `${selectedReport}_${formattedStartDate}.xlsx`;
-      break;
-    }
-    
-    case 'rtow': {
-      const data = rtowData.data.map((item: any) => ({
-        Bulan: item.bulan,
-        Hari: item.hari,
-        'Target Elevasi': item.targetElevasi,
-      }));
-      worksheet = XLSX.utils.json_to_sheet(data);
-      filename = `${selectedReport}_${formattedStartDate}_${formattedEndDate}.xlsx`;
-      break;
-    }
-    
-    default:
-      return;
-  }
+    downloadExcel(
+      selectedReport,
+      startDate,
+      endDate,
+      tmaData,
+      inflowData,
+      outflowData,
+      rohData,
+      rtowData
+    );
+  };
 
-  // Create and download workbook
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Report');
-  
-  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-  const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
-  
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
-};
-
-  
-
-  // Validate submit button state
-  // const isSubmitDisabled = selectedReport === 'ROH' 
-  //   ? !startDate 
-  //   : !selectedReport || !startDate || !endDate;
+  // Validation
   const isSubmitDisabled = selectedReport === 'ROH'
-  ? !startDate
-  : selectedReport === 'elevasi' || selectedReport === 'rtow'
-  ? !startDate // Cukup validasi tahun
-  : !selectedReport || !startDate || !endDate;
+    ? !startDate
+    : selectedReport === 'elevasi' || selectedReport === 'rtow'
+    ? !startDate
+    : !selectedReport || !startDate || !endDate;
 
-
-  // Validate download button state
   const isDownloadDisabled = !showReport || selectedReport === 'elevasi';
 
-
   return (
-    <div className="p-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Report Telemetering</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Report Select */}
-            <div>
-              <Select
-                value={selectedReport}
-                onValueChange={handleReportChange}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih Report" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {reportOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header Section */}
+        <div className="bg-white rounded-lg shadow-xl border-0 overflow-hidden">
 
-            {/* Date Inputs */}
-            <div>
-            {selectedReport === 'elevasi' || selectedReport === 'rtow' ? (
-              <input
-                type="number"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md"
-                placeholder="Masukkan Tahun (YYYY)"
-              />
-            ) : (
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md"
-                placeholder={selectedReport === 'ROH' ? 'Pilih Tanggal' : 'Tanggal Mulai'}
-              />
-            )}
-          </div>
-            <div>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md"
-                disabled={disabledReports.includes(selectedReport)}
-                placeholder="Tanggal Akhir"
-              />
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-2">
-              <Button 
-                onClick={handleSubmit}
-                disabled={isSubmitDisabled}
-              >
-                Submit
-              </Button>
-              <DropdownMenu>
-  <DropdownMenuTrigger asChild>
-    <Button variant="outline" disabled={isDownloadDisabled}>
-      <Download className="mr-2 h-4 w-4" />
-      <span>Download</span>
-    </Button>
-  </DropdownMenuTrigger>
-  <DropdownMenuContent 
-    align="start" 
-    className="w-48 bg-white border border-gray-200 rounded-md shadow-lg"
-    sideOffset={4}
-  >
-    <DropdownMenuItem 
-      onClick={handleDownloadPDF}
-      className="flex items-center cursor-pointer hover:bg-gray-100 px-4 py-2"
-    >
-      <FileText className="mr-2 h-4 w-4" />
-      <span>Export PDF</span>
-    </DropdownMenuItem>
-    <DropdownMenuItem 
-      onClick={handleDownloadExcel}
-      className="flex items-center cursor-pointer hover:bg-gray-100 px-4 py-2"
-    >
-      <Table className="mr-2 h-4 w-4" />
-      <span>Export Excel</span>
-    </DropdownMenuItem>
-  </DropdownMenuContent>
-</DropdownMenu>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {loading && (
-        <div className="flex justify-center items-center my-4">
-          <Loader2 className="animate-spin" />
-          <span className="ml-2">Memuat data...</span>
+          {/* Form Section */}
+          <ReportForm
+            selectedReport={selectedReport}
+            startDate={startDate}
+            endDate={endDate}
+            isSubmitDisabled={isSubmitDisabled}
+            isDownloadDisabled={isDownloadDisabled}
+            onReportChange={handleReportChange}
+            onStartDateChange={setStartDate}
+            onEndDateChange={setEndDate}
+            onSubmit={handleSubmit}
+            onDownloadExcel={handleDownloadExcel}
+          />
         </div>
-      )}
 
-      {hasError && <NoDataAlert />}
+        {/* Loading State */}
+        {loading && <LoadingState />}
 
-      {showReport && selectedReport && !hasError && (
-        <div ref={reportRef}>
-          {selectedReport === 'ROH' && rohData && rohData.length > 0 && <RohTable rohData={rohData} />}
-          {selectedReport === 'TMA' && tmaData.content && tmaData.content.length > 0 && (
-            <TmaTable tmaData={tmaData.content} />
-          )}
-          {selectedReport === 'inflow' && inflowData.content && inflowData.content.length > 0 && (
-            <InflowTable inflowData={inflowData.content} />
-          )}
-          {selectedReport === 'outflow' && outflowData.content && outflowData.content.length > 0 && (
-            <OutflowTable outflowData={outflowData.content} />
-          )}
-          {selectedReport === 'elevasi' && elevationData && (
-            <ElevationTable report={elevationData} />
-          )}
-          {selectedReport === 'rtow' && rtowData && <RtowTable rtowData={rtowData} />}
-        </div>
-      )}
+        {/* Error State */}
+        {hasError && <NoDataAlert />}
+
+        {/* Report Display */}
+        {showReport && selectedReport && !hasError && (
+          <div ref={reportRef}>
+            <ReportDisplay
+              selectedReport={selectedReport}
+              showReport={showReport}
+              hasError={hasError}
+              rohData={rohData}
+              tmaData={tmaData}
+              inflowData={inflowData}
+              outflowData={outflowData}
+              elevationData={elevationData}
+              rtowData={rtowData}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 };

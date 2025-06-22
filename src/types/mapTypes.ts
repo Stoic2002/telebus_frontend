@@ -1,6 +1,6 @@
 import { LatLng } from 'leaflet';
 
-export interface SensorValueResponse {
+export interface MapSensorValueResponse {
   data: {
     value: {
       value: number;

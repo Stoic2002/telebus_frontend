@@ -1,10 +1,10 @@
 import React from 'react';
 import { useRouter } from 'next/router';
 import Header from '../../components/Header';
-import Sidebar from '../../components/Sidebar';
-import MachineLearningContent from '../../components/MachineLearning/MachineLearningContent';
-import TrendsContent from '../../components/Trends/TrendsContent';
-import HomeContent from '@/components/Home/HomeContent';
+import { Sidebar } from '../../components/ui/sidebar';
+import { MachineLearningContent } from '@/components/features/machine-learning/legacy';
+import { TrendsContent } from '@/components/features/trends/legacy';
+import { HomeContent } from '@/components/features/home/legacy';
 import ReportContent from '@/components/report/ReportContent';
 import DataInputGhwContent from '@/components/dataInput/DataInputGhwContent';
 import UserAdminContent from '@/components/dataInput/UserAdminContent';

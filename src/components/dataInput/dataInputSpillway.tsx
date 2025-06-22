@@ -2,6 +2,7 @@ import React, { useState, ChangeEvent } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import { IoWaterOutline, IoSaveOutline, IoCheckmarkCircleOutline, IoWarningOutline, IoCalendarOutline, IoTimeOutline, IoSpeedometerOutline } from 'react-icons/io5';
 import { fetchWithRetry } from '@/hooks/fetchWithRetry';
 import axios from 'axios';
 
@@ -47,8 +48,6 @@ const DataInputSpillway: React.FC = () => {
       // Combine date and time into the required format
       const combinedDateTime = `${formData.tanggal} ${formData.jam}:00`;
 
-      // console.log(combinedDateTime);
-
       // Prepare request body
       const requestBody = {
         tanggal: combinedDateTime,
@@ -63,20 +62,9 @@ const DataInputSpillway: React.FC = () => {
               1000 // delay in ms
             );
 
-    //   const response = await fetch('http://192.168.105.90/input-spillway', {
-    //     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //     },
-      
-    //     body: JSON.stringify(requestBody),
-    //   });
-
       if (!response.ok) {
         throw new Error('Gagal menyimpan data');
       }
-
-      console.log(requestBody);
 
       setStatus({
         type: 'success',
@@ -105,83 +93,136 @@ const DataInputSpillway: React.FC = () => {
   // Generate hour options from 00:00 to 23:00
   const hourOptions = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
 
-
   return (
-    <Card className="w-full max-w-2xl mx-auto shadow-lg mt-6 mb-24">
-      <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-800">
-        <CardTitle className="text-center text-white text-xl">
-          Form Input Target Operasi Harian
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-6">
+    <div className="p-8">
+      <div className="w-full max-w-4xl mx-auto">
+        {/* Status Alert */}
         {status.message && (
-          <Alert className={`mb-4 ${status.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
-            <AlertDescription>{status.message}</AlertDescription>
+          <Alert className={`mb-8 ${status.type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'} rounded-xl shadow-lg`}>
+            <div className="flex items-center space-x-3">
+              {status.type === 'success' ? (
+                <IoCheckmarkCircleOutline className="w-6 h-6 text-emerald-500" />
+              ) : (
+                <IoWarningOutline className="w-6 h-6 text-red-500" />
+              )}
+              <AlertDescription className="font-semibold text-lg">{status.message}</AlertDescription>
+            </div>
           </Alert>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="flex space-x-4">
-            <div className="flex-1 space-y-2">
-              <label className="block text-sm font-semibold text-gray-700">
-                Tanggal
-              </label>
-              <input
-                type="date"
-                name="tanggal"
-                value={formData.tanggal}
-                onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                required
-              />
-            </div>
+        {/* Form Card */}
+        <Card className="shadow-2xl border-0 rounded-2xl overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-8">
+            <CardTitle className="text-xl flex items-center space-x-3">
+              <IoSpeedometerOutline className="w-6 h-6" />
+              <span>Spillway Control Parameters</span>
+            </CardTitle>
+          </CardHeader>
+          
+          <CardContent className="p-8 bg-white">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Date and Time Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <label className="block text-sm font-bold text-gray-700 flex items-center space-x-2">
+                    <IoCalendarOutline className="w-5 h-5 text-blue-600" />
+                    <span>Tanggal Operasi</span>
+                  </label>
+                  <input
+                    type="date"
+                    name="tanggal"
+                    value={formData.tanggal}
+                    onChange={handleInputChange}
+                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-gray-50 hover:bg-white shadow-sm text-lg"
+                    required
+                  />
+                </div>
 
-            <div className="flex-1 space-y-2">
-              <label className="block text-sm font-semibold text-gray-700">
-                Jam
-              </label>
-              <select
-                name="jam"
-                value={formData.jam}
-                onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                required
-              >
-                <option value="">Pilih Jam</option>
-                {hourOptions.map(hour => (
-                  <option key={hour} value={hour}>{hour}</option>
-                ))}
-              </select>
+                <div className="space-y-3">
+                  <label className="block text-sm font-bold text-gray-700 flex items-center space-x-2">
+                    <IoTimeOutline className="w-5 h-5 text-blue-600" />
+                    <span>Jam Operasi</span>
+                  </label>
+                  <select
+                    name="jam"
+                    value={formData.jam}
+                    onChange={handleInputChange}
+                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-gray-50 hover:bg-white shadow-sm text-lg"
+                    required
+                  >
+                    <option value="">Pilih Jam Operasi</option>
+                    {hourOptions.map(hour => (
+                      <option key={hour} value={hour}>{hour}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Outflow Spillway Input */}
+              <div className="space-y-3">
+                <label className="block text-sm font-bold text-gray-700 flex items-center space-x-2">
+                  <IoWaterOutline className="w-5 h-5 text-blue-600" />
+                  <span>Outflow Spillway (m³/s)</span>
+                </label>
+                <input
+                  type="number"
+                  name="outflowSpillwayM3s"
+                  value={formData.outflowSpillwayM3s}
+                  onChange={handleInputChange}
+                  className="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-gray-50 hover:bg-white shadow-sm text-lg"
+                  step="0.01"
+                  required
+                  placeholder="Masukkan debit spillway dalam m³/s"
+                />
+                <p className="text-sm text-gray-500 flex items-center space-x-1">
+                  <span>💡</span>
+                  <span>Debit spillway untuk kontrol banjir dan pengaturan level waduk</span>
+                </p>
+              </div>
+
+              {/* Submit Button */}
+              <div className="pt-6 border-t border-gray-200">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white p-4 rounded-xl transition-all focus:ring-4 focus:ring-blue-300 disabled:opacity-70 flex items-center justify-center space-x-3 shadow-xl transform hover:scale-[1.02] disabled:hover:scale-100 text-lg font-semibold"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                      <span>Menyimpan Data...</span>
+                    </>
+                  ) : (
+                    <>
+                      <IoSaveOutline className="w-6 h-6" />
+                      <span>Simpan Data Spillway</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* Information Panel */}
+        <div className="mt-8 bg-blue-50 rounded-2xl p-6 border border-blue-200">
+          <h3 className="text-lg font-bold text-blue-800 mb-3 flex items-center space-x-2">
+            <IoSpeedometerOutline className="w-5 h-5" />
+            <span>Informasi Spillway</span>
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-700">
+            <div>
+              <p><strong>Spillway Control</strong></p>
+              <p>Mengatur aliran air untuk kontrol banjir dan menjaga level waduk</p>
+            </div>
+            <div>
+              <p><strong>Parameter Input:</strong></p>
+              <p>Debit air dalam satuan meter kubik per detik (m³/s)</p>
             </div>
           </div>
-            <div className="flex-1 space-y-2">
-              <label className="block text-sm font-semibold text-gray-700">
-                Outflow Spillway (m³/s)
-              </label>
-              <input
-                type="number"
-                name="outflowSpillwayM3s"
-                value={formData.outflowSpillwayM3s}
-                onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                step="0.01"
-                required
-                placeholder="Debit Spillway"
-              />
-            </div>
-          {/* </div> */}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white p-3 rounded-lg hover:from-blue-700 hover:to-blue-900 transition-all focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-70 flex items-center justify-center space-x-2"
-          >
-            {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-            <span>{loading ? 'Menyimpan...' : 'Simpan Data'}</span>
-          </button>
-        </form>
-      </CardContent>
-    </Card>
+        </div>
+      </div>
+    </div>
   );
 };
 
